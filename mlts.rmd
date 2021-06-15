@@ -1,0 +1,890 @@
+---
+title: "**Forecast with automatic machine learning and other techniques.**"
+author:
+- Dr. Martín Lozano.
+- \texttt{<martin.lozano@udem.edu>}
+- \texttt{https://sites.google.com/site/mlozanoqf/}
+date: "Last compiled on: `r format(Sys.time(), '%d/%m/%Y, %H:%M:%S.')`"
+output:
+  pdf_document:
+    fig_caption: yes
+    number_sections: yes
+    extra_dependencies: float
+  word_document: default
+  html_document:
+    df_print: paged
+fontsize: 12pt
+always_allow_html: true #borrar.
+header-includes:
+- \usepackage{placeins}
+- \usepackage{setspace}
+- \usepackage{chngcntr}
+- \onehalfspacing
+- \counterwithin{figure}{subsection}
+- \counterwithin{table}{subsection}
+toc: yes
+abstract: We tackle a single forecast problem using several techniques. This document is based on some freely available Business Science IO codes in R that explains how to implement machine learning workflow using H2O. I added some additional explanations and code for teaching purposes (literate programming). This is still a work in progress and it is under revision.
+---
+
+```{r echo=FALSE}
+# This removes all items in environment. 
+# It is a good practice to start your code this way.
+rm(list=ls())
+library(tictoc)
+tic()
+#date: "Last compiled on: `r format(Sys.time(), '%d/%m/%Y. %H:%M:%S')`"
+```
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(fig.pos = "H", out.extra = "")
+```
+
+# Introduction.
+
+This document relies on some freely available Business Science IO R codes in the web. The CEO of Business Science IO is Matt Dancho, he is the creator of \texttt{tidyquant} and \texttt{timetk}, and I truly believe we can learn a lot from their publicly available data science examples in general. This private firm declares a nice motivation that I fully support: *A gap exists between the data scientist's skillset and the business objectives. Organizations are investing heavily into data science hiring because they know that artificial intelligence, machine learning, and data science are the future. However, this investment takes time to pay off because data scientists need to learn the business and understand which problems are important to focus on. This is the gap. business science has developed methodologies, tools, and techniques to overcome the gap through our consulting program. Now, business science has opened these tools up to the public as a way to accelerate the growth of these powerful data scientists. It's this data scientist empowerment that motivates us.* 
+
+In this context, I think that this gap exists at the moment just as this firm declares. This gap is currently being addressed in two ways: data scientists (like engineers) are learning business, and business professionals are learning data science. I also think that this gap is far from being fully covered as researchers are producing more methods and theory, technology is putting the data science frontiers even further, there are more data than people who can analyze it, and business problems are becoming more complex. As a result, I consider we are obligated to understand business as good as we can because that is our main core, and at the same time learn data science as good as we can because that will allow us to propose innovative ways to tackle current and future business problems. This gap also represents a good reason to support constant professional training, and reveal the multidisciplinary requirements in the job market.
+
+Machine learning is the study of computer algorithms that improve automatically through experience. There are many ways and many approaches to implement machine learning especially in time series forecasts purposes. This document heavily relies on \texttt{h2o} library. The \texttt{h2o} package is a product offered by H2O.ai that contains a number of cutting edge machine learning algorithms, performance metrics, and auxiliary functions to make machine learning both powerful and easy to implement.
+
+One of the most important features of this package is the \texttt{h2o.automl} (Automatic Machine Learning). H2O’s AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit. Stacked Ensembles – one based on all previously trained models, another one on the best model of each family – will be automatically trained on collections of individual models to produce highly predictive ensemble models which, in most cases, will be the top performing models in the AutoML Leaderboard. We can verify this in the example below.
+
+This document has limited explanations about the applied machine learning techniques. The value of this document is to gather several examples that are originally presented separately in Business Science IO and r-bloggers.com sites and extend the analysis to elaborate further on the code logic and interpretation. It can also be useful to better understand how the R functions work, how results are produced, and it could help to replicate a different example with a new database for those who are new in the field.
+
+You have to download and install H2O. [Click here for full instructions.](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-r) You are also expected to review the H2O webpage contents because they have important information that will allow you to better understand the value of this machine learning tool. 
+
+# The forecast problem.
+
+The problem is to forecast a time series. In particular, the time series is the *Beer, Wine, and Distilled Alcoholic Beverages Sales*. I did not pick this series by myself, this is taken from an existing example. I would rather prefer a milkshake or hot chocolate. The data is taken from FRED (Federal Reserve Economic Data). The data belongs to the non-durable goods category, it includes U.S. merchant wholesalers, except manufacturers' sales branches and offices sales. The monthly time series goes from 2010-01-01 to 2017-10-31. And the goal is to use 2017 data (10 months) as a test data to conduct the forecast.
+
+For the full database details see: 
+https://fred.stlouisfed.org/series/S4248SM144NCEN
+
+Let's load the R packages.
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Load libraries
+library(h2o)        # Awesome ML Library.
+library(timetk)     # Toolkit for working with time series in R.
+library(tidyquant)  # Loads tidyverse, financial pkgs, used to get data.
+library(dplyr)      # Database manipulation.
+library(ggplot2)    # Nice plots.
+library(tibble)     # Nice tables.
+library(kableExtra) # Nicer tables.
+library(knitr)      # I do not remember.
+library(bit64)      # Useful in the machine learning workflow.
+library(sweep)      # Broom-style tidiers for the forecast package.
+library(forecast)   # Forecasting models and predictions package.
+```
+
+We can conveniently download the data directly from the FRED API in one line of code. Manually downloading the data and then importing into R is not considered *cool* anymore.
+
+```{r get-data}
+# Beer, Wine, Distilled Alcoholic Beverages, in Millions USD.
+beer_sales_tbl <- tq_get("S4248SM144NCEN", get = "economic.data", 
+                         from = "2010-01-01", to = "2017-10-31")
+```
+
+Let's have a look of the data set. By default it says \texttt{price}, but these are basically sales figures in monetary terms. According to the main FRED reference, these are in millions of dollars, not seasonally adjusted.
+
+```{r see-the-data}
+# A quick look at the original data.
+glimpse(beer_sales_tbl)
+```
+
+Visualization is particularly important for time series analysis and forecasting. It’s a good idea to identify spots where we will split the data into training, test and validation sets. This kind of split is consistent with most machine learning algorithms. The *training* dataset is the sample of data used to fit and train the model by learning from the data. The *validation* dataset is the sample of data used to provide an unbiased evaluation of a model fit on the training dataset while tuning model hyperparameters. The *test* dataset is the sample of data used to provide an unbiased evaluation of a final model fit on the training dataset. The test dataset provides the gold standard used to evaluate the model. It is only used once a model is completely trained (using the train and validation sets). The test set is generally what is used to evaluate competing models.
+
+It is also important to see the time series because normally the models will perform better if we can identify basic characteristics such as trend and seasonality. This data set clearly has a trend and a seasonality as people drink more alcohol in December. This time series is not very long, I would propose to expand the time length some more to unleash the H2O full potential.
+
+```{r fig.cap="Beer, Wine, and Distilled Alcoholic Beverages Sales."}
+# Plot Beer Sales with train, validation, and test sets shown.
+beer_sales_tbl %>%
+  ggplot(aes(date, price)) +
+  # Train Region:
+  annotate("text", x = ymd("2013-01-01"), y = 14000, 
+           color = palette_light()[[1]], label = "Train Region") +
+  # Validation Region:
+  geom_rect(xmin = as.numeric(ymd("2016-01-01")), 
+            xmax = as.numeric(ymd("2016-12-31")), ymin = 0, ymax = Inf, 
+            alpha = 0.02, fill = palette_light()[[3]]) +
+  annotate("text", x = ymd("2016-07-01"), y = 7000,
+           color = palette_light()[[1]], label = "Validation\nRegion") +
+  # Test Region:
+  geom_rect(xmin = as.numeric(ymd("2017-01-01")), 
+            xmax = as.numeric(ymd("2017-10-31")), ymin = 0, ymax = Inf, 
+            alpha = 0.02, fill = palette_light()[[4]]) +
+  annotate("text", x = ymd("2017-06-01"), y = 7000,
+           color = palette_light()[[1]], label = "Test\nRegion") +
+  # Data.
+  geom_line(col = palette_light()[1]) +
+  geom_point(col = palette_light()[1]) +
+  # Aesthetics.
+  theme_tq() +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  labs(title = "Beer Sales: 2010 through 2017-10-31",
+       subtitle = 
+  "Train, Validation (2016), and Test Sets (2017-01-01 to 2017-10-31)",
+       caption = "The models do not know the test region, this is for us 
+       to see how well the models do the 10-month ahead forecast.") 
+```
+
+Then, the problem is to forecast the 10 months of the test region. This is, from January to October 2017. 
+
+We will do that by implementing a battery of forecasting techniques:
+
+* H2O machine learning.
+* Linear regression.
+* ARIMA.
+
+# H2O machine learning.
+
+The main objective here is to use \texttt{h2o} locally (in your own computer) to develop a high accuracy time series model on the \texttt{beer\_sales\_tbl} data set. This is a supervised machine learning regression problem. An interesting reference to learn the basics of supervised and unsupervised machine learning techniques applied to business is: Machine Learning in Business: An Introduction to the World of Data Science (2019), by John C. Hull. 
+
+## Prepare the data.
+
+The \texttt{tk\_augment\_timeseries\_signature} function expands out the timestamp information column-wise into a machine learning feature set, adding columns of time series information to the original data frame. We’ll again use \texttt{glimpse} for quick inspection of this expansion. See how there are now 31 features extracted from the original database. Not all will be important for the final and chosen models, but some will.
+
+```{r data-in-a-machine-learning-format}
+# See the full list of new variables to realize the expansion effect.
+beer_sales_tbl_aug <- beer_sales_tbl %>%
+  tk_augment_timeseries_signature() %>%
+  glimpse()
+```
+
+Note how we went from 3 columns in \texttt{beer\_sales\_tbl} to 31 columns in \texttt{beer\_sales\_tbl\_aug}, almost *out of the blue*.
+
+We need to prepare the data in a format for H2O. First, let’s remove any unnecessary columns such as dates or those with missing values, and change the ordered classes to plain factors. We prefer \texttt{dplyr} operations for these steps. Sometimes we do not need to implement this step as the data is already clean (as in this case), but sometimes it is not. Thus, let's clean the data.
+
+```{r data-cleaning}
+# See the full list of variables to realize the cleaning effect.
+beer_sales_tbl_clean <- beer_sales_tbl_aug %>%
+  select_if(~ !is.Date(.)) %>%
+  select_if(~ !any(is.na(.))) %>%
+  mutate_if(is.ordered, ~ as.character(.) %>% as.factor) %>%
+  glimpse()
+```
+
+The database did not change too much. Now we have 29 columns in \texttt{beer\_sales\_tbl\_clean}. In the case of two variables, the structure ordered factors \texttt{<ord>} changed into factors \texttt{<fct>}, which is necessary for some H2O functions.
+
+Let’s split the database into a training, validation and test sets following the time ranges in the visualization above. These training sets are the way most machine learning algorithms can be implemented and evaluated. We normally take more observations for the training, and less observations for the validation and test. The test set (the most recent dates) is unknown in the learning process of the models, the test set will be useful for us to be able to compare forecasts versus what really happened. This is how we can measure out-of-sample estimation errors.
+
+```{r}
+# Split into training, validation and test sets.
+train_tbl <- beer_sales_tbl_clean %>% filter(year < 2016)
+valid_tbl <- beer_sales_tbl_clean %>% filter(year == 2016)
+test_tbl  <- beer_sales_tbl_clean %>% filter(year == 2017)
+glimpse(test_tbl)
+```
+
+Remember our goal is to forecast the first 10 months of 2017.
+
+## Prepare for H2O.
+
+First, fire up H2O. This will initialize the Java Virtual Machine (JVM) that H2O uses locally. In simple terms, here your local computer will remotely connect to a high-power clusters to do the H2O machine learning job. This is not only amazing, it is also free.
+
+```{r run-h2o}
+h2o.init() # Fire up h2o.
+```
+
+We need the data sets in a format that can be readable by H2O. This is an easy step.
+
+```{r message=FALSE, warning=FALSE}
+# Convert to H2OFrame objects.
+h2o.no_progress() # We do not need a progress bar here.
+train_h2o <- as.h2o(train_tbl)
+valid_h2o <- as.h2o(valid_tbl)
+test_h2o  <- as.h2o(test_tbl)
+```
+
+Let's list the names of the variables.
+
+```{r variable-names}
+# Set names for h2o.
+y <- "price"
+x <- setdiff(names(train_h2o), y) # Adds price to the names list.
+kable(matrix(x, 7, 4), caption = "Summary of variable names.") %>%
+kable_styling(latex_options = "HOLD_position")
+```
+
+The \texttt{h2o.automl} is a function in H2O that automates the process of building a large number of models, with the goal of finding the *best* model without any prior knowledge or effort by the data scientist. The alternative of using \texttt{h2o.automl} is to pick some models according to the database characteristics, implement the models, and pick the one with the best performance according to some evaluation criterion. This alternative is time consuming and it could use an intensive computational memory and power, this is why H2O is valuable. If H2O was already amazing, this function makes it even more powerful. 
+
+The available algorithms that \texttt{h2o.automl} currently run and compare are (click on each one to see a full description):
+
+* [Distributed Random Forest (DRF).](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/drf.html)
+* [Generalized Linear Model (GLM).](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html?highlight=glm)
+* [XGBoost.](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/xgboost.html?highlight=xgboost)
+* [Gradient Boosting Machine (GBM).](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm.html?highlight=gbm)
+* [Deep Learning (Neural Networks).](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/deep-learning.html?highlight=deeplearning)
+* [Stacked Ensembles.](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html?highlight=stackedensemble)
+
+It is a good time to define how we are going to use some concepts at least in this document. Here, we call forecasting *techniques* to the three techniques implemented in this document: machine learning using H2O, linear regression, and ARIMA. When we implement \texttt{h2o.automl} function, H2O test for the six *algorithms* listed above. Each algorithm includes many other *models* that belongs to these algorithms in the machine learning process. The result of \texttt{h2o.automl} is one model that belongs to one algorithm. This is the difference between forecasting techniques, algorithms, and models. 
+
+## Implement \texttt{h2o.automl}.
+
+Here, we implement the \texttt{h2o.automl} in three different ways because of reproducibility issues. Reproducibility means obtaining consistent computational results using the same input data, computational steps, methods, code, and conditions of analysis. It turns out that Deep Learning cannot be reproducible by construction. Then, we first apply \texttt{h2o.automl} without Deep Learning. Second, we apply \texttt{h2o.automl} with only Deep Learning (here the results will be different each time we run the code). And third, including all available algorithms in \texttt{h2o.automl} (again, the results might change every time we run the code). The first is the only one which can be reproducible and the other two are expected to change every time we run the R code. 
+
+Please note that in the code below we set \texttt{exclude\_algos} to exclude Deep Learning, and \texttt{seed = 236} to make sure every time we run the code we can get the same results.
+
+```{r exclude-deeplearning}
+# This might take some time to run. 
+automl_models_h2o <- h2o.automl(x = x, y = y, training_frame = train_h2o, 
+    validation_frame = valid_h2o, leaderboard_frame = test_h2o,
+    exclude_algos = c("DeepLearning"), # without Deep Learning.
+    #max_models = 10, # We can adjust this to save time.
+    max_runtime_secs = 60, stopping_metric = "deviance", seed = 236)
+```
+
+The selected model by \texttt{h2o.automl} is:
+
+```{r lead-model}
+# Extract leader model.
+automl_leader <- automl_models_h2o@leader
+automl_leader@algorithm
+```
+
+See why Gradient Boosting Machine (GBM) was the chosen one:
+
+```{r}
+# Show the first 10.
+kable(head(automl_models_h2o@leaderboard, 10),
+caption = "Model rankings: h2o.automl without Deep Learning 
+algorithm.", digits = 2, row.names = TRUE) %>%
+kable_styling(font_size = 7, latex_options = "HOLD_position")
+```
+
+The \texttt{model\_id} column list the top 10 models with the lowest errors. The value of \texttt{h2o.automl} is that we can take the best model and use it to conduct our forecast. Remember we proposed to run \texttt{h2o.automl} three times. Now let's consider the second alternative (only Deep Learning). There are several ways to implement Deep Learning, this is why it makes sense to use only this family into the \texttt{h2o.automl} function. Deep Learning cannot be reproducible by construction so adding a seed in this case would be useless. 
+
+```{r message=FALSE, warning=FALSE}
+# This might take some time to run. 
+DL <- h2o.automl(x = x, y = y, training_frame = train_h2o, 
+    validation_frame = valid_h2o, leaderboard_frame = test_h2o,
+    include_algos = c("DeepLearning"), max_runtime_secs = 60, 
+    stopping_metric = "deviance")
+```
+The selected model by \texttt{h2o.automl} is:
+
+```{r}
+# Extract leader model
+automl_DL <- DL@leader
+automl_DL@algorithm
+```
+
+See why this specific Deep Learning model was the chosen one:
+
+```{r}
+kable(DL@leaderboard, 
+  caption = "Model rankings: h2o.automl with only Deep Learning algorithm.",
+  digits = 2, row.names = TRUE) %>%
+  kable_styling(font_size = 7, latex_options = "HOLD_position")
+```
+
+All models belong to the same algorithm, but we clearly choose the first one of the list. The machine learning workflow estimate a number of models using the train region and evaluate them using the validation region. The estimated model parameters then change as they learn from their mistakes. This process is repeated until a specific restriction meets, in this case \texttt{max\_runtime\_secs} is set to 60 seconds. At the end, we select the best ranked model.
+
+Now let's consider the third alternative. This is, run \texttt{h2o.automl} with no restrictions at all. Here, it would be interesting to see if this led to the best alternative. In principle, we cannot anticipate which one of these three runs will be the best. This is because the Deep Learning algorithm has a random component which might lead to better results, and remember the second round was exclusive for Deep Learning and the third includes Deep Learning. Then, every time I compile this document or run this R code we should expect different results in the second and third alternative.
+
+```{r message=FALSE, warning=FALSE}
+# This might take some time to run. 
+automl_models_h2o_all <- h2o.automl(x = x, y = y, 
+    training_frame = train_h2o, validation_frame = valid_h2o, 
+    leaderboard_frame = test_h2o, max_runtime_secs = 60, 
+    stopping_metric = "deviance")
+```
+
+The selected model by \texttt{h2o.automl} is:
+
+```{r}
+# Extract leader model
+automl_leader_all <- automl_models_h2o_all@leader
+automl_leader_all@algorithm
+```
+
+See why `r automl_leader_all@algorithm` model was the chosen one in this specific and unique code compilation:
+
+```{r}
+# Let's show the first 10 of the list.
+kable(head(automl_models_h2o_all@leaderboard, 10), 
+    caption = "Model rankings: h2o.automl with all available algorithms.",
+    digits = 2, row.names = TRUE) %>%
+  kable_styling(font_size = 7, latex_options = "HOLD_position")
+```
+
+Let's summarize the results according to the mean residual deviance as this was the criterion in \texttt{stopping\_metric}. The table shows the best ranked model according to our three different runs of \texttt{h2o.automl}.
+
+```{r}
+# Collect model names and the mean residual deviance.
+without_DL <- c(automl_leader@algorithm, 
+                round(automl_models_h2o@leaderboard[1, 2], 2))
+only_DL <- c(automl_DL@algorithm, 
+             round(DL@leaderboard[1,2], 2))
+all <- c(automl_leader_all@algorithm, 
+         round(automl_models_h2o_all@leaderboard[1, 2], 2))
+# Three different runs of h2o.automl.
+automl_three <- data.frame(without_DL, only_DL, all)
+colnames(automl_three) <- c("Without Deep Learning", "Only Deep Learning",
+                            "All algorithms")
+kable(automl_three, 
+caption = "Top ranked models: h2o.automl mean residual deviance.") %>%
+kable_styling(latex_options = "HOLD_position")
+```
+
+This is interesting because this suggest that it makes sense to run the H2O more than one time. It would be good to test for a different \texttt{stopping\_metric}, \texttt{max\_runtime\_secs} and \texttt{max\_models}.
+
+## Predict.
+
+Here are how the forecasts are calculated.
+
+```{r message=FALSE, warning=FALSE}
+# The h2o.predict function do the job.
+pred_h2o <- h2o.predict(automl_leader, newdata = test_h2o)
+pred_h2o_DL <- h2o.predict(automl_DL, newdata = test_h2o)
+pred_h2o_all <- h2o.predict(automl_leader_all, newdata = test_h2o)
+```
+
+Let's show the results in a table. First, the case without Deep Learning.
+
+```{r}
+# 10-period forecast error: h2o.automl without Deep Learning.
+error_tbl <- beer_sales_tbl %>% 
+    filter(lubridate::year(date) == 2017) %>%
+    add_column(pred = pred_h2o %>% as_tibble() %>% pull(predict)) %>%
+    rename(actual = price) %>%
+    mutate(error = actual - pred, error_pct = error / actual)
+kable(error_tbl, 
+caption = "Detailed performance: h2o.automl without Deep Learning algorithm.",
+digits = 3, row.names = TRUE) %>%
+kable_styling(latex_options = "HOLD_position")
+```
+
+The forecast looks good. Note that in some cases it over-estimate and in others under-estimate the real values, but in general these differences are small. Now, let's look at the same information in a plot.
+
+```{r fig.cap="Forecast: H2O without Deep Learning algorithm."}
+# H2O without Deep Learning algorithm.
+beer_sales_tbl %>%
+    ggplot(aes(x = date, y = price)) +
+    # Data.
+    geom_point(size = 2, color = "grey", alpha = 0.5, 
+               shape = 21, fill = "black") +
+    geom_line(color = "black", size = 0.5) +
+    # Predictions.
+    geom_point(aes(y = pred), size = 2, 
+               color = "gray", alpha = 1, shape = 21, 
+               fill = "purple", data = error_tbl) +
+geom_line(aes(y = pred), color = "purple", size = 0.5, data = error_tbl) +
+geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), linetype=2) +
+    # Aesthetics.
+    labs(title = "Beer Sales Forecast: h2o + timetk",
+    subtitle = "H2O without Deep Learning algorithm.",
+    caption = c(paste("MAPE=",((mean(abs(error_tbl$error_pct))*100)))))
+```
+
+This is an additional performance summary.
+
+```{r}
+# Without Deep Learning.
+h2o.performance(automl_leader, newdata = test_h2o)
+```
+
+Now, the case of only Deep Learning. The detailed forecast is in the following table.
+
+```{r}
+# 10-period forecast error: h2o.automl only Deep Learning.
+error_tbl_DL <- beer_sales_tbl %>% 
+    filter(lubridate::year(date) == 2017) %>%
+    add_column(pred = pred_h2o_DL %>% as_tibble() %>% pull(predict)) %>%
+    rename(actual = price) %>%
+    mutate(error = actual - pred, error_pct = error / actual) 
+kable(error_tbl_DL, 
+caption = "Detailed performance: h2o.automl only Deep Learning algoritm.",
+      digits = 3, row.names = TRUE) %>%
+kable_styling(latex_options = "HOLD_position")
+```
+
+The same information in a plot.
+
+```{r fig.cap="Forecast: H2O including only Deep Learning algorithm."}
+# H2O including only Deep Learning algorithm.
+beer_sales_tbl %>%
+    ggplot(aes(x = date, y = price)) +
+    # Data.
+    geom_point(size = 2, color = "gray", alpha = 0.5, 
+               shape = 21, fill = "black") +
+    geom_line(color = "black", size = 0.5) +
+    # Predictions.
+    geom_point(aes(y = pred), size = 2, 
+               color = "gray", alpha = 1, shape = 21, 
+               fill = "purple", data = error_tbl_DL) +
+geom_line(aes(y = pred), color = "purple", size = 0.5, 
+          data = error_tbl_DL) +
+    geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), linetype=2) +
+    # Aesthetics.
+    labs(title = "Beer Sales Forecast: h2o + timetk",
+    subtitle = "H2O including only Deep Learning algorithm.",
+    caption = c(paste("MAPE=",((mean(abs(error_tbl_DL$error_pct))*100)))))
+```
+
+Additional performance indicators.
+
+```{r}
+# Only Deep Learning.
+h2o.performance(automl_DL, newdata = test_h2o)
+```
+
+This is the H2O case with no restrictions, considering all available algorithms.
+
+```{r}
+# 10-period forecast error: h2o.automl all algorithms.
+error_tbl_all <- beer_sales_tbl %>% 
+    filter(lubridate::year(date) == 2017) %>%
+    add_column(pred = pred_h2o_all %>% as_tibble() %>% pull(predict)) %>%
+    rename(actual = price) %>%
+    mutate(error = actual - pred, error_pct = error / actual) 
+kable(error_tbl_all, 
+      caption = "Detailed performance: h2o.automl all algorithms.",
+      digits = 3, row.names = TRUE) %>%
+kable_styling(latex_options = "HOLD_position")
+```
+
+The visual representation.
+
+```{r fig.cap="Forecast: H2O including all available algorithms."}
+# H2O all available algorithms.
+beer_sales_tbl %>%
+    ggplot(aes(x = date, y = price)) +
+    # Data.
+    geom_point(size = 2, color = "grey", alpha = 0.5, 
+               shape = 21, fill = "black") +
+    geom_line(color = "black", size = 0.5) +
+    # Predictions.
+    geom_point(aes(y = pred), size = 2, 
+               color = "gray", alpha = 1, shape = 21, 
+               fill = "purple", data = error_tbl_all) +
+geom_line(aes(y = pred), color = "purple", size = 0.5, 
+          data = error_tbl_all) +
+geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), linetype=2) +
+    # Aesthetics.
+    labs(title = "Beer Sales Forecast: h2o + timetk",
+      subtitle = "H2O all available algorithms.",
+    caption = c(paste("MAPE=",((mean(abs(error_tbl_all$error_pct))*100)))))
+```
+
+Additional performance metrics.
+
+```{r}
+h2o.performance(automl_leader_all, newdata = test_h2o)
+```
+
+These plots show the power of modern forecasting techniques. In finance we care about the future and these techniques can be used as a tool to reduce the uncertainty about the future. Obviously, we cannot predict without errors, but the objective is to achieve the lowest forecasting errors possible. 
+
+## Summary performance.
+
+It is useful to see the performance results for the three different H2O runs above. First, the performance for the overall 10-period forecast.
+
+```{r}
+# There might be a more compact way to create this table.
+error_tbl_summ <- error_tbl %>%
+    summarise(model = automl_leader@algorithm,
+      me = mean(error), rmse = mean(error^2)^0.5,
+              mae  = mean(abs(error)), mape = 100 * mean(abs(error_pct)),
+              mpe  = 100 * mean(error_pct)) 
+error_tbl_DL_summ <- error_tbl_DL %>%
+    summarise(model = automl_DL@algorithm,
+      me = mean(error), rmse = mean(error^2)^0.5,
+              mae = mean(abs(error)), mape = 100 * mean(abs(error_pct)),
+              mpe = 100 * mean(error_pct))
+error_tbl_all_summ <- error_tbl_all %>%
+    summarise(model = automl_leader_all@algorithm,
+      me = mean(error), rmse = mean(error^2)^0.5,
+              mae  = mean(abs(error)), mape = 100 * mean(abs(error_pct)),
+              mpe  = 100 * mean(error_pct))
+error_automl_summ <- rbind(error_tbl_summ, error_tbl_DL_summ,
+                                error_tbl_all_summ) %>%
+  as.data.frame()
+row.names(error_automl_summ) <- c("Without Deep Learning", 
+                                  "Only Deep Learning", "All algorithms")
+
+kable(error_automl_summ, 
+caption = "Top ranked models: h2o.automl summary forecasting errors.",
+digits = 2) %>%
+kable_styling(latex_options = "HOLD_position")
+```
+
+As you can see, there are several ways in which we can measure the forecast errors. We can specify which one is the evaluation criterion to rank the models. And we can also determine which error measure: me (mean error), rmse (root mean squared error), mae (mean absolute error), mape (mean absolute percentage error), or mpe (mean percentage error) will be the one to choose between these three alternatives. In my experience, the rmse and the mape are the most popular ones, but the others might be useful in specific circumstances.
+
+We can also show the best point forecast for the three \texttt{h2o.automl} runs.
+
+```{r}
+point_forecast_1 <- data.frame(
+  model = automl_leader@algorithm,
+  error_tbl[which.min(abs(error_tbl$error_pct)), 2], 
+  error = error_tbl[which.min(abs(error_tbl$error_pct)), 6])
+point_forecast_2 <- data.frame(
+  model = automl_DL@algorithm,
+  error_tbl_DL[which.min(abs(error_tbl_DL$error_pct)), 2],
+  error = error_tbl_DL[which.min(abs(error_tbl_DL$error_pct)), 6])
+point_forecast_3 <- data.frame(
+  model = automl_leader_all@algorithm,
+  error_tbl_all[which.min(abs(error_tbl_all$error_pct)), 2],
+  error = error_tbl_all[which.min(abs(error_tbl_all$error_pct)), 6])
+point_forecast <- rbind.data.frame(point_forecast_1, point_forecast_2,
+                                   point_forecast_3)
+row.names(point_forecast) <- c("Without Deep Learning", 
+                                  "Only Deep Learning", "All algorithms")
+kable(point_forecast, 
+caption = "Top ranked models: Lowest point forecast percentage errors.",
+digits = 6) %>%
+kable_styling(latex_options = "HOLD_position")
+```
+
+We normally do not choose a model according to one specific point forecast. However, it is interesting to see which alternative and which specific date has been forecasted with the highest accuracy.
+
+# Linear regression.
+
+Let's implement a simple but powerful approach using the \texttt{lm} function.
+
+## Implement the model.
+
+This is the simplest choice, and still has a very high $R^2$. The independent variables are all \texttt{beer\_sales\_tbl\_aug} variables except for \texttt{date}, \texttt{diff}, and \texttt{symbol}.
+
+```{r}
+# linear regression model used, but can use any model
+fit_lm <- lm(price ~ ., data = 
+               select(beer_sales_tbl_aug, -c(date, diff, symbol)))
+summary(fit_lm)
+```
+
+At first sight, the model looks promising.
+
+## Predict.
+
+Prediction is easy in R.
+
+```{r}
+# Make predictions
+pred <- predict(fit_lm, newdata = test_tbl)
+future_idx <- tail(beer_sales_tbl$date, 10) # The 10-months forecast period.
+predictions_tbl <- tibble(date  = future_idx, value = pred)
+predictions_tbl
+```
+
+We can investigate the error on our test set (actuals vs predictions).
+
+```{r}
+# Investigate test error
+actuals_tbl <- tail(beer_sales_tbl[-1], 10)
+error_tbl_lm <- left_join(actuals_tbl, predictions_tbl) %>%
+    rename(actual = price, pred = value) %>%
+    mutate(error = actual - pred, error_pct = error / actual) 
+error_tbl_lm
+```
+
+And we can calculate a few residuals metrics. A more complex algorithm could produce more accurate results.
+
+```{r}
+# Calculating test error metrics
+test_residuals_lm <- error_tbl_lm$error
+test_error_pct_lm <- error_tbl_lm$error_pct * 100 # Percentage error.
+me   <- mean(test_residuals_lm, na.rm = TRUE)
+rmse <- mean(test_residuals_lm^2, na.rm = TRUE)^0.5
+mae  <- mean(abs(test_residuals_lm), na.rm = TRUE)
+mape <- mean(abs(test_error_pct_lm), na.rm = TRUE)
+mpe  <- mean(test_error_pct_lm, na.rm = TRUE)
+tibble(me, rmse, mae, mape, mpe) %>% 
+  glimpse()
+```
+
+Visualize our forecast.
+
+```{r fig.cap="Forecast: multivariate linear regression."}
+# Plot Beer Sales Forecast
+beer_sales_tbl %>%
+    ggplot(aes(x = date, y = price)) +
+    # Training data.
+    geom_line(color = palette_light()[[1]]) +
+    geom_point(color = palette_light()[[1]]) +
+    # Predictions.
+    geom_line(aes(y = value), 
+              color = palette_light()[[2]], data = predictions_tbl) +
+    geom_point(aes(y = value), 
+               color = palette_light()[[2]], data = predictions_tbl) +
+    # Actuals
+    geom_line(color = palette_light()[[1]], data = actuals_tbl) +
+    geom_point(color = palette_light()[[1]], data = actuals_tbl) +
+geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), linetype = 2) +
+    # Aesthetics
+    theme_tq() +
+    labs(title = "Beer Sales Forecast.",
+subtitle = "Multivariate linear regression can yield accurate results.",
+        caption = c(paste("MAPE=",((mean(abs(test_error_pct_lm)))))))
+```
+
+This is clearly a good alternative. The H2O machine learning could lead to better results if we consider a longer time-series because in that way the possibilities to learn increases.
+
+# ARIMA.
+
+Here, \texttt{sweep} is used for tidying the \texttt{forecast} package workflow. We’ll work through an ARIMA analysis to forecast the next 10 months of time series data. In this way we can compare our previous results.
+
+## Prepare the data.
+
+The \texttt{tk\_ts} coerce time series objects and tibbles with date/date-time columns to ts (time-series).
+
+```{r}
+# Convert from tbl to ts.
+beer_sales_ts <- tk_ts(beer_sales_tbl[1:84,], start = 2010, freq = 12)
+beer_sales_ts
+```
+
+Just verify \texttt{tk\_ts} worked.
+
+```{r}
+# Check that ts-object has a timetk index.
+has_timetk_idx(beer_sales_ts)
+```
+
+Great. This will be important when we use \texttt{sw\_sweep} later. Next, we’ll model using ARIMA.
+
+## Implement the model.
+
+We can use the \texttt{auto.arima} function from the forecast package to model the time series. By doing that, we do not have to impose a specific ARIMA model, the function can test the best specification for us.
+
+```{r}
+# Model using auto.arima.
+set.seed(13)
+fit_arima <- auto.arima(beer_sales_ts)
+fit_arima
+```
+
+The \texttt{sw\_tidy} function returns the model coefficients in a tibble (tidy data frame). This might be useful in some circumstances.
+
+```{r}
+# sw_tidy - Get model coefficients.
+sw_tidy(fit_arima)
+```
+
+The \texttt{sw\_glance} function returns the training set accuracy measures in a tibble (tidy data frame). We use glimpse to aid in quickly reviewing the model metrics.
+
+```{r}
+# sw_glance - Get model description and training set accuracy measures.
+sw_glance(fit_arima) %>%
+    glimpse()
+```
+
+This looks good.
+
+## Predict. 
+
+The \texttt{sw\_augument} function helps with model evaluation. We get the “.actual”, “.fitted” and “.resid” columns, which are useful in evaluating the model against the training data. Note that we can pass \texttt{timetk\_idx = TRUE} to return the original date index.
+
+```{r}
+# sw_augment - get model residuals
+sw_augment(fit_arima, timetk_idx = TRUE)
+```
+
+We can visualize the residual diagnostics for the training data to make sure there is no pattern leftover. This looks homoscedastic.
+
+```{r fig.cap="Forecast: ARIMA residual diagnosis."}
+# Plotting residuals
+sw_augment(fit_arima, timetk_idx = TRUE) %>%
+    ggplot(aes(x = index, y = .resid)) +
+    geom_point() + 
+    geom_hline(yintercept = 0, color = "red") + 
+    labs(title = "Residual diagnostic") +
+    scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+    theme_tq()
+```
+
+Make a forecast using the \texttt{forecast} function. This function also delivers some convenient error bounds.
+
+```{r}
+# Forecast next 10 months
+fcast_arima <- forecast(fit_arima, h = 10)
+fcast_arima
+```
+
+One problem is the forecast output is not “tidy”. We need it in a data frame if we want to work with it using the tidyverse functionality. The class is “forecast”, which is a ts-based-object (its contents are ts-objects).
+
+```{r}
+class(fcast_arima)
+```
+
+We can use \texttt{sw\_sweep} to tidy the forecast output. As an added benefit, if the forecast-object has a \texttt{timetk} index, we can use it to return a date/datetime index as opposed to regular index from the ts-based-object.
+
+First, let’s check if the forecast-object has a timetk index.
+
+```{r}
+# Check if object has timetk index 
+has_timetk_idx(fcast_arima)
+```
+
+Great. Now, use \texttt{sw\_sweep} to tidy the forecast output.
+
+```{r}
+# sw_sweep - tidies forecast output
+fcast_tbl <- sw_sweep(fcast_arima, timetk_idx = TRUE)
+fcast_tbl
+```
+
+We can investigate the error on our test set (actuals vs predictions).
+
+```{r}
+# Investigate test error 
+error_tbl_arima <- left_join(actuals_tbl, fcast_tbl, 
+                             by = c("date" = "index")) %>%
+    rename(actual = price.x, pred = price.y) %>%
+    select(date, actual, pred) %>%
+    mutate(error = actual - pred, error_pct = error / actual) 
+error_tbl_arima
+```
+
+And we can calculate a few residuals metrics.
+
+```{r}
+# Calculate test error metrics
+test_residuals_arima <- error_tbl_arima$error
+test_error_pct_arima <- error_tbl_arima$error_pct * 100 # Percentage error
+me   <- mean(test_residuals_arima, na.rm=TRUE)
+rmse <- mean(test_residuals_arima^2, na.rm=TRUE)^0.5
+mae  <- mean(abs(test_residuals_arima), na.rm=TRUE)
+mape <- mean(abs(test_error_pct_arima), na.rm=TRUE)
+mpe  <- mean(test_error_pct_arima, na.rm=TRUE)
+tibble(me, rmse, mae, mape, mpe) %>% 
+  glimpse()
+```
+
+Notice that we have the entire forecast in a tibble. We can now more easily visualize the forecast.
+
+```{r fig.cap="Forecast: ARIMA."}
+# Visualize the forecast with ggplot
+fcast_tbl %>%
+    ggplot(aes(x = index, y = price, color = key)) +
+    # 95% CI
+    geom_ribbon(aes(ymin = lo.95, ymax = hi.95), 
+                fill = "#D5DBFF", color = NA, size = 0) +
+    # 80% CI
+    geom_ribbon(aes(ymin = lo.80, ymax = hi.80, fill = key), 
+                fill = "#596DD5", color = NA, size = 0, alpha = 0.8) +
+    # Prediction
+    geom_line() +
+    geom_point() +
+    # Actuals
+    geom_line(aes(x = date, y = price), color = palette_light()[[1]], 
+              data = actuals_tbl) +
+    geom_point(aes(x = date, y = price), color = palette_light()[[1]], 
+               data = actuals_tbl) +
+        geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), 
+                   linetype=2) +
+    # Aesthetics
+labs(title = "Beer Sales Forecast: ARIMA", x = "", y = "Thousands of Tons",
+         subtitle = "sw_sweep tidies the auto.arima() forecast output",
+         caption = c(paste("MAPE=",((mean(abs(test_error_pct_arima))))))) +
+    scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+    scale_color_tq() +
+    scale_fill_tq() +
+    theme_tq()
+```
+
+This is a decent forecast.
+
+# The average forecast.
+
+An interesting question is: *What happens to the accuracy when you average the predictions of all different methods?* This question makes sense because the decision of using one technique or another is not trivial. Taking the average could be useful to avoid extreme results but at the same time it could be hard to interpret as the forecast comes from different techniques. In any case, it is interesting to see how it works.
+
+The forecast mean is calculated as:
+
+```{r message=FALSE, warning=FALSE}
+m <- data.frame(as.data.frame(pred_h2o),as.data.frame(pred_h2o_DL),
+          as.data.frame(pred_h2o_all),as.data.frame(predictions_tbl$value),
+        as.data.frame(fcast_tbl$price[(nrow(fcast_tbl)-9):nrow(fcast_tbl)]))
+pred_mean <- rowMeans(m)
+pred_mean <- as.tibble(pred_mean)
+```
+
+Now let's see actual versus predicted.
+
+```{r}
+error_tbl_mean <-as_tibble(c(as.data.frame(actuals_tbl),
+                        as.data.frame(pred_mean$value))) %>%
+    rename(actual = price, pred = `pred_mean$value`) %>%
+    select(date,actual, pred) %>%
+    mutate(error = actual - pred, error_pct = error / actual) 
+error_tbl_mean
+```
+
+Summarize the individual point forecast errors.
+
+```{r}
+error_tbl_mean %>%
+    summarise(me = mean(error), rmse = mean(error^2)^0.5,
+        mae  = mean(abs(error)), mape = mean(abs(error_pct)),
+        mpe  = mean(error_pct)) %>%
+glimpse()
+```
+
+Visualize the average forecast.
+
+```{r fig.cap="Forecast: average forecast."}
+# Plot Beer Sales Forecast
+beer_sales_tbl %>%
+    ggplot(aes(x = date, y = price)) +
+    # Training data
+    geom_line(color = palette_light()[[1]]) +
+    geom_point(color = palette_light()[[1]]) +
+    # Predictions
+    geom_point(aes(y = pred), size = 2, 
+               color = "gray", alpha = 1, shape = 21, 
+               fill = "red", data = error_tbl) +
+geom_line(aes(y = pred), color = "purple", size = 0.5, data = error_tbl) +
+geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), linetype = 2) +
+      # Actuals
+    geom_line(color = palette_light()[[1]], data = actuals_tbl) +
+    geom_point(color = palette_light()[[1]], data = actuals_tbl) +
+geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), linetype = 2) +
+    # Aesthetics
+    theme_tq() +
+    labs(title = "Beer Sales Forecast: Mean of all previous forecast.",
+subtitle = "The average method.",
+caption = c(paste("MAPE=",((100*mean(abs(error_tbl_mean$error_pct)))))))
+```
+
+Not bad, as expected.
+
+# Summary of all results.
+
+Let's see all results at once: H2O, linear regression, ARIMA and the average forecast.
+
+```{r}
+summary_techniques <- c("H2O without Deep Learning algorithm",
+             "H2O including only Deep Learning algorithm",
+             "H2O all available algorithms",
+             "Multivariate linear regression",
+             "ARIMA",
+             "Average")
+summary_mape <- c(mean(abs(error_tbl$error_pct))*100,
+             mean(abs(error_tbl_DL$error_pct))*100,
+             mean(abs(error_tbl_all$error_pct))*100,
+             mean(abs(test_error_pct_lm)),
+             mean(abs(test_error_pct_arima)),
+             100*mean(abs(error_tbl_mean$error_pct)))
+sum <- data.frame(summary_techniques, summary_mape)
+kable(sum, caption = "Summary of results.") %>%
+kable_styling(latex_options = "HOLD_position")
+```
+
+Nice.
+
+```{r}
+h2o.shutdown(prompt = TRUE) # yes (Y) instead of TRUE?
+a <- toc()
+```
+
+This document took `r as.numeric(a$toc-a$tic)` seconds to compile in Rmarkdown.
+
+# Unsorted references.
+
+The main web references of this document are (these are web links):
+
+- [Time Series Machine Learning with h2o and timetk.](https://www.r-bloggers.com/demo-week-time-series-machine-learning-with-h2o-and-timetk/)
+- [Time Series Machine Learning with timetk.](https://www.business-science.io/code-tools/2017/10/24/demo_week_timetk.html)
+- [Tidy Forecasting with sweep](https://www.business-science.io/code-tools/2017/10/25/demo_week_sweep.html)
+- [H2O Tutorials](http://docs.h2o.ai/h2o-tutorials/latest-stable/index.html)
+- [Machine Learning to Reduce Employee Attrition](https://www.facebook.com/experiannews/videos/1749616808676222/)
