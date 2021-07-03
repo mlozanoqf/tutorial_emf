@@ -24,6 +24,7 @@ header-includes:
 - \onehalfspacing
 - \counterwithin{figure}{subsection}
 - \counterwithin{table}{subsection}
+- \usepackage[nottoc]{tocbibind}
 - \usepackage{fontawesome5}
 #toc: yes
 bibliography: references.bib
@@ -900,5 +901,6 @@ The main web references of this document are (these are web links):
 - [Tidy Forecasting with sweep](https://www.business-science.io/code-tools/2017/10/25/demo_week_sweep.html)
 - [H2O Tutorials](http://docs.h2o.ai/h2o-tutorials/latest-stable/index.html)
 - [Machine Learning to Reduce Employee Attrition](https://www.facebook.com/experiannews/videos/1749616808676222/)
+
 
 # References.
