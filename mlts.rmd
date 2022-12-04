@@ -1,34 +1,8 @@
 ---
-title: "**\\Huge Forecast with automatic machine learning and other techniques. \\vspace{20 mm}   \n \\fontsize{100}{100}\\faChartLine  \\vspace{20 mm}  \n\\Huge Dr. Martín Lozano.**"
-
-author:
-- \faEnvelope \hspace{1 mm} \texttt{<martin.lozano@udem.edu>}
-- \faAddressCard \hspace{1 mm} \texttt{https://sites.google.com/site/mlozanoqf/}
-- \faGithub \hspace{1 mm} \texttt{https://github.com/mlozanoqf/}
-date: "\\faClock \\hspace{1 mm} Last compiled on: `r format(Sys.time(), '%d/%m/%Y, %H:%M:%S.')`"
-output:
-  pdf_document:
-    fig_caption: yes
-    number_sections: yes
-    extra_dependencies: float
-    citation_package: natbib
-  word_document: default
+title: ''
+#output: bookdown::gitbook:
   html_document:
     df_print: paged
-fontsize: 12pt
-always_allow_html: true #borrar.
-header-includes:
-- \usepackage{placeins}
-- \usepackage{setspace}
-- \usepackage{chngcntr}
-- \onehalfspacing
-- \counterwithin{figure}{subsection}
-- \counterwithin{table}{subsection}
-- \usepackage[nottoc]{tocbibind}
-- \usepackage{fontawesome5}
-#toc: yes
-bibliography: references.bib
-abstract: We tackle a single forecast problem using several techniques. This document is based on some freely available Business Science IO codes in R that explains how to implement machine learning workflow using H2O. Some mathematical background is skipped to emphasize the data analysis, model logic, discussion, graphical approach and R coding. As in the philosophy of Donald Knuth [@knuth1984literate], the objective of this document is to explain to human beings what we want a computer to do as literate programming. This is a work in progress and it is under revision.
 ---
 -----------------------
 ```{=tex}
@@ -47,10 +21,6 @@ tic()
 #date: "Last compiled on: `r format(Sys.time(), '%d/%m/%Y. %H:%M:%S')`"
 ```
 
-```{r global_options, include=FALSE}
-knitr::opts_chunk$set(warning=FALSE, message=FALSE)
-knitr::opts_chunk$set(fig.pos = "H", out.extra = "")
-```
 \newpage
 
 # Introduction.
