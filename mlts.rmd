@@ -29,17 +29,17 @@ tic()
 
 <!-- In this context, I think that this gap exists at the moment just as this firm declares. This gap is currently being addressed in two ways: data scientists (like engineers) are learning business, and business professionals are learning data science. I also think that this gap is far from being fully covered as researchers are producing more methods and theory, technology is putting the data science frontiers even further, there are more data than people who can analyze it, and business problems are becoming more complex. As a result, I consider we are obligated to understand business as good as we can because that is our main core, and at the same time learn data science as good as we can because that will allow us to propose innovative ways to tackle current and future business problems. This gap also represents a good reason to support constant professional training, and reveal the multidisciplinary requirements in the job market. -->
 
-Machine learning is the study of computer algorithms that improve automatically through experience. There are many ways and many approaches to implement machine learning especially in time series forecasts purposes. This document heavily relies on <tt>`h2o`</tt> library. The <tt>`h2o`</tt> package is a product offered by H2O.ai that contains a number of cutting edge machine learning algorithms, performance metrics, and auxiliary functions to make machine learning both powerful and easy to implement.
+Machine learning is the study of computer algorithms that improve automatically through experience. There are many ways and approaches to implement machine learning especially in time series forecasts purposes. This document heavily relies on <tt>`h2o`</tt> library. The <tt>`h2o`</tt> package is a product offered by H2O.ai that contains a number of cutting edge machine learning algorithms, performance metrics, and auxiliary functions to make machine learning both powerful and easy to implement.
 
 One of the most important features of this package is the <tt>`h2o.automl`</tt> (Automatic Machine Learning). H2O’s AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit. Stacked Ensembles – one based on all previously trained models, another one on the best model of each family – will be automatically trained on collections of individual models to produce highly predictive ensemble models which, in most cases, will be the top performing models in the AutoML Leaderboard. We can verify this in the example below.
 
-This document has limited explanations about the applied machine learning techniques. The value of this document is to gather several examples that are originally presented separately in Business Science IO and r-bloggers.com sites and extend the analysis to elaborate further on the code logic and interpretation. It can also be useful to better understand how the R functions work, how results are produced, and it could help to replicate a different example with a new database for those who are new in the field.
+This document has limited explanations about the applied machine learning techniques. The value of this document is to gather several examples that are originally presented separately in Business Science IO and [R-bloggers.](r-bloggers.com) sites and extend the analysis to elaborate further on the code logic and interpretation. It can also be useful to better understand how the R functions work, how results are produced, and it could help to replicate a different example with a new database for those who are new in the field.
 
 You have to download and install H2O. [Click here for full instructions.](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-r) You are also expected to review the H2O webpage contents because they have important information that will allow you to better understand the value of this machine learning tool. 
 
 # The forecast problem.
 
-The problem is to forecast a time series. In particular, the time series is the *Beer, Wine, and Distilled Alcoholic Beverages Sales*. I did not pick this series by myself, this is taken from an existing example. I would rather prefer a milkshake or hot chocolate. The data is taken from FRED (Federal Reserve Economic Data). The data belongs to the non-durable goods category, it includes U.S. merchant wholesalers, except manufacturers' sales branches and offices sales. The monthly time series goes from 2010-01-01 to 2017-10-31. And the goal is to use 2017 data (10 months) as a test data to conduct the forecast.
+The problem is to forecast a time series. In particular, the time series is the *Beer, Wine, and Distilled Alcoholic Beverages Sales* as in the original Matt Dancho's example. The data is taken from FRED (Federal Reserve Economic Data). The data belongs to the non-durable goods category, it includes U.S. merchant wholesalers, except manufacturers' sales branches and offices sales. The monthly time series goes from 2010-01-01 to 2017-10-31. And the goal is to use 2017 data (10 months) as a test data to conduct the forecast.
 
 For the full database details see: 
 https://fred.stlouisfed.org/series/S4248SM144NCEN
@@ -48,14 +48,14 @@ Let's load the R packages.
 
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # Load libraries
-library(h2o)        # Awesome ML Library.
+library(h2o)        # ML Library.
 library(timetk)     # Toolkit for working with time series in R.
 library(tidyquant)  # Loads tidyverse, financial pkgs, used to get data.
 library(dplyr)      # Database manipulation.
-library(ggplot2)    # Nice plots.
-library(tibble)     # Nice tables.
-library(kableExtra) # Nicer tables.
-library(knitr)      # I do not remember.
+library(ggplot2)    # Plots.
+library(tibble)     # Tables.
+library(kableExtra) # Tables.
+library(knitr)      
 library(bit64)      # Useful in the machine learning workflow.
 library(sweep)      # Broom-style tidiers for the forecast package.
 library(forecast)   # Forecasting models and predictions package.
@@ -65,24 +65,24 @@ We can conveniently download the data directly from the FRED API in one line of 
 
 ```{r get-data}
 # Beer, Wine, Distilled Alcoholic Beverages, in Millions USD.
-beer_sales_tbl <- tq_get("S4248SM144NCEN", get = "economic.data", 
-                         from = "2010-01-01", to = "2017-10-31")
+beer <- tq_get("S4248SM144NCEN", get = "economic.data", 
+               from = "2010-01-01", to = "2017-10-31")
 ```
 
 Let's have a look of the data set. By default it says <tt>`price`</tt>, but these are basically sales figures in monetary terms. According to the main FRED reference, these are in millions of dollars, not seasonally adjusted.
 
 ```{r see-the-data}
 # A quick look at the original data.
-glimpse(beer_sales_tbl)
+head(beer)
 ```
 
 Visualization is particularly important for time series analysis and forecasting. It’s a good idea to identify spots where we will split the data into training, test and validation sets. This kind of split is consistent with most machine learning algorithms. The *training* dataset is the sample of data used to fit and train the model by learning from the data. The *validation* dataset is the sample of data used to provide an unbiased evaluation of a model fit on the training dataset while tuning model hyperparameters. The *test* dataset is the sample of data used to provide an unbiased evaluation of a final model fit on the training dataset. The test dataset provides the gold standard used to evaluate the model. It is only used once a model is completely trained (using the train and validation sets). The test set is generally what is used to evaluate competing models.
 
-It is also important to see the time series because normally the models will perform better if we can identify basic characteristics such as trend and seasonality. This data set clearly has a trend and a seasonality as people drink more alcohol in December. This time series is not very long, I would propose to expand the time length some more to unleash the H2O full potential.
+It is also important to see the time series because normally the models will perform better if we can identify basic characteristics such as trend and seasonality. This data set clearly has a trend and a seasonality as people drink more alcohol in December. 
 
 ```{r fig.cap="Beer, Wine, and Distilled Alcoholic Beverages Sales."}
 # Plot Beer Sales with train, validation, and test sets shown.
-beer_sales_tbl %>%
+beer %>%
   ggplot(aes(date, price)) +
   # Train Region:
   annotate("text", x = ymd("2013-01-01"), y = 14000, 
@@ -122,41 +122,41 @@ We will do that by implementing a battery of forecasting techniques:
 
 # H2O machine learning.
 
-The main objective here is to use <tt>`h2o`</tt> locally (in your own computer) to develop a high accuracy time series model on the <tt>`beer_sales_tbl`</tt> data set. This is a supervised machine learning regression problem. An interesting reference to learn the basics of supervised and unsupervised machine learning techniques applied to business is: @hull2020machine. 
+The main objective here is to use <tt>`h2o`</tt> locally (in your own computer) to develop a high accuracy time series model on the <tt>`beer`</tt> data set. This is a supervised machine learning regression problem. An interesting reference to learn the basics of supervised and unsupervised machine learning techniques applied to business is: @hull2020machine. 
 
 ## Prepare the data.
 
-The <tt>`tk_augment_timeseries_signature`</tt> function expands out the timestamp information column-wise into a machine learning feature set, adding columns of time series information to the original data frame. We’ll again use <tt>`glimpse`</tt> for quick inspection of this expansion. See how there are now 31 features extracted from the original database. Not all will be important for the final and chosen models, but some will.
+The <tt>`tk_augment_timeseries_signature`</tt> function expands out the timestamp information column-wise into a machine learning feature set, adding columns of time series information to the original data frame. We’ll again use <tt>`glimpse()`</tt> function for quick inspection of this expansion. See how there are now 31 features extracted from the original database. Not all will be important for the final and chosen models, but some will.
 
 ```{r data-in-a-machine-learning-format}
 # See the full list of new variables to realize the expansion effect.
-beer_sales_tbl_aug <- beer_sales_tbl %>%
+beer_aug <- beer %>%
   tk_augment_timeseries_signature() %>%
   glimpse()
 ```
 
-Note how we went from 3 columns in <tt>`beer_sales_tbl`</tt> to 31 columns in <tt>`beer_sales_tbl_augc, almost *out of the blue*.
+Note how we went from 3 columns in <tt>`beer`</tt> to 31 columns in <tt>`beer_aug`</tt>, almost *out of the blue*.
 
 We need to prepare the data in a format for H2O. First, let’s remove any unnecessary columns such as dates or those with missing values, and change the ordered classes to plain factors. We prefer <tt>`dplyr`</tt> operations for these steps. Sometimes we do not need to implement this step as the data is already clean (as in this case), but sometimes it is not. Thus, let's clean the data.
 
 ```{r data-cleaning}
 # See the full list of variables to realize the cleaning effect.
-beer_sales_tbl_clean <- beer_sales_tbl_aug %>%
+beer_clean <- beer_aug %>%
   select_if(~ !is.Date(.)) %>%
   select_if(~ !any(is.na(.))) %>%
   mutate_if(is.ordered, ~ as.character(.) %>% as.factor) %>%
   glimpse()
 ```
 
-The database did not change too much. Now we have 29 columns in <tt>`beer_sales_tbl_clean`</tt>. In the case of two variables, the structure ordered factors <tt>`<ord>`</tt> changed into factors <tt>`<fct>`</tt>, which is necessary for some H2O functions.
+The database did not change too much. Now we have 29 columns in <tt>`beer_clean`</tt>. In the case of two variables, the structure ordered factors <tt>`<ord>`</tt> changed into factors <tt>`<fct>`</tt>, which is necessary for some H2O functions.
 
 Let’s split the database into a training, validation and test sets following the time ranges in the visualization above. These training sets are the way most machine learning algorithms can be implemented and evaluated. We normally take more observations for the training, and less observations for the validation and test. The test set (the most recent dates) is unknown in the learning process of the models, the test set will be useful for us to be able to compare forecasts versus what really happened. This is how we can measure out-of-sample estimation errors.
 
 ```{r}
 # Split into training, validation and test sets.
-train_tbl <- beer_sales_tbl_clean %>% filter(year < 2016)
-valid_tbl <- beer_sales_tbl_clean %>% filter(year == 2016)
-test_tbl  <- beer_sales_tbl_clean %>% filter(year == 2017)
+train_tbl <- beer_clean %>% filter(year < 2016)
+valid_tbl <- beer_clean %>% filter(year == 2016)
+test_tbl  <- beer_clean %>% filter(year == 2017)
 glimpse(test_tbl)
 ```
 
@@ -328,7 +328,7 @@ Let's show the results in a table. First, the case without Deep Learning.
 
 ```{r}
 # 10-period forecast error: h2o.automl without Deep Learning.
-error_tbl <- beer_sales_tbl %>% 
+error_tbl <- beer %>% 
     filter(lubridate::year(date) == 2017) %>%
     add_column(pred = pred_h2o %>% as_tibble() %>% pull(predict)) %>%
     rename(actual = price) %>%
@@ -343,7 +343,7 @@ The forecast looks good. Note that in some cases it over-estimate and in others 
 
 ```{r fig.cap="Forecast: H2O without Deep Learning algorithm."}
 # H2O without Deep Learning algorithm.
-beer_sales_tbl %>%
+beer %>%
     ggplot(aes(x = date, y = price)) +
     # Data.
     geom_point(size = 2, color = "grey", alpha = 0.5, 
@@ -372,7 +372,7 @@ Now, the case of only Deep Learning. The detailed forecast is in the following t
 
 ```{r}
 # 10-period forecast error: h2o.automl only Deep Learning.
-error_tbl_DL <- beer_sales_tbl %>% 
+error_tbl_DL <- beer %>% 
     filter(lubridate::year(date) == 2017) %>%
     add_column(pred = pred_h2o_DL %>% as_tibble() %>% pull(predict)) %>%
     rename(actual = price) %>%
@@ -387,7 +387,7 @@ The same information in a plot.
 
 ```{r fig.cap="Forecast: H2O including only Deep Learning algorithm."}
 # H2O including only Deep Learning algorithm.
-beer_sales_tbl %>%
+beer %>%
     ggplot(aes(x = date, y = price)) +
     # Data.
     geom_point(size = 2, color = "gray", alpha = 0.5, 
@@ -417,7 +417,7 @@ This is the H2O case with no restrictions, considering all available algorithms.
 
 ```{r}
 # 10-period forecast error: h2o.automl all algorithms.
-error_tbl_all <- beer_sales_tbl %>% 
+error_tbl_all <- beer %>% 
     filter(lubridate::year(date) == 2017) %>%
     add_column(pred = pred_h2o_all %>% as_tibble() %>% pull(predict)) %>%
     rename(actual = price) %>%
@@ -432,7 +432,7 @@ The visual representation.
 
 ```{r fig.cap="Forecast: H2O including all available algorithms."}
 # H2O all available algorithms.
-beer_sales_tbl %>%
+beer %>%
     ggplot(aes(x = date, y = price)) +
     # Data.
     geom_point(size = 2, color = "grey", alpha = 0.5, 
@@ -523,16 +523,16 @@ We normally do not choose a model according to one specific point forecast. Howe
 
 # Linear regression.
 
-Let's implement a simple but powerful approach using the <tt>`lm`</tt> function.
+Let's implement a simple but powerful approach using the <tt>`lm()`</tt> function.
 
 ## Implement the model.
 
-This is the simplest choice, and still has a very high $R^2$. The independent variables are all <tt>`beer_sales_tbl_aug`</tt> variables except for <tt>`date`</tt>, <tt>`diff`</tt>, and <tt>`symbol`</tt>.
+This is the simplest choice, and still has a very high $R^2$. The independent variables are all <tt>`beer_aug`</tt> variables except for <tt>`date`</tt>, <tt>`diff`</tt>, and <tt>`symbol`</tt>.
 
 ```{r}
 # linear regression model used, but can use any model
 fit_lm <- lm(price ~ ., data = 
-               select(beer_sales_tbl_aug, -c(date, diff, symbol)))
+               select(beer_aug, -c(date, diff, symbol)))
 summary(fit_lm)
 ```
 
@@ -545,7 +545,7 @@ Prediction is easy in R.
 ```{r}
 # Make predictions
 pred <- predict(fit_lm, newdata = test_tbl)
-future_idx <- tail(beer_sales_tbl$date, 10) # The 10-months forecast period.
+future_idx <- tail(beer$date, 10) # The 10-months forecast period.
 predictions_tbl <- tibble(date  = future_idx, value = pred)
 predictions_tbl
 ```
@@ -554,7 +554,7 @@ We can investigate the error on our test set (actuals vs predictions).
 
 ```{r}
 # Investigate test error
-actuals_tbl <- tail(beer_sales_tbl[-1], 10)
+actuals_tbl <- tail(beer[-1], 10)
 error_tbl_lm <- left_join(actuals_tbl, predictions_tbl) %>%
     rename(actual = price, pred = value) %>%
     mutate(error = actual - pred, error_pct = error / actual) 
@@ -580,7 +580,7 @@ Visualize our forecast.
 
 ```{r fig.cap="Forecast: multivariate linear regression."}
 # Plot Beer Sales Forecast
-beer_sales_tbl %>%
+beer %>%
     ggplot(aes(x = date, y = price)) +
     # Training data.
     geom_line(color = palette_light()[[1]]) +
@@ -613,7 +613,7 @@ The <tt>`tk_ts`</tt> coerce time series objects and tibbles with date/date-time 
 
 ```{r}
 # Convert from tbl to ts.
-beer_sales_ts <- tk_ts(beer_sales_tbl[1:84,], start = 2010, freq = 12)
+beer_sales_ts <- tk_ts(beer[1:84,], start = 2010, freq = 12)
 beer_sales_ts
 ```
 
@@ -637,14 +637,14 @@ fit_arima <- auto.arima(beer_sales_ts)
 fit_arima
 ```
 
-The <tt>`sw_tidy`</tt> function returns the model coefficients in a tibble (tidy data frame). This might be useful in some circumstances.
+The <tt>`sw_tidy()`</tt> function returns the model coefficients in a tibble (tidy data frame). This might be useful in some circumstances.
 
 ```{r}
 # sw_tidy - Get model coefficients.
 sw_tidy(fit_arima)
 ```
 
-The <tt>`sw_glance`</tt> function returns the training set accuracy measures in a tibble (tidy data frame). We use glimpse to aid in quickly reviewing the model metrics.
+The <tt>`sw_glance()`</tt> function returns the training set accuracy measures in a tibble (tidy data frame). We use glimpse to aid in quickly reviewing the model metrics.
 
 ```{r}
 # sw_glance - Get model description and training set accuracy measures.
@@ -656,7 +656,7 @@ This looks good.
 
 ## Predict. 
 
-The <tt>`sw_augument`</tt> function helps with model evaluation. We get the “.actual”, “.fitted” and “.resid” columns, which are useful in evaluating the model against the training data. Note that we can pass <tt>`timetk_idx = TRUE`</tt> to return the original date index.
+The <tt>`sw_augument()`</tt> function helps with model evaluation. We get the “.actual”, “.fitted” and “.resid” columns, which are useful in evaluating the model against the training data. Note that we can pass <tt>`timetk_idx = TRUE`</tt> to return the original date index.
 
 ```{r}
 # sw_augment - get model residuals
@@ -676,7 +676,7 @@ sw_augment(fit_arima, timetk_idx = TRUE) %>%
     theme_tq()
 ```
 
-Make a forecast using the <tt>`forecast`</tt> function. This function also delivers some convenient error bounds.
+Make a forecast using the <tt>`forecast()`</tt> function. This function also delivers some convenient error bounds.
 
 ```{r}
 # Forecast next 10 months
@@ -690,7 +690,7 @@ One problem is the forecast output is not “tidy”. We need it in a data frame
 class(fcast_arima)
 ```
 
-We can use <tt>`sw_sweep`</tt> to tidy the forecast output. As an added benefit, if the forecast-object has a <tt>`timetk`</tt> index, we can use it to return a date/datetime index as opposed to regular index from the ts-based-object.
+We can use <tt>`sw_sweep()`</tt> to tidy the forecast output. As an added benefit, if the forecast-object has a <tt>`timetk`</tt> index, we can use it to return a date/datetime index as opposed to regular index from the ts-based-object.
 
 First, let’s check if the forecast-object has a timetk index.
 
@@ -699,7 +699,7 @@ First, let’s check if the forecast-object has a timetk index.
 has_timetk_idx(fcast_arima)
 ```
 
-Great. Now, use <tt>`sw_sweep`</tt> to tidy the forecast output.
+Great. Now, use <tt>`sw_sweep()`</tt> to tidy the forecast output.
 
 ```{r}
 # sw_sweep - tidies forecast output
@@ -807,7 +807,7 @@ Visualize the average forecast.
 
 ```{r fig.cap="Forecast: average forecast."}
 # Plot Beer Sales Forecast
-beer_sales_tbl %>%
+beer %>%
     ggplot(aes(x = date, y = price)) +
     # Training data
     geom_line(color = palette_light()[[1]]) +
@@ -871,6 +871,3 @@ The main web references of this document are (these are web links):
 - [Tidy Forecasting with sweep](https://www.business-science.io/code-tools/2017/10/25/demo_week_sweep.html)
 - [H2O Tutorials](http://docs.h2o.ai/h2o-tutorials/latest-stable/index.html)
 - [Machine Learning to Reduce Employee Attrition](https://www.facebook.com/experiannews/videos/1749616808676222/)
-
-
-# References.
