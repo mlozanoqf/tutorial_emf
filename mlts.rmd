@@ -25,13 +25,13 @@ tic()
 
 # Introduction.
 
-This document relies on some freely available Business Science IO R codes in the web. The CEO of Business Science IO is Matt Dancho, he is the creator of \texttt{tidyquant} and \texttt{timetk}, and I truly believe we can learn a lot from their publicly available data science examples in general. This private firm declares a nice motivation that I fully support: *A gap exists between the data scientist's skillset and the business objectives. Organizations are investing heavily into data science hiring because they know that artificial intelligence, machine learning, and data science are the future. However, this investment takes time to pay off because data scientists need to learn the business and understand which problems are important to focus on. This is the gap. business science has developed methodologies, tools, and techniques to overcome the gap through our consulting program. Now, business science has opened these tools up to the public as a way to accelerate the growth of these powerful data scientists. It's this data scientist empowerment that motivates us.* 
+<!-- This document relies on some freely available Business Science IO R codes in the web. The CEO of Business Science IO is Matt Dancho, he is the creator of \texttt{tidyquant} and \texttt{timetk}, and I truly believe we can learn a lot from their publicly available data science examples in general. This private firm declares a nice motivation that I fully support: *A gap exists between the data scientist's skillset and the business objectives. Organizations are investing heavily into data science hiring because they know that artificial intelligence, machine learning, and data science are the future. However, this investment takes time to pay off because data scientists need to learn the business and understand which problems are important to focus on. This is the gap. business science has developed methodologies, tools, and techniques to overcome the gap through our consulting program. Now, business science has opened these tools up to the public as a way to accelerate the growth of these powerful data scientists. It's this data scientist empowerment that motivates us.*  -->
 
-In this context, I think that this gap exists at the moment just as this firm declares. This gap is currently being addressed in two ways: data scientists (like engineers) are learning business, and business professionals are learning data science. I also think that this gap is far from being fully covered as researchers are producing more methods and theory, technology is putting the data science frontiers even further, there are more data than people who can analyze it, and business problems are becoming more complex. As a result, I consider we are obligated to understand business as good as we can because that is our main core, and at the same time learn data science as good as we can because that will allow us to propose innovative ways to tackle current and future business problems. This gap also represents a good reason to support constant professional training, and reveal the multidisciplinary requirements in the job market.
+<!-- In this context, I think that this gap exists at the moment just as this firm declares. This gap is currently being addressed in two ways: data scientists (like engineers) are learning business, and business professionals are learning data science. I also think that this gap is far from being fully covered as researchers are producing more methods and theory, technology is putting the data science frontiers even further, there are more data than people who can analyze it, and business problems are becoming more complex. As a result, I consider we are obligated to understand business as good as we can because that is our main core, and at the same time learn data science as good as we can because that will allow us to propose innovative ways to tackle current and future business problems. This gap also represents a good reason to support constant professional training, and reveal the multidisciplinary requirements in the job market. -->
 
-Machine learning is the study of computer algorithms that improve automatically through experience. There are many ways and many approaches to implement machine learning especially in time series forecasts purposes. This document heavily relies on \texttt{h2o} library. The \texttt{h2o} package is a product offered by H2O.ai that contains a number of cutting edge machine learning algorithms, performance metrics, and auxiliary functions to make machine learning both powerful and easy to implement.
+Machine learning is the study of computer algorithms that improve automatically through experience. There are many ways and many approaches to implement machine learning especially in time series forecasts purposes. This document heavily relies on <tt>`h2o`</tt> library. The <tt>`h2o`</tt> package is a product offered by H2O.ai that contains a number of cutting edge machine learning algorithms, performance metrics, and auxiliary functions to make machine learning both powerful and easy to implement.
 
-One of the most important features of this package is the \texttt{h2o.automl} (Automatic Machine Learning). H2O’s AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit. Stacked Ensembles – one based on all previously trained models, another one on the best model of each family – will be automatically trained on collections of individual models to produce highly predictive ensemble models which, in most cases, will be the top performing models in the AutoML Leaderboard. We can verify this in the example below.
+One of the most important features of this package is the <tt>`h2o.automl`</tt> (Automatic Machine Learning). H2O’s AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit. Stacked Ensembles – one based on all previously trained models, another one on the best model of each family – will be automatically trained on collections of individual models to produce highly predictive ensemble models which, in most cases, will be the top performing models in the AutoML Leaderboard. We can verify this in the example below.
 
 This document has limited explanations about the applied machine learning techniques. The value of this document is to gather several examples that are originally presented separately in Business Science IO and r-bloggers.com sites and extend the analysis to elaborate further on the code logic and interpretation. It can also be useful to better understand how the R functions work, how results are produced, and it could help to replicate a different example with a new database for those who are new in the field.
 
@@ -61,7 +61,7 @@ library(sweep)      # Broom-style tidiers for the forecast package.
 library(forecast)   # Forecasting models and predictions package.
 ```
 
-We can conveniently download the data directly from the FRED API in one line of code. Manually downloading the data and then importing into R is not considered *cool* anymore.
+We can conveniently download the data directly from the FRED API in one line of code.
 
 ```{r get-data}
 # Beer, Wine, Distilled Alcoholic Beverages, in Millions USD.
@@ -69,7 +69,7 @@ beer_sales_tbl <- tq_get("S4248SM144NCEN", get = "economic.data",
                          from = "2010-01-01", to = "2017-10-31")
 ```
 
-Let's have a look of the data set. By default it says \texttt{price}, but these are basically sales figures in monetary terms. According to the main FRED reference, these are in millions of dollars, not seasonally adjusted.
+Let's have a look of the data set. By default it says <tt>`price`</tt>, but these are basically sales figures in monetary terms. According to the main FRED reference, these are in millions of dollars, not seasonally adjusted.
 
 ```{r see-the-data}
 # A quick look at the original data.
@@ -122,11 +122,11 @@ We will do that by implementing a battery of forecasting techniques:
 
 # H2O machine learning.
 
-The main objective here is to use \texttt{h2o} locally (in your own computer) to develop a high accuracy time series model on the \texttt{beer\_sales\_tbl} data set. This is a supervised machine learning regression problem. An interesting reference to learn the basics of supervised and unsupervised machine learning techniques applied to business is: Machine Learning in Business: An Introduction to the World of Data Science (2019), by John C. Hull. 
+The main objective here is to use <tt>`h2o`</tt> locally (in your own computer) to develop a high accuracy time series model on the <tt>`beer_sales_tbl`</tt> data set. This is a supervised machine learning regression problem. An interesting reference to learn the basics of supervised and unsupervised machine learning techniques applied to business is: @hull2020machine. 
 
 ## Prepare the data.
 
-The \texttt{tk\_augment\_timeseries\_signature} function expands out the timestamp information column-wise into a machine learning feature set, adding columns of time series information to the original data frame. We’ll again use \texttt{glimpse} for quick inspection of this expansion. See how there are now 31 features extracted from the original database. Not all will be important for the final and chosen models, but some will.
+The <tt>`tk_augment_timeseries_signature`</tt> function expands out the timestamp information column-wise into a machine learning feature set, adding columns of time series information to the original data frame. We’ll again use <tt>`glimpse`</tt> for quick inspection of this expansion. See how there are now 31 features extracted from the original database. Not all will be important for the final and chosen models, but some will.
 
 ```{r data-in-a-machine-learning-format}
 # See the full list of new variables to realize the expansion effect.
@@ -135,9 +135,9 @@ beer_sales_tbl_aug <- beer_sales_tbl %>%
   glimpse()
 ```
 
-Note how we went from 3 columns in \texttt{beer\_sales\_tbl} to 31 columns in \texttt{beer\_sales\_tbl\_aug}, almost *out of the blue*.
+Note how we went from 3 columns in <tt>`beer_sales_tbl`</tt> to 31 columns in <tt>`beer_sales_tbl_augc, almost *out of the blue*.
 
-We need to prepare the data in a format for H2O. First, let’s remove any unnecessary columns such as dates or those with missing values, and change the ordered classes to plain factors. We prefer \texttt{dplyr} operations for these steps. Sometimes we do not need to implement this step as the data is already clean (as in this case), but sometimes it is not. Thus, let's clean the data.
+We need to prepare the data in a format for H2O. First, let’s remove any unnecessary columns such as dates or those with missing values, and change the ordered classes to plain factors. We prefer <tt>`dplyr`</tt> operations for these steps. Sometimes we do not need to implement this step as the data is already clean (as in this case), but sometimes it is not. Thus, let's clean the data.
 
 ```{r data-cleaning}
 # See the full list of variables to realize the cleaning effect.
@@ -148,7 +148,7 @@ beer_sales_tbl_clean <- beer_sales_tbl_aug %>%
   glimpse()
 ```
 
-The database did not change too much. Now we have 29 columns in \texttt{beer\_sales\_tbl\_clean}. In the case of two variables, the structure ordered factors \texttt{<ord>} changed into factors \texttt{<fct>}, which is necessary for some H2O functions.
+The database did not change too much. Now we have 29 columns in <tt>`beer_sales_tbl_clean`</tt>. In the case of two variables, the structure ordered factors <tt>`<ord>`</tt> changed into factors <tt>`<fct>`</tt>, which is necessary for some H2O functions.
 
 Let’s split the database into a training, validation and test sets following the time ranges in the visualization above. These training sets are the way most machine learning algorithms can be implemented and evaluated. We normally take more observations for the training, and less observations for the validation and test. The test set (the most recent dates) is unknown in the learning process of the models, the test set will be useful for us to be able to compare forecasts versus what really happened. This is how we can measure out-of-sample estimation errors.
 
@@ -190,9 +190,9 @@ kable(matrix(x, 7, 4), caption = "Summary of variable names.") %>%
 kable_styling(latex_options = "HOLD_position")
 ```
 
-The \texttt{h2o.automl} is a function in H2O that automates the process of building a large number of models, with the goal of finding the *best* model without any prior knowledge or effort by the data scientist. The alternative of using \texttt{h2o.automl} is to pick some models according to the database characteristics, implement the models, and pick the one with the best performance according to some evaluation criterion. This alternative is time consuming and it could use an intensive computational memory and power, this is why H2O is valuable. If H2O was already amazing, this function makes it even more powerful. 
+The <tt>`h2o.automl`</tt> is a function in H2O that automates the process of building a large number of models, with the goal of finding the *best* model without any prior knowledge or effort by the data scientist. The alternative of using <tt>`h2o.automl`</tt> is to pick some models according to the database characteristics, implement the models, and pick the one with the best performance according to some evaluation criterion. This alternative is time consuming and it could use an intensive computational memory and power, this is why H2O is valuable. If H2O was already amazing, this function makes it even more powerful. 
 
-The available algorithms that \texttt{h2o.automl} currently run and compare are (click on each one to see a full description):
+The available algorithms that <tt>`h2o.automl`</tt> currently run and compare are (click on each one to see a full description):
 
 * [Distributed Random Forest (DRF).](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/drf.html)
 * [Generalized Linear Model (GLM).](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html?highlight=glm)
@@ -201,13 +201,13 @@ The available algorithms that \texttt{h2o.automl} currently run and compare are 
 * [Deep Learning (Neural Networks).](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/deep-learning.html?highlight=deeplearning)
 * [Stacked Ensembles.](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html?highlight=stackedensemble)
 
-It is a good time to define how we are going to use some concepts at least in this document. Here, we call forecasting *techniques* to the three techniques implemented in this document: machine learning using H2O, linear regression, and ARIMA. When we implement \texttt{h2o.automl} function, H2O test for the six *algorithms* listed above. Each algorithm includes many other *models* that belongs to these algorithms in the machine learning process. The result of \texttt{h2o.automl} is one model that belongs to one algorithm. This is the difference between forecasting techniques, algorithms, and models. 
+It is a good time to define how we are going to use some concepts at least in this document. Here, we call forecasting *techniques* to the three techniques implemented in this document: machine learning using H2O, linear regression, and ARIMA. When we implement <tt>`h2o.automl`</tt> function, H2O test for the six *algorithms* listed above. Each algorithm includes many other *models* that belongs to these algorithms in the machine learning process. The result of <tt>`h2o.automl`</tt> is one model that belongs to one algorithm. This is the difference between forecasting techniques, algorithms, and models. 
 
-## Implement \texttt{h2o.automl}.
+## Implement <tt>`h2o.automl`</tt>.
 
-Here, we implement the \texttt{h2o.automl} in three different ways because of reproducibility issues. Reproducibility means obtaining consistent computational results using the same input data, computational steps, methods, code, and conditions of analysis. It turns out that Deep Learning cannot be reproducible by construction. Then, we first apply \texttt{h2o.automl} without Deep Learning. Second, we apply \texttt{h2o.automl} with only Deep Learning (here the results will be different each time we run the code). And third, including all available algorithms in \texttt{h2o.automl} (again, the results might change every time we run the code). The first is the only one which can be reproducible and the other two are expected to change every time we run the R code. 
+Here, we implement the <tt>`h2o.automl`</tt> in three different ways because of reproducibility issues. Reproducibility means obtaining consistent computational results using the same input data, computational steps, methods, code, and conditions of analysis. It turns out that Deep Learning cannot be reproducible by construction. Then, we first apply <tt>`h2o.automl`</tt> without Deep Learning. Second, we apply <tt>`h2o.automl`</tt> with only Deep Learning (here the results will be different each time we run the code). And third, including all available algorithms in <tt>`h2o.automl`</tt> (again, the results might change every time we run the code). The first is the only one which can be reproducible and the other two are expected to change every time we run the R code. 
 
-Please note that in the code below we set \texttt{exclude\_algos} to exclude Deep Learning, and \texttt{seed = 236} to make sure every time we run the code we can get the same results.
+Please note that in the code below we set <tt>`exclude_algos`</tt> to exclude Deep Learning, and <tt>`seed = 236`</tt> to make sure every time we run the code we can get the same results.
 
 ```{r exclude-deeplearning}
 # This might take some time to run. 
@@ -218,7 +218,7 @@ automl_models_h2o <- h2o.automl(x = x, y = y, training_frame = train_h2o,
     max_runtime_secs = 60, stopping_metric = "deviance", seed = 236)
 ```
 
-The selected model by \texttt{h2o.automl} is:
+The selected model by <tt>`h2o.automl`</tt> is:
 
 ```{r lead-model}
 # Extract leader model.
@@ -236,7 +236,7 @@ algorithm.", digits = 2, row.names = TRUE) %>%
 kable_styling(font_size = 7, latex_options = "HOLD_position")
 ```
 
-The \texttt{model\_id} column list the top 10 models with the lowest errors. The value of \texttt{h2o.automl} is that we can take the best model and use it to conduct our forecast. Remember we proposed to run \texttt{h2o.automl} three times. Now let's consider the second alternative (only Deep Learning). There are several ways to implement Deep Learning, this is why it makes sense to use only this family into the \texttt{h2o.automl} function. Deep Learning cannot be reproducible by construction so adding a seed in this case would be useless. 
+The <tt>`model_id`</tt> column list the top 10 models with the lowest errors. The value of <tt>`h2o.automl`</tt> is that we can take the best model and use it to conduct our forecast. Remember we proposed to run <tt>`h2o.automl`</tt> three times. Now let's consider the second alternative (only Deep Learning). There are several ways to implement Deep Learning, this is why it makes sense to use only this family into the <tt>`h2o.automl`</tt> function. Deep Learning cannot be reproducible by construction so adding a seed in this case would be useless. 
 
 ```{r message=FALSE, warning=FALSE}
 # This might take some time to run. 
@@ -245,7 +245,7 @@ DL <- h2o.automl(x = x, y = y, training_frame = train_h2o,
     include_algos = c("DeepLearning"), max_runtime_secs = 60, 
     stopping_metric = "deviance")
 ```
-The selected model by \texttt{h2o.automl} is:
+The selected model by <tt>`h2o.automl`</tt> is:
 
 ```{r}
 # Extract leader model
@@ -262,9 +262,9 @@ kable(DL@leaderboard,
   kable_styling(font_size = 7, latex_options = "HOLD_position")
 ```
 
-All models belong to the same algorithm, but we clearly choose the first one of the list. The machine learning workflow estimate a number of models using the train region and evaluate them using the validation region. The estimated model parameters then change as they learn from their mistakes. This process is repeated until a specific restriction meets, in this case \texttt{max\_runtime\_secs} is set to 60 seconds. At the end, we select the best ranked model.
+All models belong to the same algorithm, but we clearly choose the first one of the list. The machine learning workflow estimate a number of models using the train region and evaluate them using the validation region. The estimated model parameters then change as they learn from their mistakes. This process is repeated until a specific restriction meets, in this case <tt>`max_runtime_secs`</tt> is set to 60 seconds. At the end, we select the best ranked model.
 
-Now let's consider the third alternative. This is, run \texttt{h2o.automl} with no restrictions at all. Here, it would be interesting to see if this led to the best alternative. In principle, we cannot anticipate which one of these three runs will be the best. This is because the Deep Learning algorithm has a random component which might lead to better results, and remember the second round was exclusive for Deep Learning and the third includes Deep Learning. Then, every time I compile this document or run this R code we should expect different results in the second and third alternative.
+Now let's consider the third alternative. This is, run <tt>`h2o.automl`</tt> with no restrictions at all. Here, it would be interesting to see if this led to the best alternative. In principle, we cannot anticipate which one of these three runs will be the best. This is because the Deep Learning algorithm has a random component which might lead to better results, and remember the second round was exclusive for Deep Learning and the third includes Deep Learning. Then, every time I compile this document or run this R code we should expect different results in the second and third alternative.
 
 ```{r message=FALSE, warning=FALSE}
 # This might take some time to run. 
@@ -274,7 +274,7 @@ automl_models_h2o_all <- h2o.automl(x = x, y = y,
     stopping_metric = "deviance")
 ```
 
-The selected model by \texttt{h2o.automl} is:
+The selected model by <tt>`h2o.automl`</tt> is:
 
 ```{r}
 # Extract leader model
@@ -292,7 +292,7 @@ kable(head(automl_models_h2o_all@leaderboard, 10),
   kable_styling(font_size = 7, latex_options = "HOLD_position")
 ```
 
-Let's summarize the results according to the mean residual deviance as this was the criterion in \texttt{stopping\_metric}. The table shows the best ranked model according to our three different runs of \texttt{h2o.automl}.
+Let's summarize the results according to the mean residual deviance as this was the criterion in <tt>`stopping_metric`</tt>. The table shows the best ranked model according to our three different runs of <tt>`h2o.automl`</tt>.
 
 ```{r}
 # Collect model names and the mean residual deviance.
@@ -311,7 +311,7 @@ caption = "Top ranked models: h2o.automl mean residual deviance.") %>%
 kable_styling(latex_options = "HOLD_position")
 ```
 
-This is interesting because this suggest that it makes sense to run the H2O more than one time. It would be good to test for a different \texttt{stopping\_metric}, \texttt{max\_runtime\_secs} and \texttt{max\_models}.
+This is interesting because this suggest that it makes sense to run the H2O more than one time. It would be good to test for a different <tt>`stopping_metric`</tt>, <tt>`max_runtime_secs`</tt> and <tt>`max_models`</tt>.
 
 ## Predict.
 
@@ -494,7 +494,7 @@ kable_styling(latex_options = "HOLD_position")
 
 As you can see, there are several ways in which we can measure the forecast errors. We can specify which one is the evaluation criterion to rank the models. And we can also determine which error measure: me (mean error), rmse (root mean squared error), mae (mean absolute error), mape (mean absolute percentage error), or mpe (mean percentage error) will be the one to choose between these three alternatives. In my experience, the rmse and the mape are the most popular ones, but the others might be useful in specific circumstances.
 
-We can also show the best point forecast for the three \texttt{h2o.automl} runs.
+We can also show the best point forecast for the three <tt>`h2o.automl`</tt> runs.
 
 ```{r}
 point_forecast_1 <- data.frame(
@@ -523,11 +523,11 @@ We normally do not choose a model according to one specific point forecast. Howe
 
 # Linear regression.
 
-Let's implement a simple but powerful approach using the \texttt{lm} function.
+Let's implement a simple but powerful approach using the <tt>`lm`</tt> function.
 
 ## Implement the model.
 
-This is the simplest choice, and still has a very high $R^2$. The independent variables are all \texttt{beer\_sales\_tbl\_aug} variables except for \texttt{date}, \texttt{diff}, and \texttt{symbol}.
+This is the simplest choice, and still has a very high $R^2$. The independent variables are all <tt>`beer_sales_tbl_aug`</tt> variables except for <tt>`date`</tt>, <tt>`diff`</tt>, and <tt>`symbol`</tt>.
 
 ```{r}
 # linear regression model used, but can use any model
@@ -605,11 +605,11 @@ This is clearly a good alternative. The H2O machine learning could lead to bette
 
 # ARIMA.
 
-Here, \texttt{sweep} is used for tidying the \texttt{forecast} package workflow. We’ll work through an ARIMA analysis to forecast the next 10 months of time series data. In this way we can compare our previous results.
+Here, <tt>`sweep`</tt> is used for tidying the <tt>`forecast`</tt> package workflow. We’ll work through an ARIMA analysis to forecast the next 10 months of time series data. In this way we can compare our previous results.
 
 ## Prepare the data.
 
-The \texttt{tk\_ts} coerce time series objects and tibbles with date/date-time columns to ts (time-series).
+The <tt>`tk_ts`</tt> coerce time series objects and tibbles with date/date-time columns to ts (time-series).
 
 ```{r}
 # Convert from tbl to ts.
@@ -617,18 +617,18 @@ beer_sales_ts <- tk_ts(beer_sales_tbl[1:84,], start = 2010, freq = 12)
 beer_sales_ts
 ```
 
-Just verify \texttt{tk\_ts} worked.
+Just verify <tt>`tk_ts`</tt> worked.
 
 ```{r}
 # Check that ts-object has a timetk index.
 has_timetk_idx(beer_sales_ts)
 ```
 
-Great. This will be important when we use \texttt{sw\_sweep} later. Next, we’ll model using ARIMA.
+Great. This will be important when we use <tt>`sw_sweep`</tt> later. Next, we’ll model using ARIMA.
 
 ## Implement the model.
 
-We can use the \texttt{auto.arima} function from the forecast package to model the time series. By doing that, we do not have to impose a specific ARIMA model, the function can test the best specification for us.
+We can use the <tt>`auto.arima`</tt> function from the forecast package to model the time series. By doing that, we do not have to impose a specific ARIMA model, the function can test the best specification for us.
 
 ```{r}
 # Model using auto.arima.
@@ -637,14 +637,14 @@ fit_arima <- auto.arima(beer_sales_ts)
 fit_arima
 ```
 
-The \texttt{sw\_tidy} function returns the model coefficients in a tibble (tidy data frame). This might be useful in some circumstances.
+The <tt>`sw_tidy`</tt> function returns the model coefficients in a tibble (tidy data frame). This might be useful in some circumstances.
 
 ```{r}
 # sw_tidy - Get model coefficients.
 sw_tidy(fit_arima)
 ```
 
-The \texttt{sw\_glance} function returns the training set accuracy measures in a tibble (tidy data frame). We use glimpse to aid in quickly reviewing the model metrics.
+The <tt>`sw_glance`</tt> function returns the training set accuracy measures in a tibble (tidy data frame). We use glimpse to aid in quickly reviewing the model metrics.
 
 ```{r}
 # sw_glance - Get model description and training set accuracy measures.
@@ -656,7 +656,7 @@ This looks good.
 
 ## Predict. 
 
-The \texttt{sw\_augument} function helps with model evaluation. We get the “.actual”, “.fitted” and “.resid” columns, which are useful in evaluating the model against the training data. Note that we can pass \texttt{timetk\_idx = TRUE} to return the original date index.
+The <tt>`sw_augument`</tt> function helps with model evaluation. We get the “.actual”, “.fitted” and “.resid” columns, which are useful in evaluating the model against the training data. Note that we can pass <tt>`timetk_idx = TRUE`</tt> to return the original date index.
 
 ```{r}
 # sw_augment - get model residuals
@@ -676,7 +676,7 @@ sw_augment(fit_arima, timetk_idx = TRUE) %>%
     theme_tq()
 ```
 
-Make a forecast using the \texttt{forecast} function. This function also delivers some convenient error bounds.
+Make a forecast using the <tt>`forecast`</tt> function. This function also delivers some convenient error bounds.
 
 ```{r}
 # Forecast next 10 months
@@ -690,7 +690,7 @@ One problem is the forecast output is not “tidy”. We need it in a data frame
 class(fcast_arima)
 ```
 
-We can use \texttt{sw\_sweep} to tidy the forecast output. As an added benefit, if the forecast-object has a \texttt{timetk} index, we can use it to return a date/datetime index as opposed to regular index from the ts-based-object.
+We can use <tt>`sw_sweep`</tt> to tidy the forecast output. As an added benefit, if the forecast-object has a <tt>`timetk`</tt> index, we can use it to return a date/datetime index as opposed to regular index from the ts-based-object.
 
 First, let’s check if the forecast-object has a timetk index.
 
@@ -699,7 +699,7 @@ First, let’s check if the forecast-object has a timetk index.
 has_timetk_idx(fcast_arima)
 ```
 
-Great. Now, use \texttt{sw\_sweep} to tidy the forecast output.
+Great. Now, use <tt>`sw_sweep`</tt> to tidy the forecast output.
 
 ```{r}
 # sw_sweep - tidies forecast output
