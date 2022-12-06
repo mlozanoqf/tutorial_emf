@@ -14,11 +14,9 @@ title: ''
 
 ```{r echo=FALSE}
 # This removes all items in environment. 
-# It is a good practice to start your code this way.
 rm(list=ls())
 library(tictoc)
 tic()
-#date: "Last compiled on: `r format(Sys.time(), '%d/%m/%Y. %H:%M:%S')`"
 ```
 
 \newpage
@@ -48,6 +46,7 @@ Let's load the R packages.
 
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # Load libraries
+library(fpp3)
 library(h2o)        # ML Library.
 library(timetk)     # Toolkit for working with time series in R.
 library(tidyquant)  # Loads tidyverse, financial pkgs, used to get data.
@@ -69,12 +68,22 @@ beer <- tq_get("S4248SM144NCEN", get = "economic.data",
                from = "2010-01-01", to = "2017-10-31")
 ```
 
-Let's have a look of the data set. By default it says <tt>`price`</tt>, but these are basically sales figures in monetary terms. According to the main FRED reference, these are in millions of dollars, not seasonally adjusted.
+Let's have a look of the data set. By default it says <tt>`sales`</tt>, but these are basically sales figures in monetary terms. According to the main FRED reference, these are in millions of dollars, not seasonally adjusted.
 
 ```{r see-the-data}
 # A quick look at the original data.
 head(beer)
 ```
+
+We can change the name of the column.
+
+```{r rename}
+beer <- beer %>%
+  rename(sales = price)
+
+head(beer)
+```
+Better now. 
 
 Visualization is particularly important for time series analysis and forecasting. It’s a good idea to identify spots where we will split the data into training, test and validation sets. This kind of split is consistent with most machine learning algorithms. The *training* dataset is the sample of data used to fit and train the model by learning from the data. The *validation* dataset is the sample of data used to provide an unbiased evaluation of a model fit on the training dataset while tuning model hyperparameters. The *test* dataset is the sample of data used to provide an unbiased evaluation of a final model fit on the training dataset. The test dataset provides the gold standard used to evaluate the model. It is only used once a model is completely trained (using the train and validation sets). The test set is generally what is used to evaluate competing models.
 
@@ -83,7 +92,7 @@ It is also important to see the time series because normally the models will per
 ```{r fig.cap="Beer, Wine, and Distilled Alcoholic Beverages Sales."}
 # Plot Beer Sales with train, validation, and test sets shown.
 beer %>%
-  ggplot(aes(date, price)) +
+  ggplot(aes(date, sales)) +
   # Train Region:
   annotate("text", x = ymd("2013-01-01"), y = 14000, 
            color = palette_light()[[1]], label = "Train Region") +
@@ -105,9 +114,9 @@ beer %>%
   # Aesthetics.
   theme_tq() +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  labs(title = "Beer Sales: 2010 through 2017-10-31",
+  labs(title = "Beer Sales.",
        subtitle = 
-  "Train, Validation (2016), and Test Sets (2017-01-01 to 2017-10-31)",
+  "Train (2010 - 2016), validation (2016), and test set (2017-01-01 to 2017-10-31)",
        caption = "The models do not know the test region, this is for us 
        to see how well the models do the 10-month ahead forecast.") 
 ```
@@ -120,22 +129,38 @@ We will do that by implementing a battery of forecasting techniques:
 * Linear regression.
 * ARIMA.
 
+The forecasting techniques are expected to exploit the time-series components like trend and seasonal component. Here we use the @hyndman2021forecasting <tt>`fpp3`</tt> package. Note that we have to transform <tt>`beer`</tt> into a <tt>`tsibble`</tt> object.
+
+```{r}
+beer_tbls <- beer
+beer_tbls$date <- yearmonth(beer_tbls$date)
+beer_tbls <- as_tsibble(beer_tbls)
+
+beer_tbls %>%
+  model(
+    classical_decomposition(sales, type = "additive")) %>%
+  components() %>%
+  autoplot() +
+  labs(title = "Classical additive decomposition of Beer Sales.")
+```
+
 # H2O machine learning.
 
 The main objective here is to use <tt>`h2o`</tt> locally (in your own computer) to develop a high accuracy time series model on the <tt>`beer`</tt> data set. This is a supervised machine learning regression problem. An interesting reference to learn the basics of supervised and unsupervised machine learning techniques applied to business is: @hull2020machine. 
 
 ## Prepare the data.
 
-The <tt>`tk_augment_timeseries_signature`</tt> function expands out the timestamp information column-wise into a machine learning feature set, adding columns of time series information to the original data frame. We’ll again use <tt>`glimpse()`</tt> function for quick inspection of this expansion. See how there are now 31 features extracted from the original database. Not all will be important for the final and chosen models, but some will.
+The <tt>`tk_augment_timeseries_signature()`</tt> function expands out the timestamp information column-wise into a machine learning feature set, adding columns of time series information to the original data frame. We’ll again use <tt>`head()`</tt> function for quick inspection of this expansion. See how there are now 31 features extracted from the original database. Not all will be important for the final and chosen models, but some will.
 
 ```{r data-in-a-machine-learning-format}
 # See the full list of new variables to realize the expansion effect.
 beer_aug <- beer %>%
-  tk_augment_timeseries_signature() %>%
-  glimpse()
+  tk_augment_timeseries_signature() 
+
+head(beer_aug)
 ```
 
-Note how we went from 3 columns in <tt>`beer`</tt> to 31 columns in <tt>`beer_aug`</tt>, almost *out of the blue*.
+Note how we went from 3 columns in <tt>`beer`</tt> to 31 columns in <tt>`beer_aug`</tt>.
 
 We need to prepare the data in a format for H2O. First, let’s remove any unnecessary columns such as dates or those with missing values, and change the ordered classes to plain factors. We prefer <tt>`dplyr`</tt> operations for these steps. Sometimes we do not need to implement this step as the data is already clean (as in this case), but sometimes it is not. Thus, let's clean the data.
 
@@ -144,8 +169,9 @@ We need to prepare the data in a format for H2O. First, let’s remove any unnec
 beer_clean <- beer_aug %>%
   select_if(~ !is.Date(.)) %>%
   select_if(~ !any(is.na(.))) %>%
-  mutate_if(is.ordered, ~ as.character(.) %>% as.factor) %>%
-  glimpse()
+  mutate_if(is.ordered, ~ as.character(.) %>% as.factor)
+
+head(beer_clean)
 ```
 
 The database did not change too much. Now we have 29 columns in <tt>`beer_clean`</tt>. In the case of two variables, the structure ordered factors <tt>`<ord>`</tt> changed into factors <tt>`<fct>`</tt>, which is necessary for some H2O functions.
@@ -157,7 +183,8 @@ Let’s split the database into a training, validation and test sets following t
 train_tbl <- beer_clean %>% filter(year < 2016)
 valid_tbl <- beer_clean %>% filter(year == 2016)
 test_tbl  <- beer_clean %>% filter(year == 2017)
-glimpse(test_tbl)
+
+test_tbl$sales
 ```
 
 Remember our goal is to forecast the first 10 months of 2017.
@@ -184,8 +211,8 @@ Let's list the names of the variables.
 
 ```{r variable-names}
 # Set names for h2o.
-y <- "price"
-x <- setdiff(names(train_h2o), y) # Adds price to the names list.
+y <- "sales"
+x <- setdiff(names(train_h2o), y) # Adds sales to the names list.
 kable(matrix(x, 7, 4), caption = "Summary of variable names.") %>%
 kable_styling(latex_options = "HOLD_position")
 ```
@@ -331,7 +358,7 @@ Let's show the results in a table. First, the case without Deep Learning.
 error_tbl <- beer %>% 
     filter(lubridate::year(date) == 2017) %>%
     add_column(pred = pred_h2o %>% as_tibble() %>% pull(predict)) %>%
-    rename(actual = price) %>%
+    rename(actual = sales) %>%
     mutate(error = actual - pred, error_pct = error / actual)
 kable(error_tbl, 
 caption = "Detailed performance: h2o.automl without Deep Learning algorithm.",
@@ -344,7 +371,7 @@ The forecast looks good. Note that in some cases it over-estimate and in others 
 ```{r fig.cap="Forecast: H2O without Deep Learning algorithm."}
 # H2O without Deep Learning algorithm.
 beer %>%
-    ggplot(aes(x = date, y = price)) +
+    ggplot(aes(x = date, y = sales)) +
     # Data.
     geom_point(size = 2, color = "grey", alpha = 0.5, 
                shape = 21, fill = "black") +
@@ -375,7 +402,7 @@ Now, the case of only Deep Learning. The detailed forecast is in the following t
 error_tbl_DL <- beer %>% 
     filter(lubridate::year(date) == 2017) %>%
     add_column(pred = pred_h2o_DL %>% as_tibble() %>% pull(predict)) %>%
-    rename(actual = price) %>%
+    rename(actual = sales) %>%
     mutate(error = actual - pred, error_pct = error / actual) 
 kable(error_tbl_DL, 
 caption = "Detailed performance: h2o.automl only Deep Learning algoritm.",
@@ -388,7 +415,7 @@ The same information in a plot.
 ```{r fig.cap="Forecast: H2O including only Deep Learning algorithm."}
 # H2O including only Deep Learning algorithm.
 beer %>%
-    ggplot(aes(x = date, y = price)) +
+    ggplot(aes(x = date, y = sales)) +
     # Data.
     geom_point(size = 2, color = "gray", alpha = 0.5, 
                shape = 21, fill = "black") +
@@ -420,7 +447,7 @@ This is the H2O case with no restrictions, considering all available algorithms.
 error_tbl_all <- beer %>% 
     filter(lubridate::year(date) == 2017) %>%
     add_column(pred = pred_h2o_all %>% as_tibble() %>% pull(predict)) %>%
-    rename(actual = price) %>%
+    rename(actual = sales) %>%
     mutate(error = actual - pred, error_pct = error / actual) 
 kable(error_tbl_all, 
       caption = "Detailed performance: h2o.automl all algorithms.",
@@ -433,7 +460,7 @@ The visual representation.
 ```{r fig.cap="Forecast: H2O including all available algorithms."}
 # H2O all available algorithms.
 beer %>%
-    ggplot(aes(x = date, y = price)) +
+    ggplot(aes(x = date, y = sales)) +
     # Data.
     geom_point(size = 2, color = "grey", alpha = 0.5, 
                shape = 21, fill = "black") +
@@ -531,7 +558,7 @@ This is the simplest choice, and still has a very high $R^2$. The independent va
 
 ```{r}
 # linear regression model used, but can use any model
-fit_lm <- lm(price ~ ., data = 
+fit_lm <- lm(sales ~ ., data = 
                select(beer_aug, -c(date, diff, symbol)))
 summary(fit_lm)
 ```
@@ -556,7 +583,7 @@ We can investigate the error on our test set (actuals vs predictions).
 # Investigate test error
 actuals_tbl <- tail(beer[-1], 10)
 error_tbl_lm <- left_join(actuals_tbl, predictions_tbl) %>%
-    rename(actual = price, pred = value) %>%
+    rename(actual = sales, pred = value) %>%
     mutate(error = actual - pred, error_pct = error / actual) 
 error_tbl_lm
 ```
@@ -581,7 +608,7 @@ Visualize our forecast.
 ```{r fig.cap="Forecast: multivariate linear regression."}
 # Plot Beer Sales Forecast
 beer %>%
-    ggplot(aes(x = date, y = price)) +
+    ggplot(aes(x = date, y = sales)) +
     # Training data.
     geom_line(color = palette_light()[[1]]) +
     geom_point(color = palette_light()[[1]]) +
@@ -713,7 +740,7 @@ We can investigate the error on our test set (actuals vs predictions).
 # Investigate test error 
 error_tbl_arima <- left_join(actuals_tbl, fcast_tbl, 
                              by = c("date" = "index")) %>%
-    rename(actual = price.x, pred = price.y) %>%
+    rename(actual = sales.x, pred = sales.y) %>%
     select(date, actual, pred) %>%
     mutate(error = actual - pred, error_pct = error / actual) 
 error_tbl_arima
@@ -739,7 +766,7 @@ Notice that we have the entire forecast in a tibble. We can now more easily visu
 ```{r fig.cap="Forecast: ARIMA."}
 # Visualize the forecast with ggplot
 fcast_tbl %>%
-    ggplot(aes(x = index, y = price, color = key)) +
+    ggplot(aes(x = index, y = sales, color = key)) +
     # 95% CI
     geom_ribbon(aes(ymin = lo.95, ymax = hi.95), 
                 fill = "#D5DBFF", color = NA, size = 0) +
@@ -750,9 +777,9 @@ fcast_tbl %>%
     geom_line() +
     geom_point() +
     # Actuals
-    geom_line(aes(x = date, y = price), color = palette_light()[[1]], 
+    geom_line(aes(x = date, y = sales), color = palette_light()[[1]], 
               data = actuals_tbl) +
-    geom_point(aes(x = date, y = price), color = palette_light()[[1]], 
+    geom_point(aes(x = date, y = sales), color = palette_light()[[1]], 
                data = actuals_tbl) +
         geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), 
                    linetype=2) +
@@ -777,7 +804,7 @@ The forecast mean is calculated as:
 ```{r message=FALSE, warning=FALSE}
 m <- data.frame(as.data.frame(pred_h2o),as.data.frame(pred_h2o_DL),
           as.data.frame(pred_h2o_all),as.data.frame(predictions_tbl$value),
-        as.data.frame(fcast_tbl$price[(nrow(fcast_tbl)-9):nrow(fcast_tbl)]))
+        as.data.frame(fcast_tbl$sales[(nrow(fcast_tbl)-9):nrow(fcast_tbl)]))
 pred_mean <- rowMeans(m)
 pred_mean <- as.tibble(pred_mean)
 ```
@@ -787,7 +814,7 @@ Now let's see actual versus predicted.
 ```{r}
 error_tbl_mean <-as_tibble(c(as.data.frame(actuals_tbl),
                         as.data.frame(pred_mean$value))) %>%
-    rename(actual = price, pred = `pred_mean$value`) %>%
+    rename(actual = sales, pred = `pred_mean$value`) %>%
     select(date,actual, pred) %>%
     mutate(error = actual - pred, error_pct = error / actual) 
 error_tbl_mean
@@ -808,7 +835,7 @@ Visualize the average forecast.
 ```{r fig.cap="Forecast: average forecast."}
 # Plot Beer Sales Forecast
 beer %>%
-    ggplot(aes(x = date, y = price)) +
+    ggplot(aes(x = date, y = sales)) +
     # Training data
     geom_line(color = palette_light()[[1]]) +
     geom_point(color = palette_light()[[1]]) +
