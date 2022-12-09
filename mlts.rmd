@@ -15,8 +15,6 @@ title: ''
 ```{r echo=FALSE}
 # This removes all items in environment. 
 rm(list=ls())
-library(tictoc)
-tic()
 ```
 
 \newpage
@@ -58,6 +56,7 @@ library(knitr)
 library(bit64)      # Useful in the machine learning workflow.
 library(sweep)      # Broom-style tidiers for the forecast package.
 library(forecast)   # Forecasting models and predictions package.
+library(seasonal)
 ```
 
 We can conveniently download the data directly from the FRED API in one line of code.
@@ -77,7 +76,7 @@ head(beer)
 
 We can change the name of the column.
 
-```{r rename}
+```{r re}
 beer <- beer %>%
   rename(sales = price)
 
@@ -95,33 +94,71 @@ beer %>%
   ggplot(aes(date, sales)) +
   # Train Region:
   annotate("text", x = ymd("2013-01-01"), y = 14000, 
-           color = palette_light()[[1]], label = "Train Region") +
+           color = "black", label = "Train region") +
   # Validation Region:
-  geom_rect(xmin = as.numeric(ymd("2016-01-01")), 
-            xmax = as.numeric(ymd("2016-12-31")), ymin = 0, ymax = Inf, 
-            alpha = 0.02, fill = palette_light()[[3]]) +
-  annotate("text", x = ymd("2016-07-01"), y = 7000,
-           color = palette_light()[[1]], label = "Validation\nRegion") +
+  geom_rect(xmin = as.numeric(ymd("2021-01-01")), 
+            xmax = as.numeric(ymd("2021-12-31")), ymin = 0, ymax = 20000, 
+            alpha = 0.01, fill = "purple") +
+  annotate("text", x = ymd("2021-04-01"), y = 7000,
+           color = "black", label = "Validation\nregion") +
   # Test Region:
-  geom_rect(xmin = as.numeric(ymd("2017-01-01")), 
-            xmax = as.numeric(ymd("2017-10-31")), ymin = 0, ymax = Inf, 
-            alpha = 0.02, fill = palette_light()[[4]]) +
-  annotate("text", x = ymd("2017-06-01"), y = 7000,
-           color = palette_light()[[1]], label = "Test\nRegion") +
+  geom_rect(xmin = as.numeric(ymd("2022-01-01")), 
+            xmax = as.numeric(ymd("2022-09-30")), ymin = 0, ymax = 20000, 
+            alpha = 0.02, fill = "pink") +
+  annotate("text", x = ymd("2022-06-01"), y = 9000,
+           color = "black", label = "Test\nregion") +
   # Data.
-  geom_line(col = palette_light()[1]) +
-  geom_point(col = palette_light()[1]) +
+  geom_line(col = "black") +
+  geom_point(col = "black", alpha = 0.5, size = 2) +
   # Aesthetics.
   theme_tq() +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   labs(title = "Beer Sales.",
        subtitle = 
-  "Train (2010 - 2016), validation (2016), and test set (2017-01-01 to 2017-10-31)",
+  "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
+  x = "Sales", y = "Date",
        caption = "The models do not know the test region, this is for us 
        to see how well the models do the 10-month ahead forecast.") 
 ```
 
-Then, the problem is to forecast the 10 months of the test region. This is, from January to October 2017. 
+Then, the problem is to forecast the 10 months of the test region. This is, from January to October 2022. 
+
+Here is a zoom version of the plot above.
+
+```{r fig.cap="Zoom: Beer, Wine, and Distilled Alcoholic Beverages Sales."}
+# Plot Beer Sales with train, validation, and test sets shown.
+beer %>%
+  filter(date > as.Date("2020-01-01")) %>%
+  ggplot(aes(date, sales)) +
+  # Train Region:
+  annotate("text", x = ymd("2020-08-01"), y = 14000, 
+           color = "black", label = "Train region") +
+  # Validation Region:
+  geom_rect(xmin = as.numeric(ymd("2021-01-01")), 
+            xmax = as.numeric(ymd("2021-12-31")), ymin = 0, ymax = 20000, 
+            alpha = 0.01, fill = "purple") +
+  annotate("text", x = ymd("2021-07-01"), y = 14000,
+           color = "black", label = "Validation region") +
+  # Test Region:
+  geom_rect(xmin = as.numeric(ymd("2022-01-01")), 
+            xmax = as.numeric(ymd("2022-09-30")), ymin = 0, ymax = 20000, 
+            alpha = 0.02, fill = "pink") +
+  annotate("text", x = ymd("2022-05-01"), y = 14000,
+           color = "black", label = "Test region") +
+  # Data.
+  geom_line(col = "black") +
+  geom_point(col = "black", alpha = 0.5, size = 5) +
+  # Aesthetics.
+  theme_tq() +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  labs(title = "Beer Sales (Zoom).",
+       subtitle = 
+  "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
+  x = "Sales", y = "Date",
+       caption = "The models do not know the test region, this is for us 
+       to see how well the models do the 10-month ahead forecast.") 
+```
+
 
 We will do that by implementing a battery of forecasting techniques:
 
@@ -131,18 +168,49 @@ We will do that by implementing a battery of forecasting techniques:
 
 The forecasting techniques are expected to exploit the time-series components like trend and seasonal component. Here we use the @hyndman2021forecasting <tt>`fpp3`</tt> package. Note that we have to transform <tt>`beer`</tt> into a <tt>`tsibble`</tt> object.
 
+
 ```{r}
 beer_tbls <- beer
 beer_tbls$date <- yearmonth(beer_tbls$date)
 beer_tbls <- as_tsibble(beer_tbls)
 
 beer_tbls %>%
-  model(
-    classical_decomposition(sales, type = "additive")) %>%
+  model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
+  components() %>%
+autoplot() +
+  labs(title =
+         "A multiplicative decomposition of beer sales using X-11.")
+```
+```{r}
+beer_tbls %>%
+  model(seats = X_13ARIMA_SEATS(sales ~ seats())) %>%
   components() %>%
   autoplot() +
-  labs(title = "Classical additive decomposition of Beer Sales.")
+  labs(title = "A decomposition of beer sales obtained using SEATS.")
 ```
+
+
+
+```{r}
+beer_tbls %>%
+  gg_season(sales, labels = "both") +
+  labs(y = "Sales", x = "Date",
+       title = "Seasonal plot: Beer sales.")
+```
+
+```{r}
+beer_tbls %>%
+  gg_subseries(sales) +
+  labs(y = "Sales",
+    title = "Seasonal subseries plot of monthly beer sales.")
+```
+
+```{r}
+beer_tbls %>%
+  ACF(sales, lag_max = 48) %>%
+  autoplot() + labs(title = "ACF of monthly beer sales.")
+```
+
 
 # H2O machine learning.
 
@@ -237,16 +305,20 @@ Here, we implement the <tt>`h2o.automl()`</tt> in three different ways because o
 
 Please note that in the code below we set <tt>`exclude_algos`</tt> to exclude Deep Learning, and <tt>`seed = 13`</tt> to make sure every time we run the code we can get the same results.
 
-```{r exclude-deeplearning takes a few minutes to run}
+```{r exclude-deeplearning takes a few minutes to run, include=FALSE}
 # It takes some time to run. 
+tic("inner1")
+
 automl_models_h2o <- h2o.automl(x = x, y = y, training_frame = train_h2o, 
     validation_frame = valid_h2o, leaderboard_frame = test_h2o,
     exclude_algos = c("DeepLearning"), # without Deep Learning.
     #max_models = 10, # We can adjust this to save time.
     max_runtime_secs = 60, stopping_metric = "RMSE", seed = 13)
+
+t_inner1 <- toc()
 ```
 
-The selected model by <tt>`h2o.automl()`</tt> is:
+After `r as.numeric((t_inner1$toc-t_inner1$tic)/60)` minutes running, the selected model by <tt>`h2o.automl()`</tt> is:
 
 ```{r lead-model}
 # Extract leader model.
@@ -254,27 +326,31 @@ automl_leader <- automl_models_h2o@leader
 automl_leader@algorithm
 ```
 
-See why Gradient Boosting Machine (GBM) was the chosen one:
+See why `r automl_leader@algorithm` was the chosen one:
 
 ```{r}
 # Show the first 10.
 kable(head(automl_models_h2o@leaderboard[,1:2], 10),
 caption = "Model rankings: h2o.automl without Deep Learning 
 algorithm.", digits = 2, row.names = TRUE) %>%
-kable_styling(font_size = 12, latex_options = "HOLD_position")
+kable_styling(font_size = 16, latex_options = "HOLD_position")
 ```
 
 
 The <tt>`model_id`</tt> column list the top 10 models with the lowest errors. The value of <tt>`h2o.automl()`</tt> is that we can take the best model and use it to conduct our forecast. Remember we proposed to run <tt>`h2o.automl()`</tt> three times. Now let's consider the second alternative (only Deep Learning). There are several ways to implement Deep Learning, this is why it makes sense to use only this family into the <tt>`h2o.automl()`</tt> function. Deep Learning cannot be reproducible by construction so adding a seed in this case would be useless. 
 
-```{r message=FALSE, warning=FALSE}
+```{r include=FALSE}
 # This might take some time to run. 
+tic("inner2")
+
 DL <- h2o.automl(x = x, y = y, training_frame = train_h2o, 
     validation_frame = valid_h2o, leaderboard_frame = test_h2o,
     include_algos = c("DeepLearning"), max_runtime_secs = 60, 
     stopping_metric = "RMSE")
+
+t_inner2 <- toc()
 ```
-The selected model by <tt>`h2o.automl()`</tt> is:
+After `r as.numeric((t_inner2$toc-t_inner2$tic)/60)` minutes running, the selected model by <tt>`h2o.automl()`</tt> is:
 
 ```{r}
 # Extract leader model
@@ -282,28 +358,30 @@ automl_DL <- DL@leader
 automl_DL@algorithm
 ```
 
-See why this specific Deep Learning model was the chosen one:
+See why this specific `r automl_DL@algorithm` model was the chosen one:
 
 ```{r}
-kable(DL@leaderboard, 
+kable(head(DL@leaderboard[,1:2], 10), 
   caption = "Model rankings: h2o.automl with only Deep Learning algorithm.",
   digits = 2, row.names = TRUE) %>%
-  kable_styling(font_size = 7, latex_options = "HOLD_position")
+  kable_styling(font_size = 16, latex_options = "HOLD_position")
 ```
 
 All models belong to the same algorithm, but we clearly choose the first one of the list. The machine learning workflow estimate a number of models using the train region and evaluate them using the validation region. The estimated model parameters then change as they learn from their mistakes. This process is repeated until a specific restriction meets, in this case <tt>`max_runtime_secs`</tt> is set to 60 seconds. At the end, we select the best ranked model.
 
 Now let's consider the third alternative. This is, run <tt>`h2o.automl()`</tt> with no restrictions at all. Here, it would be interesting to see if this led to the best alternative. In principle, we cannot anticipate which one of these three runs will be the best. This is because the Deep Learning algorithm has a random component which might lead to better results, and remember the second round was exclusive for Deep Learning and the third includes Deep Learning. Then, every time I compile this document or run this R code we should expect different results in the second and third alternative.
 
-```{r message=FALSE, warning=FALSE}
+```{r include=FALSE}
+tic("inner3")
 # This might take some time to run. 
 automl_models_h2o_all <- h2o.automl(x = x, y = y, 
     training_frame = train_h2o, validation_frame = valid_h2o, 
     leaderboard_frame = test_h2o, max_runtime_secs = 60, 
     stopping_metric = "RMSE")
+t_inner3 <- toc()
 ```
 
-The selected model by <tt>`h2o.automl()`</tt> is:
+After `r as.numeric((t_inner3$toc-t_inner3$tic)/60)` minutes running, the selected model by <tt>`h2o.automl()`</tt> is:
 
 ```{r}
 # Extract leader model
@@ -315,10 +393,10 @@ See why `r automl_leader_all@algorithm` model was the chosen one in this specifi
 
 ```{r}
 # Let's show the first 10 of the list.
-kable(head(automl_models_h2o_all@leaderboard, 10), 
+kable(head(automl_models_h2o_all@leaderboard[,1:2], 10), 
     caption = "Model rankings: h2o.automl with all available algorithms.",
     digits = 2, row.names = TRUE) %>%
-  kable_styling(font_size = 7, latex_options = "HOLD_position")
+  kable_styling(font_size = 16, latex_options = "HOLD_position")
 ```
 
 Let's summarize the results according to the mean residual deviance as this was the criterion in <tt>`stopping_metric`</tt>. The table shows the best ranked model according to our three different runs of <tt>`h2o.automl()`</tt>.
@@ -579,7 +657,7 @@ Prediction is easy in R.
 ```{r}
 # Make predictions
 pred <- predict(fit_lm, newdata = test_tbl)
-future_idx <- tail(beer$date, 9) # The 10-months forecast period.
+future_idx <- tail(beer$date, 10) # The 10-months forecast period.
 predictions_tbl <- tibble(date  = future_idx, value = pred)
 predictions_tbl
 ```
@@ -588,7 +666,7 @@ We can investigate the error on our test set (actuals vs predictions).
 
 ```{r}
 # Investigate test error
-actuals_tbl <- tail(beer[-1], 9)
+actuals_tbl <- tail(beer[-1], 10)
 error_tbl_lm <- left_join(actuals_tbl, predictions_tbl) %>%
     rename(actual = sales, pred = value) %>%
     mutate(error = actual - pred, error_pct = error / actual) 
@@ -708,6 +786,8 @@ We can visualize the residual diagnostics for the training data to make sure the
 sw_augment(fit_arima, timetk_idx = TRUE) %>%
     ggplot(aes(x = index, y = .resid)) +
     geom_point(size = 5, alpha = 0.5) + 
+ # geom_text(aes(label = paste0(index)), 
+   #         vjust = -1, color = "black", size = 3.5) +
     geom_hline(yintercept = 0, color = "red") + 
     labs(title = "Residual diagnostic",
          x = "Date", y = "Residuals") +
@@ -719,7 +799,7 @@ Make a forecast using the <tt>`forecast()`</tt> function. This function also del
 
 ```{r}
 # Forecast next 10 months
-fcast_arima <- forecast(fit_arima, h = 9)
+fcast_arima <- forecast(fit_arima, h = 10)
 fcast_arima
 ```
 
@@ -819,7 +899,7 @@ The forecast mean is calculated as:
 ```{r message=FALSE, warning=FALSE}
 m <- data.frame(as.data.frame(pred_h2o),as.data.frame(pred_h2o_DL),
           as.data.frame(pred_h2o_all),as.data.frame(predictions_tbl$value),
-        as.data.frame(fcast_tbl$sales[(nrow(fcast_tbl)-8):nrow(fcast_tbl)]))
+        as.data.frame(fcast_tbl$sales[(nrow(fcast_tbl)-9):nrow(fcast_tbl)]))
 pred_mean <- rowMeans(m)
 pred_mean <- as.tibble(pred_mean)
 ```
@@ -900,10 +980,8 @@ Nice.
 
 ```{r}
 h2o.shutdown(prompt = TRUE) # yes (Y) instead of TRUE?
-a <- toc()
 ```
 
-This document took `r as.numeric(a$toc-a$tic)` seconds to compile in Rmarkdown.
 
 # Unsorted references.
 
