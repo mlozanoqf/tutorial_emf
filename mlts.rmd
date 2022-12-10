@@ -113,10 +113,9 @@ beer %>%
   # Aesthetics.
   theme_tq() +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  labs(title = "Beer Sales.",
-       subtitle = 
+  labs(subtitle = 
   "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
-  x = "Sales", y = "Date",
+  x = "Date", y = "Sales",
        caption = "The models do not know the test region, this is for us 
        to see how well the models do the 10-month ahead forecast.") 
 ```
@@ -151,10 +150,9 @@ beer %>%
   # Aesthetics.
   theme_tq() +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  labs(title = "Beer Sales (Zoom).",
-       subtitle = 
+  labs(subtitle = 
   "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
-  x = "Sales", y = "Date",
+  x = "Date", y = "Sales",
        caption = "The models do not know the test region, this is for us 
        to see how well the models do the 10-month ahead forecast.") 
 ```
@@ -169,7 +167,7 @@ We will do that by implementing a battery of forecasting techniques:
 The forecasting techniques are expected to exploit the time-series components like trend and seasonal component. Here we use the @hyndman2021forecasting <tt>`fpp3`</tt> package. Note that we have to transform <tt>`beer`</tt> into a <tt>`tsibble`</tt> object.
 
 
-```{r}
+```{r fig.cap="A multiplicative decomposition of beer sales using X-11."}
 beer_tbls <- beer
 beer_tbls$date <- yearmonth(beer_tbls$date)
 beer_tbls <- as_tsibble(beer_tbls)
@@ -178,37 +176,35 @@ beer_tbls %>%
   model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
   components() %>%
 autoplot() +
-  labs(title =
-         "A multiplicative decomposition of beer sales using X-11.")
+  labs(y = "Sales", x = "Date")
 ```
-```{r}
+
+```{r fig.cap="A decomposition of beer sales obtained using SEATS."}
 beer_tbls %>%
   model(seats = X_13ARIMA_SEATS(sales ~ seats())) %>%
   components() %>%
   autoplot() +
-  labs(title = "A decomposition of beer sales obtained using SEATS.")
+  labs(y = "Sales", x = "Date")
 ```
 
 
 
-```{r}
+```{r fig.cap="Seasonal plot: Beer sales."}
 beer_tbls %>%
   gg_season(sales, labels = "both") +
-  labs(y = "Sales", x = "Date",
-       title = "Seasonal plot: Beer sales.")
+  labs(y = "Sales", x = "Date")
 ```
 
-```{r}
+```{r fig.cap="Seasonal subseries plot of monthly beer sales."}
 beer_tbls %>%
   gg_subseries(sales) +
-  labs(y = "Sales",
-    title = "Seasonal subseries plot of monthly beer sales.")
+  labs(y = "Sales", x = "Date")
 ```
 
-```{r}
+```{r fig.cap="ACF of monthly beer sales."}
 beer_tbls %>%
   ACF(sales, lag_max = 48) %>%
-  autoplot() + labs(title = "ACF of monthly beer sales.")
+  autoplot()
 ```
 
 
@@ -449,7 +445,6 @@ kable_styling(latex_options = "HOLD_position")
 The forecast looks good. Note that in some cases it over-estimate and in others under-estimate the real values, but in general these differences are small. Now, let's look at the same information in a plot.
 
 ```{r fig.cap="Forecast: H2O without Deep Learning algorithm."}
-# H2O without Deep Learning algorithm.
 beer %>%
   filter(date > as.Date("2021-01-01")) %>%
     ggplot(aes(x = date, y = sales)) +
@@ -464,8 +459,7 @@ beer %>%
 geom_line(aes(y = pred), color = "red", size = 0.5, data = error_tbl) +
 geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
     # Aesthetics.
-    labs(title = "Beer Sales Forecast: h2o + timetk",
-    subtitle = "H2O without Deep Learning algorithm.",
+    labs(x = "Date", y = "Sales",
     caption = c(paste("MAPE=",((mean(abs(error_tbl$error_pct))*100)))))
 ```
 
@@ -494,7 +488,6 @@ kable_styling(latex_options = "HOLD_position")
 The same information in a plot.
 
 ```{r fig.cap="Forecast: H2O including only Deep Learning algorithm."}
-# H2O including only Deep Learning algorithm.
 beer %>%
     filter(date > as.Date("2021-01-01")) %>%
     ggplot(aes(x = date, y = sales)) +
@@ -511,8 +504,7 @@ geom_line(aes(y = pred), color = "red", size = 0.5,
     geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), 
                linetype = 2) +
     # Aesthetics.
-    labs(title = "Beer Sales Forecast: h2o + timetk",
-    subtitle = "H2O including only Deep Learning algorithm.",
+    labs(x = "Date", y = "Sales",
     caption = c(paste("MAPE=",((mean(abs(error_tbl_DL$error_pct))*100)))))
 ```
 
@@ -541,7 +533,6 @@ kable_styling(latex_options = "HOLD_position")
 The visual representation.
 
 ```{r fig.cap="Forecast: H2O including all available algorithms."}
-# H2O all available algorithms.
 beer %>%
     filter(date > as.Date("2021-01-01")) %>%
     ggplot(aes(x = date, y = sales)) +
@@ -557,8 +548,7 @@ geom_line(aes(y = pred), color = "red", size = 0.5,
           data = error_tbl_all) +
 geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
     # Aesthetics.
-    labs(title = "Beer Sales Forecast: h2o + timetk",
-      subtitle = "H2O all available algorithms.",
+    labs(x = "Date", y = "Sales",
     caption = c(paste("MAPE=",((mean(abs(error_tbl_all$error_pct))*100)))))
 ```
 
@@ -691,7 +681,6 @@ tibble(me, rmse, mae, mape, mpe) %>%
 Visualize our forecast.
 
 ```{r fig.cap="Forecast: multivariate linear regression."}
-# Plot Beer Sales Forecast
 beer %>%
     filter(date > as.Date("2021-01-01")) %>%
     ggplot(aes(x = date, y = sales)) +
@@ -709,8 +698,7 @@ beer %>%
 geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
     # Aesthetics
     theme_tq() +
-    labs(title = "Beer Sales Forecast.",
-subtitle = "Multivariate linear regression can yield accurate results.",
+    labs(x = "Date", y = "Sales",
         caption = c(paste("MAPE=",((mean(abs(test_error_pct_lm)))))))
 ```
 
@@ -782,15 +770,13 @@ sw_augment(fit_arima, timetk_idx = TRUE)
 We can visualize the residual diagnostics for the training data to make sure there is no pattern leftover. This looks homoscedastic.
 
 ```{r fig.cap="Forecast: ARIMA residual diagnosis."}
-# Plotting residuals
 sw_augment(fit_arima, timetk_idx = TRUE) %>%
     ggplot(aes(x = index, y = .resid)) +
     geom_point(size = 5, alpha = 0.5) + 
  # geom_text(aes(label = paste0(index)), 
    #         vjust = -1, color = "black", size = 3.5) +
     geom_hline(yintercept = 0, color = "red") + 
-    labs(title = "Residual diagnostic",
-         x = "Date", y = "Residuals") +
+    labs(x = "Date", y = "Residuals") +
     scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
     theme_tq()
 ```
@@ -856,7 +842,6 @@ tibble(me, rmse, mae, mape, mpe) %>%
 Notice that we have the entire forecast in a tibble. We can now more easily visualize the forecast.
 
 ```{r fig.cap="Forecast: ARIMA."}
-# Visualize the forecast with ggplot
 fcast_tbl %>%
     filter(index > as.Date("2021-01-01")) %>%
     ggplot(aes(x = index, y = sales, color = key)) +
@@ -879,9 +864,8 @@ geom_point(size = 5, alpha = 0.5) +
         geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), 
                   linetype = 2) +
     # Aesthetics
-labs(title = "Beer Sales Forecast: ARIMA", x = "", y = "Sales",
-         subtitle = "sw_sweep tidies the auto.arima() forecast output",
-         caption = c(paste("MAPE=",((mean(abs(test_error_pct_arima))))))) +
+labs(x = "Date", y = "Sales",
+     caption = c(paste("MAPE=",((mean(abs(test_error_pct_arima))))))) +
     scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
     scale_color_tq() +
     scale_fill_tq() +
@@ -928,7 +912,6 @@ glimpse()
 Visualize the average forecast.
 
 ```{r fig.cap="Forecast: average forecast."}
-# Plot Beer Sales Forecast
 beer %>%
     filter(date > as.Date("2021-01-01")) %>%
     ggplot(aes(x = date, y = sales)) +
@@ -947,8 +930,7 @@ geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
 geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), linetype = 2) +
     # Aesthetics
     theme_tq() +
-    labs(title = "Beer Sales Forecast: Mean of all previous forecast.",
-subtitle = "The average method.",
+    labs(x = "Date", y = "Sales",
 caption = c(paste("MAPE=",((100*mean(abs(error_tbl_mean$error_pct)))))))
 ```
 
