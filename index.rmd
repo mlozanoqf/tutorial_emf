@@ -64,6 +64,6 @@ htmltools::tagList(
 t_full <- toc()
 ```
 
-This document took `r as.numeric((t_full$toc-t_full$tic)/60)` minutes to compile in Rmarkdown, R version 4.2.1.
+This document took `r round(as.numeric((t_full$toc-t_full$tic)/60), 2)` minutes to compile in Rmarkdown, R version 4.2.1.
 
 # References.

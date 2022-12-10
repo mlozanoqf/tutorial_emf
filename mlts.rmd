@@ -57,6 +57,7 @@ library(bit64)      # Useful in the machine learning workflow.
 library(sweep)      # Broom-style tidiers for the forecast package.
 library(forecast)   # Forecasting models and predictions package.
 library(seasonal)
+library(tictoc)
 ```
 
 We can conveniently download the data directly from the FRED API in one line of code.
@@ -166,12 +167,16 @@ We will do that by implementing a battery of forecasting techniques:
 
 The forecasting techniques are expected to exploit the time-series components like trend and seasonal component. Here we use the @hyndman2021forecasting <tt>`fpp3`</tt> package. Note that we have to transform <tt>`beer`</tt> into a <tt>`tsibble`</tt> object.
 
-
-```{r fig.cap="A multiplicative decomposition of beer sales using X-11."}
+```{r from tbls to tsibble}
 beer_tbls <- beer
 beer_tbls$date <- yearmonth(beer_tbls$date)
 beer_tbls <- as_tsibble(beer_tbls)
+```
 
+According to @hyndman2021forecasting, the X-11 method originated in the US Census Bureau and was further developed by Statistics Canada. The process tends to be highly robust to outliers and level shifts in the time series. The details of the X-11 method are described in @dagum2016seasonal.
+
+
+```{r fig.cap="A multiplicative decomposition of beer sales using X-11."}
 beer_tbls %>%
   model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
   components() %>%
@@ -203,7 +208,7 @@ beer_tbls %>%
 
 ```{r fig.cap="ACF of monthly beer sales."}
 beer_tbls %>%
-  ACF(sales, lag_max = 48) %>%
+  ACF(sales, lag_max = 60) %>%
   autoplot()
 ```
 
@@ -212,7 +217,7 @@ beer_tbls %>%
 
 The main objective here is to use <tt>`h2o`</tt> locally (in your own computer) to develop a high accuracy time series model on the <tt>`beer`</tt> data set. This is a supervised machine learning regression problem. An interesting reference to learn the basics of supervised and unsupervised machine learning techniques applied to business is: @hull2020machine. 
 
-## Prepare the data.
+## The data.
 
 The <tt>`tk_augment_timeseries_signature()`</tt> function expands out the timestamp information column-wise into a machine learning feature set, adding columns of time series information to the original data frame. We’ll again use <tt>`head()`</tt> function for quick inspection of this expansion. See how there are now 31 features extracted from the original database. Not all will be important for the final and chosen models, but some will.
 
@@ -295,13 +300,13 @@ The available algorithms that <tt>`h2o.automl()`</tt> currently run and compare 
 
 It is a good time to define how we are going to use some concepts at least in this document. Here, we call forecasting *techniques* to the three techniques implemented in this document: machine learning using H2O, linear regression, and ARIMA. When we implement <tt>`h2o.automl()`</tt> function, H2O test for the six *algorithms* listed above. Each algorithm includes many other *models* that belongs to these algorithms in the machine learning process. The result of <tt>`h2o.automl()`</tt> is one model that belongs to one algorithm. This is the difference between forecasting techniques, algorithms, and models. 
 
-## Implement <tt>`h2o.automl()`</tt>.
+## Estimate <tt>`h2o.automl()`</tt> models.
 
 Here, we implement the <tt>`h2o.automl()`</tt> in three different ways because of reproducibility issues. Reproducibility means obtaining consistent computational results using the same input data, computational steps, methods, code, and conditions of analysis. It turns out that Deep Learning cannot be reproducible by construction. Then, we first apply <tt>`h2o.automl()`</tt> without Deep Learning. Second, we apply <tt>`h2o.automl()`</tt> with only Deep Learning (here the results will be different each time we run the code). And third, including all available algorithms in <tt>`h2o.automl()`</tt> (again, the results might change every time we run the code). The first is the only one which can be reproducible and the other two are expected to change every time we run the R code. 
 
 Please note that in the code below we set <tt>`exclude_algos`</tt> to exclude Deep Learning, and <tt>`seed = 13`</tt> to make sure every time we run the code we can get the same results.
 
-```{r exclude-deeplearning takes a few minutes to run, include=FALSE}
+```{r exclude-deeplearning takes a few minutes to run}
 # It takes some time to run. 
 tic("inner1")
 
@@ -309,12 +314,13 @@ automl_models_h2o <- h2o.automl(x = x, y = y, training_frame = train_h2o,
     validation_frame = valid_h2o, leaderboard_frame = test_h2o,
     exclude_algos = c("DeepLearning"), # without Deep Learning.
     #max_models = 10, # We can adjust this to save time.
-    max_runtime_secs = 60, stopping_metric = "RMSE", seed = 13)
+    max_runtime_secs = 60, stopping_metric = "RMSE", seed = 13,
+    verbosity = NULL)
 
 t_inner1 <- toc()
 ```
 
-After `r as.numeric((t_inner1$toc-t_inner1$tic)/60)` minutes running, the selected model by <tt>`h2o.automl()`</tt> is:
+After `r round(as.numeric((t_inner1$toc-t_inner1$tic)/60), 2)` minutes running, the selected model by <tt>`h2o.automl()`</tt> is:
 
 ```{r lead-model}
 # Extract leader model.
@@ -327,26 +333,27 @@ See why `r automl_leader@algorithm` was the chosen one:
 ```{r}
 # Show the first 10.
 kable(head(automl_models_h2o@leaderboard[,1:2], 10),
-caption = "Model rankings: h2o.automl without Deep Learning 
-algorithm.", digits = 2, row.names = TRUE) %>%
+caption = "Model rankings: h2o.automl without Deep Learning algorithm.", 
+digits = 2, row.names = TRUE) %>%
 kable_styling(font_size = 16, latex_options = "HOLD_position")
 ```
 
 
 The <tt>`model_id`</tt> column list the top 10 models with the lowest errors. The value of <tt>`h2o.automl()`</tt> is that we can take the best model and use it to conduct our forecast. Remember we proposed to run <tt>`h2o.automl()`</tt> three times. Now let's consider the second alternative (only Deep Learning). There are several ways to implement Deep Learning, this is why it makes sense to use only this family into the <tt>`h2o.automl()`</tt> function. Deep Learning cannot be reproducible by construction so adding a seed in this case would be useless. 
 
-```{r include=FALSE}
+```{r}
 # This might take some time to run. 
 tic("inner2")
 
 DL <- h2o.automl(x = x, y = y, training_frame = train_h2o, 
     validation_frame = valid_h2o, leaderboard_frame = test_h2o,
     include_algos = c("DeepLearning"), max_runtime_secs = 60, 
-    stopping_metric = "RMSE")
+    stopping_metric = "RMSE", verbosity = NULL)
 
 t_inner2 <- toc()
 ```
-After `r as.numeric((t_inner2$toc-t_inner2$tic)/60)` minutes running, the selected model by <tt>`h2o.automl()`</tt> is:
+
+After `r round(as.numeric((t_inner2$toc-t_inner2$tic)/60), 2)` minutes running, the selected model by <tt>`h2o.automl()`</tt> is:
 
 ```{r}
 # Extract leader model
@@ -367,17 +374,19 @@ All models belong to the same algorithm, but we clearly choose the first one of 
 
 Now let's consider the third alternative. This is, run <tt>`h2o.automl()`</tt> with no restrictions at all. Here, it would be interesting to see if this led to the best alternative. In principle, we cannot anticipate which one of these three runs will be the best. This is because the Deep Learning algorithm has a random component which might lead to better results, and remember the second round was exclusive for Deep Learning and the third includes Deep Learning. Then, every time I compile this document or run this R code we should expect different results in the second and third alternative.
 
-```{r include=FALSE}
+```{r}
 tic("inner3")
+
 # This might take some time to run. 
 automl_models_h2o_all <- h2o.automl(x = x, y = y, 
     training_frame = train_h2o, validation_frame = valid_h2o, 
     leaderboard_frame = test_h2o, max_runtime_secs = 60, 
-    stopping_metric = "RMSE")
+    stopping_metric = "RMSE", verbosity = NULL)
+
 t_inner3 <- toc()
 ```
 
-After `r as.numeric((t_inner3$toc-t_inner3$tic)/60)` minutes running, the selected model by <tt>`h2o.automl()`</tt> is:
+After `r round(as.numeric((t_inner3$toc-t_inner3$tic)/60), 2)` minutes running, the selected model by <tt>`h2o.automl()`</tt> is:
 
 ```{r}
 # Extract leader model
@@ -416,7 +425,7 @@ kable_styling(latex_options = "HOLD_position")
 
 This is interesting because this suggest that it makes sense to run the H2O more than one time. It would be good to test for a different <tt>`stopping_metric`</tt>, <tt>`max_runtime_secs`</tt> and <tt>`max_models`</tt>.
 
-## Predict.
+## Predict with the <tt>`h2o.automl()`</tt> models.
 
 Here are how the forecasts are calculated.
 
@@ -807,9 +816,8 @@ has_timetk_idx(fcast_arima)
 Great. Now, use <tt>`sw_sweep()`</tt> to tidy the forecast output.
 
 ```{r}
-# sw_sweep - tidies forecast output
 fcast_tbl <- sw_sweep(fcast_arima, timetk_idx = TRUE)
-fcast_tbl
+tail(fcast_tbl, 12)
 ```
 
 We can investigate the error on our test set (actuals vs predictions).
@@ -820,7 +828,8 @@ error_tbl_arima <- left_join(actuals_tbl, fcast_tbl,
                              by = c("date" = "index")) %>%
     rename(actual = sales.x, pred = sales.y) %>%
     select(date, actual, pred) %>%
-    mutate(error = actual - pred, error_pct = error / actual) 
+    mutate(error = round((actual - pred), 2), 
+           error_pct = round((error / actual), 4)) 
 error_tbl_arima
 ```
 
@@ -894,8 +903,9 @@ Now let's see actual versus predicted.
 error_tbl_mean <-as_tibble(c(as.data.frame(actuals_tbl),
                         as.data.frame(pred_mean$value))) %>%
     rename(actual = sales, pred = `pred_mean$value`) %>%
-    select(date,actual, pred) %>%
-    mutate(error = actual - pred, error_pct = error / actual) 
+    select(date, actual, pred) %>%
+    mutate(error = round((actual - pred), 2), 
+           error_pct = round((error / actual), 4))
 error_tbl_mean
 ```
 
