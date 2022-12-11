@@ -21,10 +21,12 @@ rm(list=ls())
 
 # The forecast problem.
 
-The problem is to forecast a time series. In particular, the time series is the *Beer, Wine, and Distilled Alcoholic Beverages Sales* as in the original Matt Dancho's example. The data is taken from FRED (Federal Reserve Economic Data). The data belongs to the non-durable goods category, it includes U.S. merchant wholesalers, except manufacturers' sales branches and offices sales. The monthly time series goes from 2010-01-01 to 2017-10-31. And the goal is to use 2017 data (10 months) as a test data to conduct the forecast.
+The problem is to forecast a time series. In particular, the time series is the *Beer, Wine, and Distilled Alcoholic Beverages Sales* as in the original Matt Dancho's example. The data is taken from FRED (Federal Reserve Economic Data). The data belongs to the non-durable goods category, it includes U.S. merchant wholesalers, except manufacturers' sales branches and offices sales. The monthly time series goes from 2010-01-01 to 2022-10-31. And the goal is to use 2022 data (10 months) as a test data to conduct the forecast.
 
 For the full database details see: 
 https://fred.stlouisfed.org/series/S4248SM144NCEN
+
+## The data.
 
 Let's load the R packages.
 
@@ -71,7 +73,7 @@ tail(beer)
 ```
 Better now. 
 
-Visualization is particularly important for time series analysis and forecasting. It’s a good idea to identify spots where we will split the data into training, test and validation sets. This kind of split is consistent with most machine learning algorithms. The *training* dataset is the sample of data used to fit and train the model by learning from the data. The *validation* dataset is the sample of data used to provide an unbiased evaluation of a model fit on the training dataset while tuning model hyperparameters. The *test* dataset is the sample of data used to provide an unbiased evaluation of a final model fit on the training dataset. The test dataset provides the gold standard used to evaluate the model. It is only used once a model is completely trained (using the train and validation sets). The test set is generally what is used to evaluate competing models.
+Visualization is particularly important for time series analysis and forecasting. It’s a good idea to identify spots where we will split the data into training and test. This kind of split is consistent with most machine learning algorithms. The *training* dataset is the sample of data used to fit and train the model by learning from the data. The *test* dataset is the sample of data used to provide an unbiased evaluation of a final model fit on the training dataset. The test dataset provides the gold standard used to evaluate the model. It is only used once a model is completely trained. The test set is generally what is used to evaluate competing models.
 
 It is also important to see the time series because normally the models will perform better if we can identify basic characteristics such as trend and seasonality. This data set clearly has a trend and a seasonality as people drink more alcohol in December. 
 
@@ -81,13 +83,6 @@ beer %>%
   # Train Region:
   annotate("text", x = ymd("2013-01-01"), y = 14000, 
            color = "black", label = "Train region") +
-  # Validation Region:
-  geom_rect(xmin = as.numeric(ymd("2021-01-01")), 
-            xmax = as.numeric(ymd("2021-12-31")), ymin = 0, ymax = 20000, 
-            alpha = 0.01, fill = "purple") +
-  annotate("text", x = ymd("2021-04-01"), y = 7000,
-           color = "black", label = "Validation\nregion") +
-  # Test Region:
   geom_rect(xmin = as.numeric(ymd("2022-01-01")), 
             xmax = as.numeric(ymd("2022-09-30")), ymin = 0, ymax = 20000, 
             alpha = 0.02, fill = "pink") +
@@ -100,7 +95,7 @@ beer %>%
   theme_tq() +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   labs(subtitle = 
-  "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
+  "Train (2010 - 2021), and test set (Jan 2022 to Oct 2022)",
   x = "Date", y = "Sales",
        caption = "The models do not know the test region, this is for us 
        to see how well the models do the 10-month ahead forecast.") 
@@ -115,15 +110,8 @@ beer %>%
   filter(date > as.Date("2020-01-01")) %>%
   ggplot(aes(date, sales)) +
   # Train Region:
-  annotate("text", x = ymd("2020-08-01"), y = 14000, 
+  annotate("text", x = ymd("2020-08-01"), y = 17000, 
            color = "black", label = "Train region") +
-  # Validation Region:
-  geom_rect(xmin = as.numeric(ymd("2021-01-01")), 
-            xmax = as.numeric(ymd("2021-12-31")), ymin = 0, ymax = 20000, 
-            alpha = 0.01, fill = "purple") +
-  annotate("text", x = ymd("2021-07-01"), y = 14000,
-           color = "black", label = "Validation region") +
-  # Test Region:
   geom_rect(xmin = as.numeric(ymd("2022-01-01")), 
             xmax = as.numeric(ymd("2022-09-30")), ymin = 0, ymax = 20000, 
             alpha = 0.02, fill = "pink") +
@@ -136,18 +124,13 @@ beer %>%
   theme_tq() +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   labs(subtitle = 
-  "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
+  "Train (2010 - 2021) and test set (Jan 2022 to Oct 2022)",
   x = "Date", y = "Sales",
        caption = "The models do not know the test region, this is for us 
        to see how well the models do the 10-month ahead forecast.") 
 ```
 
-
-We will do that by implementing a battery of forecasting techniques:
-
-* H2O machine learning.
-* Linear regression.
-* ARIMA.
+## Time series properties.
 
 The forecasting techniques are expected to exploit the time-series components like trend and seasonal component. Here we use the @hyndman2021forecasting <tt>`fpp3`</tt> package to learn about the time series properties before conducting the forecast techniques. In order to use the <tt>`fpp3`</tt> package, we have to transform <tt>`beer`</tt> from a <tt>`tibble`</tt> to a <tt>`tsibble`</tt> object.
 
@@ -224,12 +207,91 @@ beer_tbls %>%
 ```
 December is the month of the year with the highest sales, followed by June. January is the month of the year with the lowest sales, followed by February.
 
+Following @hyndman2021forecasting, just as correlation measures the extent of a linear relationship between two variables, autocorrelation measures the linear relationship between lagged values of a time series. When data have a trend, the autocorrelations for small lags tend to be large and positive because observations nearby in time are also nearby in value. So the ACF of a trended time series tends to have positive values that slowly decrease as the lags increase. When data are seasonal, the autocorrelations will be larger for the seasonal lags (at multiples of the seasonal period, in this case 12) than for other lags.
+
 ```{r fig.cap="ACF of monthly beer sales."}
 beer_tbls %>%
   ACF(sales, lag_max = 60) %>%
   autoplot()
 ```
+Beer sales is both trended and seasonal. The slow decrease in the ACF as the lags increase is due to the trend, while the *scalloped* shape is due to the seasonality.
 
+# Four simple techniques.
+
+Let's estimate four simple forecast techniques. These are: mean (the forecasts of all future values are equal to the average of the historical data), naïve (set all forecasts to be the value of the last observation), seasonal naïve (set each forecast to be equal to the last observed value from the same season), and drift (to allow the forecasts to increase or decrease over time).
+
+First define the training set.
+
+```{r}
+beer_train <- beer_tbls %>%
+  select(date, sales) %>%
+  filter_index(. ~ "2021-12")
+```
+
+Estimate the models.
+
+```{r}
+beer_fit <- beer_train %>%
+  model(Mean = MEAN(sales), `Naïve` = NAIVE(sales),
+    `Seasonal naïve` = SNAIVE(sales), Drift = RW(sales ~ drift()))
+glance(beer_fit)
+```
+
+The forecasts.
+
+```{r}
+beer_fc <- beer_fit %>%
+  fabletools::forecast(h = "10 months")
+```
+
+Let's plot the forecast results.
+
+```{r fig.cap="Four simple forecasts."}
+beer_fc %>%
+  autoplot(beer_tbls, level = NULL) +
+  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  labs(y = "Sales", x = "Date") +
+  guides(colour = guide_legend(title = "Forecast"))
+```
+The plot above is not very clear. Here is a zoom version.
+
+```{r fig.cap="Zoom: Four simple forecasts."}
+beer_zoom <- beer_tbls %>%
+  select(date, sales) %>%
+  filter_index("2019-12" ~ .)
+
+beer_fc %>%
+  autoplot(beer_zoom, level = NULL, lwd = 2)  +
+  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  labs(y = "Sales", x = "Date") +
+  guides(colour = guide_legend(title = "Forecast"))
+```
+This is the seasonal naïve forecasts.
+
+```{r fig.cap="Zoom: Seasonal naïve forecasts."}
+beer_zoom <- beer_tbls %>%
+  select(date, sales) %>%
+  filter_index("2019-12" ~ .)
+
+beer_sn <- beer_fc %>%
+  filter(.model == "Seasonal naïve") 
+
+beer_sn %>%
+  autoplot(beer_zoom, lwd = 2, alpha = 0.4)  +
+  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  labs(y = "Sales", x = "Date") #+
+  #guides(colour = guide_legend(title = "Forecast"))
+```
+The forecast looks accurate. Let's compute the MAPE of all forecasts.
+
+```{r}
+beer_2022 <- beer_tbls %>%
+  select(date, sales) %>%
+  filter_index("2022-01" ~ .)
+
+fabletools::accuracy(beer_fc, beer_2022) %>%
+  select(.model, MAPE)
+```
 
 # H2O machine learning.
 
@@ -244,6 +306,71 @@ You have to download and install H2O. [Click here for full instructions.](https:
 The main objective here is to use <tt>`h2o`</tt> locally (in your own computer) to develop a high accuracy time series model on the <tt>`beer`</tt> data set. This is a supervised machine learning regression problem. An interesting reference to learn the basics of supervised and unsupervised machine learning techniques applied to business is: @hull2020machine. 
 
 ## The data.
+
+The *validation* dataset is the sample of data used to provide an unbiased evaluation of a model fit on the training dataset while tuning model hyperparameters.
+
+```{r fig.cap="Beer sales: train, validation and test sets."}
+beer %>%
+  ggplot(aes(date, sales)) +
+  # Train Region:
+  annotate("text", x = ymd("2013-01-01"), y = 14000, 
+           color = "black", label = "Train region") +
+  # Validation Region:
+  geom_rect(xmin = as.numeric(ymd("2021-01-01")), 
+            xmax = as.numeric(ymd("2021-12-31")), ymin = 0, ymax = 20000, 
+            alpha = 0.01, fill = "purple") +
+  annotate("text", x = ymd("2021-04-01"), y = 7000,
+           color = "black", label = "Validation\nregion") +
+  # Test Region:
+  geom_rect(xmin = as.numeric(ymd("2022-01-01")), 
+            xmax = as.numeric(ymd("2022-09-30")), ymin = 0, ymax = 20000, 
+            alpha = 0.02, fill = "pink") +
+  annotate("text", x = ymd("2022-06-01"), y = 9000,
+           color = "black", label = "Test\nregion") +
+  # Data.
+  geom_line(col = "black") +
+  geom_point(col = "black", alpha = 0.5, size = 2) +
+  # Aesthetics.
+  theme_tq() +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  labs(subtitle = 
+  "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
+  x = "Date", y = "Sales",
+       caption = "The models do not know the test region, this is for us 
+       to see how well the models do the 10-month ahead forecast.") 
+```
+
+```{r fig.cap="Zoom. Beer sales: train, validation and test sets."}
+beer %>%
+  filter(date > as.Date("2020-01-01")) %>%
+  ggplot(aes(date, sales)) +
+  # Train Region:
+  annotate("text", x = ymd("2020-08-01"), y = 14000, 
+           color = "black", label = "Train region") +
+  # Validation Region:
+  geom_rect(xmin = as.numeric(ymd("2021-01-01")), 
+            xmax = as.numeric(ymd("2021-12-31")), ymin = 0, ymax = 20000, 
+            alpha = 0.01, fill = "purple") +
+  annotate("text", x = ymd("2021-07-01"), y = 14000,
+           color = "black", label = "Validation region") +
+  # Test Region:
+  geom_rect(xmin = as.numeric(ymd("2022-01-01")), 
+            xmax = as.numeric(ymd("2022-09-30")), ymin = 0, ymax = 20000, 
+            alpha = 0.02, fill = "pink") +
+  annotate("text", x = ymd("2022-05-01"), y = 14000,
+           color = "black", label = "Test region") +
+  # Data.
+  geom_line(col = "black") +
+  geom_point(col = "black", alpha = 0.5, size = 5) +
+  # Aesthetics.
+  theme_tq() +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  labs(subtitle = 
+  "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
+  x = "Date", y = "Sales",
+       caption = "The models do not know the test region, this is for us 
+       to see how well the models do the 10-month ahead forecast.") 
+```
 
 The <tt>`tk_augment_timeseries_signature()`</tt> function expands out the timestamp information column-wise into a machine learning feature set, adding columns of time series information to the original data frame. We’ll again use <tt>`head()`</tt> function for quick inspection of this expansion. See how there are now 31 features extracted from the original database. Not all will be important for the final and chosen models, but some will.
 
@@ -326,7 +453,7 @@ The available algorithms that <tt>`h2o.automl()`</tt> currently run and compare 
 
 It is a good time to define how we are going to use some concepts at least in this document. Here, we call forecasting *techniques* to the three techniques implemented in this document: machine learning using H2O, linear regression, and ARIMA. When we implement <tt>`h2o.automl()`</tt> function, H2O test for the six *algorithms* listed above. Each algorithm includes many other *models* that belongs to these algorithms in the machine learning process. The result of <tt>`h2o.automl()`</tt> is one model that belongs to one algorithm. This is the difference between forecasting techniques, algorithms, and models. 
 
-## Estimate <tt>`h2o.automl()`</tt> models.
+## Estimate H2O models.
 
 Here, we implement the <tt>`h2o.automl()`</tt> in three different ways because of reproducibility issues. Reproducibility means obtaining consistent computational results using the same input data, computational steps, methods, code, and conditions of analysis. It turns out that Deep Learning cannot be reproducible by construction. Then, we first apply <tt>`h2o.automl()`</tt> without Deep Learning. Second, we apply <tt>`h2o.automl()`</tt> with only Deep Learning (here the results will be different each time we run the code). And third, including all available algorithms in <tt>`h2o.automl()`</tt> (again, the results might change every time we run the code). The first is the only one which can be reproducible and the other two are expected to change every time we run the R code. 
 
@@ -451,7 +578,7 @@ kable_styling(latex_options = "HOLD_position")
 
 This is interesting because this suggest that it makes sense to run the H2O more than one time. It would be good to test for a different <tt>`stopping_metric`</tt>, <tt>`max_runtime_secs`</tt> and <tt>`max_models`</tt>.
 
-## Predict with the <tt>`h2o.automl()`</tt> models.
+## Predictions.
 
 Here are how the forecasts are calculated.
 
@@ -595,7 +722,7 @@ h2o.performance(automl_leader_all, newdata = test_h2o)
 
 These plots show the power of modern forecasting techniques. In finance we care about the future and these techniques can be used as a tool to reduce the uncertainty about the future. Obviously, we cannot predict without errors, but the objective is to achieve the lowest forecasting errors possible. 
 
-## Summary performance.
+## Summary H2O models.
 
 It is useful to see the performance results for the three different H2O runs above. First, the performance for the overall 10-period forecast.
 
