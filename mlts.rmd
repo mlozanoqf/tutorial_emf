@@ -293,6 +293,89 @@ fabletools::accuracy(beer_fc, beer_2022) %>%
   select(.model, MAPE)
 ```
 
+## ETS.
+
+```{r}
+beer_ets <- beer_train %>%
+  model(ETS(sales))
+report(beer_ets)
+```
+
+```{r fig.cap="ETS components."}
+components(beer_ets) %>%
+  autoplot()
+```
+
+
+
+
+```{r fig.cap="ETS forecast."}
+beer_ets %>%
+  fabletools::forecast(h = 10) %>%
+  autoplot(beer_tbls) +
+  labs(x="Date", y="Sales")
+```
+
+
+```{r fig.cap="Zoom: ETS forecast."}
+beer_ets %>%
+  fabletools::forecast(h = 10) %>%
+  autoplot(beer_zoom, lwd = 2, alpha = 0.4) +
+  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  labs(x="Date", y="Sales")
+```
+
+```{r}
+beer_fc <- beer_ets %>%
+  fabletools::forecast(h = "10 months")
+
+fabletools::accuracy(beer_fc, beer_2022)%>%
+  select(.model, MAPE)
+```
+
+## ARIMA fpp3.
+
+```{r}
+beer_arima <- beer_train %>%
+  model(stepwise = ARIMA(sales))
+report(beer_arima)
+```
+```{r}
+beer_arima %>%
+  select(stepwise) %>%
+  gg_tsresiduals()
+```
+
+```{r}
+beer_arima_fc <- beer_arima %>%
+  fabletools::forecast(h = "10 months")
+```
+
+Let's plot the forecast results.
+
+```{r fig.cap="ARIMA fpp3 forecasts."}
+beer_arima_fc %>%
+  autoplot(beer_tbls, level = NULL) +
+  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  labs(y = "Sales", x = "Date") +
+  guides(colour = guide_legend(title = "Forecast"))
+```
+
+The plot above is not very clear. Here is a zoom version.
+
+```{r fig.cap="Zoom: ARIMA fpp3."}
+beer_arima_fc %>%
+  autoplot(beer_zoom, lwd = 2, alpha = 0.4)  +
+  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  labs(y = "Sales", x = "Date") +
+  labs(x="Date", y="Sales")
+```
+
+```{r}
+fabletools::accuracy(beer_arima_fc, beer_2022) %>%
+  select(.model, MAPE)
+```
+
 # H2O machine learning.
 
 Machine learning is the study of computer algorithms that improve automatically through experience. There are many ways and approaches to implement machine learning especially in time series forecasts purposes. This document heavily relies on <tt>`h2o`</tt> library. The <tt>`h2o`</tt> package is a product offered by H2O.ai that contains a number of cutting edge machine learning algorithms, performance metrics, and auxiliary functions to make machine learning both powerful and easy to implement.
