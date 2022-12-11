@@ -19,20 +19,6 @@ rm(list=ls())
 
 \newpage
 
-# Introduction.
-
-<!-- This document relies on some freely available Business Science IO R codes in the web. The CEO of Business Science IO is Matt Dancho, he is the creator of \texttt{tidyquant} and \texttt{timetk}, and I truly believe we can learn a lot from their publicly available data science examples in general. This private firm declares a nice motivation that I fully support: *A gap exists between the data scientist's skillset and the business objectives. Organizations are investing heavily into data science hiring because they know that artificial intelligence, machine learning, and data science are the future. However, this investment takes time to pay off because data scientists need to learn the business and understand which problems are important to focus on. This is the gap. business science has developed methodologies, tools, and techniques to overcome the gap through our consulting program. Now, business science has opened these tools up to the public as a way to accelerate the growth of these powerful data scientists. It's this data scientist empowerment that motivates us.*  -->
-
-<!-- In this context, I think that this gap exists at the moment just as this firm declares. This gap is currently being addressed in two ways: data scientists (like engineers) are learning business, and business professionals are learning data science. I also think that this gap is far from being fully covered as researchers are producing more methods and theory, technology is putting the data science frontiers even further, there are more data than people who can analyze it, and business problems are becoming more complex. As a result, I consider we are obligated to understand business as good as we can because that is our main core, and at the same time learn data science as good as we can because that will allow us to propose innovative ways to tackle current and future business problems. This gap also represents a good reason to support constant professional training, and reveal the multidisciplinary requirements in the job market. -->
-
-Machine learning is the study of computer algorithms that improve automatically through experience. There are many ways and approaches to implement machine learning especially in time series forecasts purposes. This document heavily relies on <tt>`h2o`</tt> library. The <tt>`h2o`</tt> package is a product offered by H2O.ai that contains a number of cutting edge machine learning algorithms, performance metrics, and auxiliary functions to make machine learning both powerful and easy to implement.
-
-One of the most important features of this package is the <tt>`h2o.automl()`</tt> (Automatic Machine Learning). H2O’s AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit. Stacked Ensembles – one based on all previously trained models, another one on the best model of each family – will be automatically trained on collections of individual models to produce highly predictive ensemble models which, in most cases, will be the top performing models in the AutoML Leaderboard. We can verify this in the example below.
-
-This document has limited explanations about the applied machine learning techniques. The value of this document is to gather several examples that are originally presented separately in Business Science IO and [R-bloggers.](r-bloggers.com) sites and extend the analysis to elaborate further on the code logic and interpretation. It can also be useful to better understand how the R functions work, how results are produced, and it could help to replicate a different example with a new database for those who are new in the field.
-
-You have to download and install H2O. [Click here for full instructions.](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-r) You are also expected to review the H2O webpage contents because they have important information that will allow you to better understand the value of this machine learning tool. 
-
 # The forecast problem.
 
 The problem is to forecast a time series. In particular, the time series is the *Beer, Wine, and Distilled Alcoholic Beverages Sales* as in the original Matt Dancho's example. The data is taken from FRED (Federal Reserve Economic Data). The data belongs to the non-durable goods category, it includes U.S. merchant wholesalers, except manufacturers' sales branches and offices sales. The monthly time series goes from 2010-01-01 to 2017-10-31. And the goal is to use 2017 data (10 months) as a test data to conduct the forecast.
@@ -90,7 +76,6 @@ Visualization is particularly important for time series analysis and forecasting
 It is also important to see the time series because normally the models will perform better if we can identify basic characteristics such as trend and seasonality. This data set clearly has a trend and a seasonality as people drink more alcohol in December. 
 
 ```{r fig.cap="Beer, Wine, and Distilled Alcoholic Beverages Sales."}
-# Plot Beer Sales with train, validation, and test sets shown.
 beer %>%
   ggplot(aes(date, sales)) +
   # Train Region:
@@ -126,7 +111,6 @@ Then, the problem is to forecast the 10 months of the test region. This is, from
 Here is a zoom version of the plot above.
 
 ```{r fig.cap="Zoom: Beer, Wine, and Distilled Alcoholic Beverages Sales."}
-# Plot Beer Sales with train, validation, and test sets shown.
 beer %>%
   filter(date > as.Date("2020-01-01")) %>%
   ggplot(aes(date, sales)) +
@@ -165,24 +149,46 @@ We will do that by implementing a battery of forecasting techniques:
 * Linear regression.
 * ARIMA.
 
-The forecasting techniques are expected to exploit the time-series components like trend and seasonal component. Here we use the @hyndman2021forecasting <tt>`fpp3`</tt> package. Note that we have to transform <tt>`beer`</tt> into a <tt>`tsibble`</tt> object.
+The forecasting techniques are expected to exploit the time-series components like trend and seasonal component. Here we use the @hyndman2021forecasting <tt>`fpp3`</tt> package to learn about the time series properties before conducting the forecast techniques. In order to use the <tt>`fpp3`</tt> package, we have to transform <tt>`beer`</tt> from a <tt>`tibble`</tt> to a <tt>`tsibble`</tt> object.
 
-```{r from tbls to tsibble}
+```{r from tibble to tsibble}
 beer_tbls <- beer
 beer_tbls$date <- yearmonth(beer_tbls$date)
 beer_tbls <- as_tsibble(beer_tbls)
 ```
 
-According to @hyndman2021forecasting, the X-11 method originated in the US Census Bureau and was further developed by Statistics Canada. The process tends to be highly robust to outliers and level shifts in the time series. The details of the X-11 method are described in @dagum2016seasonal.
+According to @hyndman2021forecasting, the X-11 method was originated in the US Census Bureau and further developed by Statistics Canada. The decomposition process tends to be highly robust to outliers and level shifts in the time series. The details of the X-11 method are described in @dagum2016seasonal.
 
 
-```{r fig.cap="A multiplicative decomposition of beer sales using X-11."}
+```{r fig.cap="A multiplicative c of beer sales using X-11."}
 beer_tbls %>%
   model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
   components() %>%
-autoplot() +
+  autoplot() +
   labs(y = "Sales", x = "Date")
 ```
+The trend shows a clear change in the first half of 2020. Let's take a look of it.
+
+```{r}
+beer_tbls %>%
+  model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
+  components() %>%
+  select(date, sales, trend) %>%
+  filter_index("2020-03" ~ "2020-10") %>%
+  head(8)
+```
+The consumption trend significantly increased from June 2020 to July 2020. There are also three negative spikes in the irregular component.
+
+```{r}
+beer_tbls %>%
+  model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
+  components() %>%
+  select(date, sales, irregular) %>%
+  filter(irregular < 0.95) %>%
+  head(3)
+```
+
+Apparently, these trend and irregular events are consistent independently of the decomposition technique. We implement the SEATS decomposition below. SEATS stands for *Seasonal Extraction in ARIMA Time Series*. According to @hyndman2021forecasting, this procedure was developed at the Bank of Spain, and is now widely used by government agencies around the world. See @dagum2016seasonal for further details.
 
 ```{r fig.cap="A decomposition of beer sales obtained using SEATS."}
 beer_tbls %>%
@@ -192,19 +198,31 @@ beer_tbls %>%
   labs(y = "Sales", x = "Date")
 ```
 
-
+A seasonal plot is similar to a time plot except that the data are plotted against the individual *seasons*, in this case months, in which the data were observed. 
 
 ```{r fig.cap="Seasonal plot: Beer sales."}
 beer_tbls %>%
   gg_season(sales, labels = "both") +
   labs(y = "Sales", x = "Date")
 ```
+And this is the zoom version of the plot above.
+
+```{r fig.cap="Zoom. Seasonal plot: Beer sales."}
+beer_tbls %>%
+  filter_index("2019-01" ~ .) %>%
+  gg_season(sales, labels = "both", size = 2) +
+  geom_point() +
+  labs(y = "Sales", x = "Date")
+```
+
+An alternative plot that emphasises the seasonal patterns is where the data for each month are collected together in separate mini time plots.
 
 ```{r fig.cap="Seasonal subseries plot of monthly beer sales."}
 beer_tbls %>%
   gg_subseries(sales) +
   labs(y = "Sales", x = "Date")
 ```
+December is the month of the year with the highest sales, followed by June. January is the month of the year with the lowest sales, followed by February.
 
 ```{r fig.cap="ACF of monthly beer sales."}
 beer_tbls %>%
@@ -214,6 +232,14 @@ beer_tbls %>%
 
 
 # H2O machine learning.
+
+Machine learning is the study of computer algorithms that improve automatically through experience. There are many ways and approaches to implement machine learning especially in time series forecasts purposes. This document heavily relies on <tt>`h2o`</tt> library. The <tt>`h2o`</tt> package is a product offered by H2O.ai that contains a number of cutting edge machine learning algorithms, performance metrics, and auxiliary functions to make machine learning both powerful and easy to implement.
+
+One of the most important features of this package is the <tt>`h2o.automl()`</tt> (Automatic Machine Learning). H2O’s AutoML can be used for automating the machine learning workflow, which includes automatic training and tuning of many models within a user-specified time-limit. Stacked Ensembles – one based on all previously trained models, another one on the best model of each family – will be automatically trained on collections of individual models to produce highly predictive ensemble models which, in most cases, will be the top performing models in the AutoML Leaderboard. We can verify this in the example below.
+
+This document has limited explanations about the applied machine learning techniques. The value of this document is to gather several examples that are originally presented separately in Business Science IO and [R-bloggers.](r-bloggers.com) sites and extend the analysis to elaborate further on the code logic and interpretation. It can also be useful to better understand how the R functions work, how results are produced, and it could help to replicate a different example with a new database for those who are new in the field.
+
+You have to download and install H2O. [Click here for full instructions.](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html#install-in-r) You are also expected to review the H2O webpage contents because they have important information that will allow you to better understand the value of this machine learning tool. 
 
 The main objective here is to use <tt>`h2o`</tt> locally (in your own computer) to develop a high accuracy time series model on the <tt>`beer`</tt> data set. This is a supervised machine learning regression problem. An interesting reference to learn the basics of supervised and unsupervised machine learning techniques applied to business is: @hull2020machine. 
 
