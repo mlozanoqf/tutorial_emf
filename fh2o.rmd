@@ -562,7 +562,10 @@ kable_styling(latex_options = "HOLD_position")
 
 We normally do not choose a model according to one specific point forecast. However, it is interesting to see which alternative and which specific date has been forecasted with the highest accuracy.
 
-# Linear regression.
+
+# Two more forecast models.
+
+## Linear regression.
 
 Let's implement a simple but powerful approach using the <tt>`lm()`</tt> function.
 
@@ -643,7 +646,7 @@ geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
 
 This is clearly a good alternative. The H2O machine learning could lead to better results if we consider a longer time-series because in that way the possibilities to learn increases.
 
-# ARIMA.
+## ARIMA.
 
 Here, <tt>`sweep`</tt> is used for tidying the <tt>`forecast`</tt> package workflow. We’ll work through an ARIMA analysis to forecast the next 10 months of time series data. In this way we can compare our previous results.
 
@@ -813,7 +816,8 @@ labs(x = "Date", y = "Sales",
 
 This is a decent forecast.
 
-# The average forecast.
+# Summary of all results.
+
 
 An interesting question is: *What happens to the accuracy when you average the predictions of all different methods?* This question makes sense because the decision of using one technique or another is not trivial. Taking the average could be useful to avoid extreme results but at the same time it could be hard to interpret as the forecast comes from different techniques. In any case, it is interesting to see how it works.
 
@@ -876,7 +880,7 @@ caption = c(paste("MAPE=",((100*mean(abs(error_tbl_mean$error_pct)))))))
 
 Not bad, as expected.
 
-# Summary of all results.
+
 
 Let's see all results at once: H2O, linear regression, ARIMA and the average forecast.
 
@@ -905,7 +909,7 @@ h2o.shutdown(prompt = TRUE) # yes (Y) instead of TRUE?
 ```
 
 
-# Unsorted references.
+## Unsorted references.
 
 The main web references of this document are (these are web links):
 
@@ -913,4 +917,3 @@ The main web references of this document are (these are web links):
 - [Time Series Machine Learning with timetk.](https://www.business-science.io/code-tools/2017/10/24/demo_week_timetk.html)
 - [Tidy Forecasting with sweep](https://www.business-science.io/code-tools/2017/10/25/demo_week_sweep.html)
 - [H2O Tutorials](http://docs.h2o.ai/h2o-tutorials/latest-stable/index.html)
-- [Machine Learning to Reduce Employee Attrition](https://www.facebook.com/experiannews/videos/1749616808676222/)
