@@ -56,14 +56,13 @@ beer <- tq_get("S4248SM144NCEN", get = "economic.data",
                from = "2010-01-01", to = "2022-10-31")
 ```
 
-Let's have a look of the data set. By default it says <tt>`sales`</tt>, but these are basically sales figures in monetary terms. According to the main FRED reference, these are in millions of dollars, not seasonally adjusted.
+Let's have a look of the data set. By default it says *price*, but these are sales figures in monetary terms. According to the main FRED reference, these are in millions of dollars, not seasonally adjusted.
 
 ```{r see-the-data}
-# A quick look at the original data.
 head(beer)
 ```
 
-We can change the name of the column.
+We can change the name of the price column.
 
 ```{r re}
 beer <- beer %>%
@@ -109,7 +108,6 @@ Here is a zoom version of the plot above.
 beer %>%
   filter(date > as.Date("2020-01-01")) %>%
   ggplot(aes(date, sales)) +
-  # Train Region:
   annotate("text", x = ymd("2020-08-01"), y = 17000, 
            color = "black", label = "Train region") +
   geom_rect(xmin = as.numeric(ymd("2022-01-01")), 
@@ -117,10 +115,8 @@ beer %>%
             alpha = 0.02, fill = "pink") +
   annotate("text", x = ymd("2022-05-01"), y = 14000,
            color = "black", label = "Test region") +
-  # Data.
   geom_line(col = "black") +
   geom_point(col = "black", alpha = 0.5, size = 5) +
-  # Aesthetics.
   theme_tq() +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   labs(subtitle = 
@@ -143,7 +139,7 @@ beer_tbls <- as_tsibble(beer_tbls)
 According to @hyndman2021forecasting, the X-11 method was originated in the US Census Bureau and further developed by Statistics Canada. The decomposition process tends to be highly robust to outliers and level shifts in the time series. The details of the X-11 method are described in @dagum2016seasonal.
 
 
-```{r fig.cap="A multiplicative c of beer sales using X-11."}
+```{r fig.cap="A multiplicative decomposition of beer sales using X-11."}
 beer_tbls %>%
   model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
   components() %>%
@@ -160,7 +156,23 @@ beer_tbls %>%
   filter_index("2020-03" ~ "2020-10") %>%
   head(8)
 ```
-The consumption trend significantly increased from June 2020 to July 2020. There are also three negative spikes in the irregular component.
+The consumption trend significantly increased from June 2020 to July 2020. It is big enough to create a discontinuity in the trend plot below.
+
+```{r fig.cap="Trend discontinuity."}
+beer_tbls %>%
+  model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
+  components() %>%
+  select(date, trend) %>%
+  ggplot(aes(date, trend)) + 
+  geom_point(alpha = 0.3, size = 4) +
+  geom_point(aes(x = yearmonth("2020 jun."), y = 13950.99), 
+             alpha = 0.3, size = 4, colour = "red") +
+  geom_point(aes(x = yearmonth("2020 jul."), y = 15356.13), 
+             alpha = 0.3, size = 4, colour = "red") +
+  labs(y = "Trend", x = "Date")
+```
+
+There are also three negative spikes in the irregular component.
 
 ```{r}
 beer_tbls %>%
@@ -169,6 +181,22 @@ beer_tbls %>%
   select(date, sales, irregular) %>%
   filter(irregular < 0.95) %>%
   head(3)
+```
+
+```{r fig.cap="Three negative spikes in the irregular component."}
+beer_tbls %>%
+  model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
+  components() %>%
+  select(date, irregular) %>%
+  ggplot(aes(date, irregular)) + 
+  geom_point(alpha = 0.3, size = 4) +
+  geom_point(aes(x = yearmonth("2020 apr."), y = 0.8894670), 
+             alpha = 0.3, size = 4, colour = "red") +
+  geom_point(aes(x = yearmonth("2020 dec."), y = 0.8688517), 
+             alpha = 0.3, size = 4, colour = "red") +
+  geom_point(aes(x = yearmonth("2021 dec."), y = 0.9099203), 
+             alpha = 0.3, size = 4, colour = "red") +
+  labs(y = "Irregular", x = "Date")
 ```
 
 Apparently, these trend and irregular events are consistent independently of the decomposition technique. We implement the SEATS decomposition below. SEATS stands for *Seasonal Extraction in ARIMA Time Series*. According to @hyndman2021forecasting, this procedure was developed at the Bank of Spain, and is now widely used by government agencies around the world. See @dagum2016seasonal for further details.
@@ -205,7 +233,7 @@ beer_tbls %>%
   gg_subseries(sales) +
   labs(y = "Sales", x = "Date")
 ```
-December is the month of the year with the highest sales, followed by June. January is the month of the year with the lowest sales, followed by February.
+December is the month of the year with the highest average sales, followed by June. January is the month of the year with the lowest average sales, followed by February.
 
 Following @hyndman2021forecasting, just as correlation measures the extent of a linear relationship between two variables, autocorrelation measures the linear relationship between lagged values of a time series. When data have a trend, the autocorrelations for small lags tend to be large and positive because observations nearby in time are also nearby in value. So the ACF of a trended time series tends to have positive values that slowly decrease as the lags increase. When data are seasonal, the autocorrelations will be larger for the seasonal lags (at multiples of the seasonal period, in this case 12) than for other lags.
 
@@ -216,19 +244,25 @@ beer_tbls %>%
 ```
 Beer sales is both trended and seasonal. The slow decrease in the ACF as the lags increase is due to the trend, while the *scalloped* shape is due to the seasonality.
 
-# Four simple techniques.
+# Forecasts with <tt>`fpp3`</tt>.
 
-Let's estimate four simple forecast techniques. These are: mean (the forecasts of all future values are equal to the average of the historical data), naïve (set all forecasts to be the value of the last observation), seasonal naïve (set each forecast to be equal to the last observed value from the same season), and drift (to allow the forecasts to increase or decrease over time).
-
-First define the training set.
+Here we implement some selected forecast techniques using the @hyndman2021forecasting <tt>`fpp3`</tt> package. First define the training and test set (2022).
 
 ```{r}
 beer_train <- beer_tbls %>%
   select(date, sales) %>%
   filter_index(. ~ "2021-12")
+
+beer_2022 <- beer_tbls %>%
+  select(date, sales) %>%
+  filter_index("2022-01" ~ .)
 ```
 
-Estimate the models.
+## Four simple techniques.
+
+Let's estimate four simple forecast techniques. *Mean*, where the forecasts of all future values are equal to the average of the historical data. *Naïve*, we set all forecasts to be the value of the last observation. *Seasonal naïve*, we set each forecast to be equal to the last observed value from the same season. And *drift*, to allow the forecasts to increase or decrease over time.
+
+Estimate the four models.
 
 ```{r}
 beer_fit <- beer_train %>%
@@ -237,11 +271,28 @@ beer_fit <- beer_train %>%
 glance(beer_fit)
 ```
 
-The forecasts.
+The 10-month forecasts.
 
 ```{r}
 beer_fc <- beer_fit %>%
   fabletools::forecast(h = "10 months")
+```
+
+Let's compute the MAPE of all forecasts.
+
+```{r}
+mape_table <- fabletools::accuracy(beer_fc, beer_2022) %>%
+  select(.model, MAPE) %>%
+  arrange(desc(-MAPE))
+mape_table
+```
+
+```{r}
+sn_mape <- fabletools::accuracy(beer_fc, beer_2022) %>%
+  filter(.model == "Seasonal naïve") %>%
+  select(MAPE) %>%
+  unlist()
+sn_mape
 ```
 
 Let's plot the forecast results.
@@ -251,7 +302,8 @@ beer_fc %>%
   autoplot(beer_tbls, level = NULL) +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
   labs(y = "Sales", x = "Date") +
-  guides(colour = guide_legend(title = "Forecast"))
+  guides(colour = guide_legend(title = "Forecast:")) +
+  theme(legend.position = "bottom")
 ```
 The plot above is not very clear. Here is a zoom version.
 
@@ -264,7 +316,8 @@ beer_fc %>%
   autoplot(beer_zoom, level = NULL, lwd = 2)  +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
   labs(y = "Sales", x = "Date") +
-  guides(colour = guide_legend(title = "Forecast"))
+  guides(colour = guide_legend(title = "Forecast:")) +
+  theme(legend.position = "bottom")
 ```
 This is the seasonal naïve forecasts.
 
@@ -273,27 +326,29 @@ beer_zoom <- beer_tbls %>%
   select(date, sales) %>%
   filter_index("2019-12" ~ .)
 
-beer_sn <- beer_fc %>%
+beer_sn_fc <- beer_fc %>%
   filter(.model == "Seasonal naïve") 
 
-beer_sn %>%
-  autoplot(beer_zoom, lwd = 2, alpha = 0.4)  +
+  ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
+  geom_line() +
+  geom_point(size = 5, color = "black", alpha = 0.5, 
+             shape = 21, fill = "black") +
+  geom_point(aes(y = .mean), size = 5, 
+             color = "red", alpha = 0.5, shape = 21, 
+             fill = "red", data = beer_sn_fc) +
+  geom_line(aes(y = .mean), color = "red", size = 0.5, data = beer_sn_fc) +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
-  labs(y = "Sales", x = "Date") #+
-  #guides(colour = guide_legend(title = "Forecast"))
+  labs(y = "Sales", x = "Date",
+       caption = c(paste("MAPE=",(round(sn_mape, 5))))) +
+  theme(legend.position = "bottom")
 ```
-The forecast looks accurate. Let's compute the MAPE of all forecasts.
+The simple techniques are not necessarily bad techniques. 
 
-```{r}
-beer_2022 <- beer_tbls %>%
-  select(date, sales) %>%
-  filter_index("2022-01" ~ .)
+## Exponential smoothing.
 
-fabletools::accuracy(beer_fc, beer_2022) %>%
-  select(.model, MAPE)
-```
+According to @hyndman2021forecasting, forecasts produced using exponential smoothing methods are weighted averages of past observations, with the weights decaying exponentially as the observations get older. In other words, the more recent the observation the higher the associated weight. This framework generates reliable forecasts quickly and for a wide range of time series, which is a great advantage and of major importance to applications in industry.
 
-## ETS.
+In this subsection, we let the <tt>`ETS()`</tt>. function select the model by minimising the AICc.
 
 ```{r}
 beer_ets <- beer_train %>%
@@ -301,79 +356,131 @@ beer_ets <- beer_train %>%
 report(beer_ets)
 ```
 
+The <tt>`ETS(M,A,M)`</tt> corresponds to a Holt-Winters multiplicative method with multiplicative errors for when seasonal variations are changing proportional to the level of the series.
+
 ```{r fig.cap="ETS components."}
 components(beer_ets) %>%
   autoplot()
 ```
 
+The ETS(M,A,M) 10-month forecast.
 
+```{r}
+beer_ets_fc <- beer_ets %>%
+  fabletools::forecast(h = 10)
+beer_ets_fc
+```
 
+The ETS(M,A,M) MAPE.
+
+```{r}
+ets_mape <- fabletools::accuracy(beer_ets_fc, beer_2022) %>%
+  select(MAPE) %>%
+  unlist()
+ets_mape
+```
+Let's see the <tt>`ETS(M,A,M)`</tt> forecast.
 
 ```{r fig.cap="ETS forecast."}
 beer_ets %>%
   fabletools::forecast(h = 10) %>%
   autoplot(beer_tbls) +
-  labs(x="Date", y="Sales")
+  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  labs(x = "Date", y = "Sales") +
+  theme(legend.position = "bottom")
 ```
-
+This is not very clear, here is the zoom version.
 
 ```{r fig.cap="Zoom: ETS forecast."}
-beer_ets %>%
-  fabletools::forecast(h = 10) %>%
-  autoplot(beer_zoom, lwd = 2, alpha = 0.4) +
+  ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
+  geom_line() +
+  geom_point(size = 5, color = "black", alpha = 0.5, 
+             shape = 21, fill = "black") +
+  geom_point(aes(y = .mean), size = 5, 
+             color = "red", alpha = 0.5, shape = 21, 
+             fill = "red", data = beer_ets_fc) +
+  geom_line(aes(y = .mean), color = "red", size = 0.5, data = beer_ets_fc) +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
-  labs(x="Date", y="Sales")
+  labs(x = "Date", y = "Sales",
+       caption = c(paste("MAPE=",(round(ets_mape, 5))))) +
+  theme(legend.position = "bottom")
 ```
+Update the MAPE table.
 
 ```{r}
-beer_fc <- beer_ets %>%
-  fabletools::forecast(h = "10 months")
-
-fabletools::accuracy(beer_fc, beer_2022)%>%
-  select(.model, MAPE)
+mape_updated <- mape_table %>%
+  add_row(.model = "ETS(M,A,M)", MAPE = ets_mape) %>%
+  arrange(desc(-MAPE))
+mape_updated
 ```
 
-## ARIMA fpp3.
+## ARIMA.
+
+According to @hyndman2021forecasting, while exponential smoothing models are based on a description of the trend and seasonality in the data, ARIMA models aim to describe the autocorrelations in the data. The <tt>`ARIMA()`</tt> function combines unit root tests, minimisation of the AICc and MLE to obtain an ARIMA model. By setting <tt>`stepwise = FALSE`</tt> and <tt>`approximation = FALSE`</tt>, we are making R work extra hard to find a good model. 
 
 ```{r}
 beer_arima <- beer_train %>%
-  model(stepwise = ARIMA(sales))
+  model(arima_auto = ARIMA(sales, stepwise = FALSE, approx = FALSE))
 report(beer_arima)
 ```
-```{r}
+The residuals for the best ARIMA model.
+
+```{r fig.cap="Residuals from the fitted ARIMA(4,1,1)(0,1,1)[12] model."}
 beer_arima %>%
-  select(stepwise) %>%
+  select(arima_auto) %>%
   gg_tsresiduals()
 ```
+
+The forecast for the best ARIMA model.
 
 ```{r}
 beer_arima_fc <- beer_arima %>%
   fabletools::forecast(h = "10 months")
+beer_arima_fc
+```
+
+The best ARIMA MAPE.
+
+```{r}
+arima_mape <- fabletools::accuracy(beer_arima_fc, beer_2022) %>%
+  select(MAPE) %>%
+  unlist()
+arima_mape
 ```
 
 Let's plot the forecast results.
 
-```{r fig.cap="ARIMA fpp3 forecasts."}
+```{r fig.cap="ARIMA(4,1,1)(0,1,1)[12] forecast."}
 beer_arima_fc %>%
   autoplot(beer_tbls, level = NULL) +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
-  labs(y = "Sales", x = "Date") +
-  guides(colour = guide_legend(title = "Forecast"))
+  labs(y = "Sales", x = "Date") 
 ```
 
 The plot above is not very clear. Here is a zoom version.
 
-```{r fig.cap="Zoom: ARIMA fpp3."}
-beer_arima_fc %>%
-  autoplot(beer_zoom, lwd = 2, alpha = 0.4)  +
+```{r fig.cap="Zoom. ARIMA(4,1,1)(0,1,1)[12] forecast."}
+  ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
+  geom_line() +
+  geom_point(size = 5, color = "black", alpha = 0.5, 
+             shape = 21, fill = "black") +
+  geom_point(aes(y = .mean), size = 5, 
+             color = "red", alpha = 0.5, shape = 21, 
+             fill = "red", data = beer_arima_fc) +
+  geom_line(aes(y = .mean), color = "red", size = 0.5, data = beer_arima_fc) +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
-  labs(y = "Sales", x = "Date") +
-  labs(x="Date", y="Sales")
+  labs(x = "Date", y = "Sales",
+       caption = c(paste("MAPE=",(round(arima_mape, 5))))) +
+  theme(legend.position = "bottom")
 ```
 
+Update the MAPE table.
+
 ```{r}
-fabletools::accuracy(beer_arima_fc, beer_2022) %>%
-  select(.model, MAPE)
+mape_updated <- mape_updated %>%
+  add_row(.model = "ARIMA auto", MAPE = arima_mape) %>%
+  arrange(desc(-MAPE))
+mape_updated
 ```
 
 # H2O machine learning.
