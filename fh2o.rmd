@@ -5,7 +5,6 @@ title: ''
     df_print: paged
 ---
 
-
 ```{r echo=FALSE}
 # This removes all items in environment. 
 rm(list=ls())
@@ -13,14 +12,12 @@ rm(list=ls())
 
 \newpage
 
-# The forecast problem2.
+# Forecasts with H2O.
 
-The problem is to forecast a time series. In particular, the time series is the *Beer, Wine, and Distilled Alcoholic Beverages Sales* as in the original Matt Dancho's example. The data is taken from FRED (Federal Reserve Economic Data). The data belongs to the non-durable goods category, it includes U.S. merchant wholesalers, except manufacturers' sales branches and offices sales. The monthly time series goes from 2010-01-01 to 2022-10-31. And the goal is to use 2022 data (10 months) as a test data to conduct the forecast.
+As in the previous section, the problem is to forecast a time series. In particular, the time series is the *Beer, Wine, and Distilled Alcoholic Beverages Sales* as in the original Matt Dancho's example. The data is taken from FRED (Federal Reserve Economic Data). The data belongs to the non-durable goods category, it includes U.S. merchant wholesalers, except manufacturers' sales branches and offices sales. The monthly time series goes from 2010-01-01 to 2022-10-31. And the goal is to use 2022 data (10 months) as a test data to conduct the forecast.
 
 For the full database details see: 
 https://fred.stlouisfed.org/series/S4248SM144NCEN
-
-## The data2.
 
 Let's load the R packages.
 
@@ -40,6 +37,12 @@ library(sweep)      # Broom-style tidiers for the forecast package.
 library(forecast)   # Forecasting models and predictions package.
 library(seasonal)
 library(tictoc)
+```
+
+```{r}
+# This comes from ffpp3.rmd
+mape_updated <- readRDS("mape_updated.rds")
+mape_updated
 ```
 
 We can conveniently download the data directly from the FRED API in one line of code.
@@ -64,14 +67,10 @@ beer <- beer %>%
 
 tail(beer)
 ```
+
 Better now. 
 
-Visualization is particularly important for time series analysis and forecasting. It’s a good idea to identify spots where we will split the data into training and test. This kind of split is consistent with most machine learning algorithms. The *training* dataset is the sample of data used to fit and train the model by learning from the data. The *test* dataset is the sample of data used to provide an unbiased evaluation of a final model fit on the training dataset. The test dataset provides the gold standard used to evaluate the model. It is only used once a model is completely trained. The test set is generally what is used to evaluate competing models.
-
-It is also important to see the time series because normally the models will perform better if we can identify basic characteristics such as trend and seasonality. This data set clearly has a trend and a seasonality as people drink more alcohol in December. 
-
-
-# H2O machine learning.
+## The H2O package.
 
 Machine learning is the study of computer algorithms that improve automatically through experience. There are many ways and approaches to implement machine learning especially in time series forecasts purposes. This document heavily relies on <tt>`h2o`</tt> library. The <tt>`h2o`</tt> package is a product offered by H2O.ai that contains a number of cutting edge machine learning algorithms, performance metrics, and auxiliary functions to make machine learning both powerful and easy to implement.
 
@@ -188,7 +187,7 @@ test_tbl  <- beer_clean %>% filter(year == 2022)
 test_tbl$sales
 ```
 
-Remember our goal is to forecast the first 10 months of 2017.
+Remember our goal is to forecast the first 10 months of 2022.
 
 ## Prepare for H2O.
 

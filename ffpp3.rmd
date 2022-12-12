@@ -386,7 +386,7 @@ beer_ets %>%
 ```
 This is not very clear, here is the zoom version.
 
-```{r fig.cap="Zoom: ETS forecast."}
+```{r fig.cap="Zoom: ETS(M,A,M) forecast."}
   ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
   geom_line() +
   geom_point(size = 5, color = "black", alpha = 0.5, 
@@ -486,7 +486,7 @@ beer_nnet <- beer_train %>%
   model(NNETAR(sales))
 report(beer_nnet)
 ```
-The $NNAR(15,1,8)_{12}$ model has inputs $y_{t−1}, y_{t−2},..., y_{t−15}$ and 8 neurons in the hidden layer. 
+The NNAR(15,1,8)[12] model has inputs $y_{t−1}, y_{t−2},..., y_{t−15}$ and 8 neurons in the hidden layer. 
 
 The forecast for the best NNAR model.
 
@@ -539,4 +539,8 @@ mape_updated <- mape_updated %>%
 mape_updated
 ```
 
+```{r}
+# I save the mape_updated object to use it in hh2o.rmd
+saveRDS(mape_updated, "mape_updated.rds")
+```
 
