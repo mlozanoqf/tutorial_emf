@@ -348,7 +348,7 @@ The simple techniques are not necessarily bad techniques.
 
 According to @hyndman2021forecasting, forecasts produced using exponential smoothing methods are weighted averages of past observations, with the weights decaying exponentially as the observations get older. In other words, the more recent the observation the higher the associated weight. This framework generates reliable forecasts quickly and for a wide range of time series, which is a great advantage and of major importance to applications in industry.
 
-In this subsection, we let the <tt>`ETS()`</tt>. function select the model by minimising the AICc.
+In this subsection, we let the <tt>`ETS()`</tt> function select the model by minimising the AICc.
 
 ```{r}
 beer_ets <- beer_train %>%
@@ -360,7 +360,8 @@ The <tt>`ETS(M,A,M)`</tt> corresponds to a Holt-Winters multiplicative method wi
 
 ```{r fig.cap="ETS components."}
 components(beer_ets) %>%
-  autoplot()
+  autoplot() +
+  labs(x = "Date", y = "Sales")
 ```
 
 The ETS(M,A,M) 10-month forecast.
@@ -381,7 +382,7 @@ ets_mape
 ```
 Let's see the <tt>`ETS(M,A,M)`</tt> forecast.
 
-```{r fig.cap="ETS forecast."}
+```{r fig.cap="ETS(M,A,M) forecast."}
 beer_ets %>%
   fabletools::forecast(h = 10) %>%
   autoplot(beer_tbls) +
@@ -478,7 +479,68 @@ Update the MAPE table.
 
 ```{r}
 mape_updated <- mape_updated %>%
-  add_row(.model = "ARIMA auto", MAPE = arima_mape) %>%
+  add_row(.model = "ARIMA(4,1,1)(0,1,1)[12]", MAPE = arima_mape) %>%
+  arrange(desc(-MAPE))
+mape_updated
+```
+## Neural network.
+
+Artificial neural networks are forecasting methods that are based on simple mathematical models of the brain. They allow complex nonlinear relationships between the response variable and its predictors. With time series data, lagged values of the time series can be used as inputs to a neural network, just as we used lagged values in a linear autoregression model. We call this a neural network autoregression or NNAR model.
+
+```{r}
+beer_nnet <- beer_train %>%
+  model(NNETAR(sales))
+report(beer_nnet)
+```
+The $NNAR(15,1,8)_{12}$ model has inputs $y_{t−1}, y_{t−2},..., y_{t−15}$ and 8 neurons in the hidden layer. 
+
+The forecast for the best NNAR model.
+
+```{r}
+beer_nnet_fc <- beer_nnet %>%
+  fabletools::forecast(h = "10 months")
+beer_nnet_fc
+```
+
+The best NNET MAPE.
+
+```{r}
+nnet_mape <- fabletools::accuracy(beer_nnet_fc, beer_2022) %>%
+  select(MAPE) %>%
+  unlist()
+nnet_mape
+```
+Let's plot the forecast results.
+
+```{r fig.cap="NNAR(15,1,8)[12] forecast."}
+beer_nnet_fc %>%
+  autoplot(beer_tbls, level = NULL) +
+  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  labs(y = "Sales", x = "Date") 
+```
+
+The plot above is not very clear. Here is a zoom version.
+
+```{r fig.cap="Zoom. NNAR(15,1,8)[12] forecast."}
+  ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
+  geom_line() +
+  geom_point(size = 5, color = "black", alpha = 0.5, 
+             shape = 21, fill = "black") +
+  geom_point(aes(y = .mean), size = 5, 
+             color = "red", alpha = 0.5, shape = 21, 
+             fill = "red", data = beer_nnet_fc) +
+  geom_line(aes(y = .mean), color = "red", size = 0.5, data = beer_nnet_fc) +
+  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  labs(x = "Date", y = "Sales",
+       caption = c(paste("MAPE=",(round(nnet_mape, 5))))) +
+  theme(legend.position = "bottom")
+```
+
+Update the MAPE table.
+
+```{r}
+mape_updated <- mape_updated %>%
+  add_row(.model = "NNAR(15,1,8)[12]", MAPE = nnet_mape) %>%
   arrange(desc(-MAPE))
 mape_updated
 ```
