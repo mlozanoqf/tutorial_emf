@@ -61,7 +61,12 @@ htmltools::tagList(
 \newpage
 
 
-```{r H2o and ML, child = 'mlts.rmd'}
+```{r fpp3, child = 'ffpp3.rmd'}
+```
+
+\newpage
+
+```{r H2o and ML, child = 'fh2o.rmd'}
 ```
 
 
