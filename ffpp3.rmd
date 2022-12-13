@@ -260,8 +260,9 @@ Estimate the four models.
 
 ```{r}
 beer_fit <- beer_train %>%
-  model(Mean = MEAN(sales), `Naïve` = NAIVE(sales),
-    `Seasonal naïve` = SNAIVE(sales), Drift = RW(sales ~ drift()))
+  model("fpp3: mean" = MEAN(sales), "fpp3: naïve" = NAIVE(sales),
+    "fpp3: seasonal naïve" = SNAIVE(sales), 
+    "fpp3: drift" = RW(sales ~ drift()))
 glance(beer_fit)
 ```
 
@@ -283,7 +284,7 @@ mape_table
 
 ```{r}
 sn_mape <- fabletools::accuracy(beer_fc, beer_2022) %>%
-  filter(.model == "Seasonal naïve") %>%
+  filter(.model == "fpp3: seasonal naïve") %>%
   select(MAPE) %>%
   unlist()
 sn_mape
@@ -291,7 +292,7 @@ sn_mape
 
 Let's plot the forecast results.
 
-```{r fig.cap="Four simple forecasts."}
+```{r fig.cap="fpp3: four simple forecasts."}
 beer_fc %>%
   autoplot(beer_tbls, level = NULL) +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
@@ -301,7 +302,7 @@ beer_fc %>%
 ```
 The plot above is not very clear. Here is a zoom version.
 
-```{r fig.cap="Zoom: Four simple forecasts."}
+```{r fig.cap="Zoom. fpp3: four simple forecasts."}
 beer_zoom <- beer_tbls %>%
   select(date, sales) %>%
   filter_index("2019-12" ~ .)
@@ -315,7 +316,7 @@ beer_fc %>%
 ```
 This is the seasonal naïve forecasts.
 
-```{r fig.cap="Zoom: Seasonal naïve forecasts."}
+```{r fig.cap="Zoom. fpp3: seasonal naïve forecasts."}
 beer_zoom <- beer_tbls %>%
   select(date, sales) %>%
   filter_index("2019-12" ~ .)
@@ -352,7 +353,7 @@ report(beer_ets)
 
 The <tt>`ETS(M,A,M)`</tt> corresponds to a Holt-Winters multiplicative method with multiplicative errors for when seasonal variations are changing proportional to the level of the series.
 
-```{r fig.cap="ETS components."}
+```{r fig.cap="fpp3: ETS components."}
 components(beer_ets) %>%
   autoplot() +
   labs(x = "Date", y = "Sales")
@@ -376,7 +377,7 @@ ets_mape
 ```
 Let's see the <tt>`ETS(M,A,M)`</tt> forecast.
 
-```{r fig.cap="ETS(M,A,M) forecast."}
+```{r fig.cap="fpp3: ETS(M,A,M) forecast."}
 beer_ets %>%
   fabletools::forecast(h = 10) %>%
   autoplot(beer_tbls) +
@@ -386,7 +387,7 @@ beer_ets %>%
 ```
 This is not very clear, here is the zoom version.
 
-```{r fig.cap="Zoom: ETS(M,A,M) forecast."}
+```{r fig.cap="Zoom. fpp3: ETS(M,A,M) forecast."}
   ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
   geom_line() +
   geom_point(size = 5, color = "black", alpha = 0.5, 
@@ -404,7 +405,7 @@ Update the MAPE table.
 
 ```{r}
 mape_updated <- mape_table %>%
-  add_row(.model = "ETS(M,A,M)", MAPE = ets_mape) %>%
+  add_row(.model = "fpp3: ETS(M,A,M)", MAPE = ets_mape) %>%
   arrange(desc(-MAPE))
 mape_updated
 ```
@@ -420,7 +421,7 @@ report(beer_arima)
 ```
 The residuals for the best ARIMA model.
 
-```{r fig.cap="Residuals from the fitted ARIMA(4,1,1)(0,1,1)[12] model."}
+```{r fig.cap="Residuals from the fitted fpp3 ARIMA(4,1,1)(0,1,1)[12] model."}
 beer_arima %>%
   select(arima_auto) %>%
   gg_tsresiduals()
@@ -445,7 +446,7 @@ arima_mape
 
 Let's plot the forecast results.
 
-```{r fig.cap="ARIMA(4,1,1)(0,1,1)[12] forecast."}
+```{r fig.cap="fpp3: ARIMA(4,1,1)(0,1,1)[12] forecast."}
 beer_arima_fc %>%
   autoplot(beer_tbls, level = NULL) +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
@@ -454,7 +455,7 @@ beer_arima_fc %>%
 
 The plot above is not very clear. Here is a zoom version.
 
-```{r fig.cap="Zoom. ARIMA(4,1,1)(0,1,1)[12] forecast."}
+```{r fig.cap="Zoom. fpp3: ARIMA(4,1,1)(0,1,1)[12] forecast."}
   ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
   geom_line() +
   geom_point(size = 5, color = "black", alpha = 0.5, 
@@ -473,7 +474,7 @@ Update the MAPE table.
 
 ```{r}
 mape_updated <- mape_updated %>%
-  add_row(.model = "ARIMA(4,1,1)(0,1,1)[12]", MAPE = arima_mape) %>%
+  add_row(.model = "fpp3: ARIMA(4,1,1)(0,1,1)[12]", MAPE = arima_mape) %>%
   arrange(desc(-MAPE))
 mape_updated
 ```
@@ -506,7 +507,7 @@ nnet_mape
 ```
 Let's plot the forecast results.
 
-```{r fig.cap="NNAR(15,1,8)[12] forecast."}
+```{r fig.cap="fpp3: NNAR(15,1,8)[12] forecast."}
 beer_nnet_fc %>%
   autoplot(beer_tbls, level = NULL) +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
@@ -515,7 +516,7 @@ beer_nnet_fc %>%
 
 The plot above is not very clear. Here is a zoom version.
 
-```{r fig.cap="Zoom. NNAR(15,1,8)[12] forecast."}
+```{r fig.cap="Zoom. fpp3: NNAR(15,1,8)[12] forecast."}
   ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
   geom_line() +
   geom_point(size = 5, color = "black", alpha = 0.5, 
@@ -534,7 +535,7 @@ Update the MAPE table.
 
 ```{r}
 mape_updated <- mape_updated %>%
-  add_row(.model = "NNAR(15,1,8)[12]", MAPE = nnet_mape) %>%
+  add_row(.model = "fpp3: NNAR(15,1,8)[12]", MAPE = nnet_mape) %>%
   arrange(desc(-MAPE))
 mape_updated
 ```

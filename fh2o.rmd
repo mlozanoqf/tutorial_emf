@@ -814,60 +814,60 @@ An interesting question is: *What happens to the accuracy when you average the p
 
 The forecast mean is calculated as:
 
-```{r message=FALSE, warning=FALSE}
-m <- data.frame(as.data.frame(pred_h2o),as.data.frame(pred_h2o_DL),
-          as.data.frame(pred_h2o_all),as.data.frame(predictions_tbl$value),
-        as.data.frame(fcast_tbl$sales[(nrow(fcast_tbl)-9):nrow(fcast_tbl)]))
-pred_mean <- rowMeans(m)
-pred_mean <- as.tibble(pred_mean)
-```
+<!-- ```{r message=FALSE, warning=FALSE} -->
+<!-- m <- data.frame(as.data.frame(pred_h2o),as.data.frame(pred_h2o_DL), -->
+<!--           as.data.frame(pred_h2o_all),as.data.frame(predictions_tbl$value), -->
+<!--         as.data.frame(fcast_tbl$sales[(nrow(fcast_tbl)-9):nrow(fcast_tbl)])) -->
+<!-- pred_mean <- rowMeans(m) -->
+<!-- pred_mean <- as.tibble(pred_mean) -->
+<!-- ``` -->
 
 Now let's see actual versus predicted.
 
-```{r}
-error_tbl_mean <-as_tibble(c(as.data.frame(actuals_tbl),
-                        as.data.frame(pred_mean$value))) %>%
-    rename(actual = sales, pred = `pred_mean$value`) %>%
-    select(date, actual, pred) %>%
-    mutate(error = round((actual - pred), 2), 
-           error_pct = round((error / actual), 4))
-error_tbl_mean
-```
+<!-- ```{r} -->
+<!-- error_tbl_mean <-as_tibble(c(as.data.frame(actuals_tbl), -->
+<!--                         as.data.frame(pred_mean$value))) %>% -->
+<!--     rename(actual = sales, pred = `pred_mean$value`) %>% -->
+<!--     select(date, actual, pred) %>% -->
+<!--     mutate(error = round((actual - pred), 2),  -->
+<!--            error_pct = round((error / actual), 4)) -->
+<!-- error_tbl_mean -->
+<!-- ``` -->
 
 Summarize the individual point forecast errors.
 
-```{r}
-error_tbl_mean %>%
-    summarise(me = mean(error), rmse = mean(error^2)^0.5,
-        mae  = mean(abs(error)), mape = mean(abs(error_pct)),
-        mpe  = mean(error_pct)) %>%
-glimpse()
-```
+<!-- ```{r} -->
+<!-- error_tbl_mean %>% -->
+<!--     summarise(me = mean(error), rmse = mean(error^2)^0.5, -->
+<!--         mae  = mean(abs(error)), mape = mean(abs(error_pct)), -->
+<!--         mpe  = mean(error_pct)) %>% -->
+<!-- glimpse() -->
+<!-- ``` -->
 
 Visualize the average forecast.
 
-```{r fig.cap="Forecast: average forecast."}
-beer %>%
-    filter(date > as.Date("2021-01-01")) %>%
-    ggplot(aes(x = date, y = sales)) +
-    # Training data
-    geom_line(color = "black") +
-    geom_point(size = 5, alpha = 0.5) +
-    # Predictions
-    geom_point(aes(y = pred), size = 5, 
-               alpha = 0.5, shape = 21, 
-               fill = "red", data = error_tbl) +
-geom_line(aes(y = pred), color = "red", size = 0.5, data = error_tbl) +
-geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
-      # Actuals
-    geom_line(color = "black", data = actuals_tbl) +
-    geom_point(size =5, alpha = 0.5, data = actuals_tbl) +
-geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), linetype = 2) +
-    # Aesthetics
-    theme_tq() +
-    labs(x = "Date", y = "Sales",
-caption = c(paste("MAPE=",((100*mean(abs(error_tbl_mean$error_pct)))))))
-```
+<!-- ```{r fig.cap="Forecast: average forecast."} -->
+<!-- beer %>% -->
+<!--     filter(date > as.Date("2021-01-01")) %>% -->
+<!--     ggplot(aes(x = date, y = sales)) + -->
+<!--     # Training data -->
+<!--     geom_line(color = "black") + -->
+<!--     geom_point(size = 5, alpha = 0.5) + -->
+<!--     # Predictions -->
+<!--     geom_point(aes(y = pred), size = 5,  -->
+<!--                alpha = 0.5, shape = 21,  -->
+<!--                fill = "red", data = error_tbl) + -->
+<!-- geom_line(aes(y = pred), color = "red", size = 0.5, data = error_tbl) + -->
+<!-- geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) + -->
+<!--       # Actuals -->
+<!--     geom_line(color = "black", data = actuals_tbl) + -->
+<!--     geom_point(size =5, alpha = 0.5, data = actuals_tbl) + -->
+<!-- geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), linetype = 2) + -->
+<!--     # Aesthetics -->
+<!--     theme_tq() + -->
+<!--     labs(x = "Date", y = "Sales", -->
+<!-- caption = c(paste("MAPE=",((100*mean(abs(error_tbl_mean$error_pct))))))) -->
+<!-- ``` -->
 
 Not bad, as expected.
 
@@ -975,23 +975,23 @@ beer %>%
 
 Let's see all results at once: H2O, linear regression, ARIMA and the average forecast.
 
-```{r}
-summary_techniques <- c("H2O without Deep Learning algorithm",
-             "H2O including only Deep Learning algorithm",
-             "H2O all available algorithms",
-             "Multivariate linear regression",
-             "ARIMA",
-             "Average")
-summary_mape <- c(mean(abs(error_tbl$error_pct))*100,
-             mean(abs(error_tbl_DL$error_pct))*100,
-             mean(abs(error_tbl_all$error_pct))*100,
-             mean(abs(test_error_pct_lm)),
-             mean(abs(test_error_pct_arima)),
-             100*mean(abs(error_tbl_mean$error_pct)))
-sum <- data.frame(summary_techniques, summary_mape)
-kable(sum, caption = "Summary of results.") %>%
-kable_styling(latex_options = "HOLD_position")
-```
+<!-- ```{r} -->
+<!-- summary_techniques <- c("H2O without Deep Learning algorithm", -->
+<!--              "H2O including only Deep Learning algorithm", -->
+<!--              "H2O all available algorithms", -->
+<!--              "Multivariate linear regression", -->
+<!--              "ARIMA", -->
+<!--              "Average") -->
+<!-- summary_mape <- c(mean(abs(error_tbl$error_pct))*100, -->
+<!--              mean(abs(error_tbl_DL$error_pct))*100, -->
+<!--              mean(abs(error_tbl_all$error_pct))*100, -->
+<!--              mean(abs(test_error_pct_lm)), -->
+<!--              mean(abs(test_error_pct_arima)), -->
+<!--              100*mean(abs(error_tbl_mean$error_pct))) -->
+<!-- sum <- data.frame(summary_techniques, summary_mape) -->
+<!-- kable(sum, caption = "Summary of results.") %>% -->
+<!-- kable_styling(latex_options = "HOLD_position") -->
+<!-- ``` -->
 
 
 ```{r}
