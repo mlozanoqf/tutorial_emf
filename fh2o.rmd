@@ -812,84 +812,21 @@ This is a decent forecast.
 
 An interesting question is: *What happens to the accuracy when you average the predictions of all different methods?* This question makes sense because the decision of using one technique or another is not trivial. Taking the average could be useful to avoid extreme results but at the same time it could be hard to interpret as the forecast comes from different techniques. In any case, it is interesting to see how it works.
 
-The forecast mean is calculated as:
-
-<!-- ```{r message=FALSE, warning=FALSE} -->
-<!-- m <- data.frame(as.data.frame(pred_h2o),as.data.frame(pred_h2o_DL), -->
-<!--           as.data.frame(pred_h2o_all),as.data.frame(predictions_tbl$value), -->
-<!--         as.data.frame(fcast_tbl$sales[(nrow(fcast_tbl)-9):nrow(fcast_tbl)])) -->
-<!-- pred_mean <- rowMeans(m) -->
-<!-- pred_mean <- as.tibble(pred_mean) -->
-<!-- ``` -->
-
-Now let's see actual versus predicted.
-
-<!-- ```{r} -->
-<!-- error_tbl_mean <-as_tibble(c(as.data.frame(actuals_tbl), -->
-<!--                         as.data.frame(pred_mean$value))) %>% -->
-<!--     rename(actual = sales, pred = `pred_mean$value`) %>% -->
-<!--     select(date, actual, pred) %>% -->
-<!--     mutate(error = round((actual - pred), 2),  -->
-<!--            error_pct = round((error / actual), 4)) -->
-<!-- error_tbl_mean -->
-<!-- ``` -->
-
-Summarize the individual point forecast errors.
-
-<!-- ```{r} -->
-<!-- error_tbl_mean %>% -->
-<!--     summarise(me = mean(error), rmse = mean(error^2)^0.5, -->
-<!--         mae  = mean(abs(error)), mape = mean(abs(error_pct)), -->
-<!--         mpe  = mean(error_pct)) %>% -->
-<!-- glimpse() -->
-<!-- ``` -->
-
-Visualize the average forecast.
-
-<!-- ```{r fig.cap="Forecast: average forecast."} -->
-<!-- beer %>% -->
-<!--     filter(date > as.Date("2021-01-01")) %>% -->
-<!--     ggplot(aes(x = date, y = sales)) + -->
-<!--     # Training data -->
-<!--     geom_line(color = "black") + -->
-<!--     geom_point(size = 5, alpha = 0.5) + -->
-<!--     # Predictions -->
-<!--     geom_point(aes(y = pred), size = 5,  -->
-<!--                alpha = 0.5, shape = 21,  -->
-<!--                fill = "red", data = error_tbl) + -->
-<!-- geom_line(aes(y = pred), color = "red", size = 0.5, data = error_tbl) + -->
-<!-- geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) + -->
-<!--       # Actuals -->
-<!--     geom_line(color = "black", data = actuals_tbl) + -->
-<!--     geom_point(size =5, alpha = 0.5, data = actuals_tbl) + -->
-<!-- geom_vline(xintercept = as.numeric(as.Date("2016-12-01")), linetype = 2) + -->
-<!--     # Aesthetics -->
-<!--     theme_tq() + -->
-<!--     labs(x = "Date", y = "Sales", -->
-<!-- caption = c(paste("MAPE=",((100*mean(abs(error_tbl_mean$error_pct))))))) -->
-<!-- ``` -->
-
-Not bad, as expected.
-
+In order to calculate the average forecast we need to load the forecasts from the previous section. In particular, we include the seasonal naïve, NNAR(15,1,8)[12], ETS(M,A,M) and ARIMA(4,1,1)(0,1,1)[12]. We did not include the naïve, drift and mean.
 
 ```{r}
 # This comes from ffpp3.rmd
 fpp3_fc <- readRDS("fpp3_fc.rds")
 ```
 
+We need to add our H2O forecast into <tt>`fpp3_fc`</tt>.
 
 ```{r}
-as_tsibble(fpp3_fc) %>%
-  select(.model, date, .mean)
-```
-
-```{r}
-pred_h2o_x<-as.data.frame(pred_h2o)
-pred_h2o_DL_x<-as.data.frame(pred_h2o_DL)
-pred_h2o_all_x<-as.data.frame(pred_h2o_all)
-```
-
-```{r}
+# Transform h2o object to a simple data frame.
+pred_h2o_x <- as.data.frame(pred_h2o)
+pred_h2o_DL_x <- as.data.frame(pred_h2o_DL)
+pred_h2o_all_x <- as.data.frame(pred_h2o_all)
+# Transform the data frame to a tsibble.
 pred_h2o_fc <- tsibble(
   .model = rep("pred_h2o", 10),
   date = yearmonth(c("2022-01", "2022-02", "2022-03", "2022-04",
@@ -897,7 +834,6 @@ pred_h2o_fc <- tsibble(
            "2022-09", "2022-10")),
   .mean = pred_h2o_x$predict,
   index = date)
-
 pred_h2o_DL_fc <- tsibble(
   .model = rep("pred_h2o_DL", 10),
   date = yearmonth(c("2022-01", "2022-02", "2022-03", "2022-04",
@@ -905,7 +841,6 @@ pred_h2o_DL_fc <- tsibble(
            "2022-09", "2022-10")),
   .mean = pred_h2o_DL_x$predict,
   index = date)
-
 pred_h2o_all_fc <- tsibble(
   .model = rep("pred_h2o_all", 10),
   date = yearmonth(c("2022-01", "2022-02", "2022-03", "2022-04",
@@ -913,18 +848,16 @@ pred_h2o_all_fc <- tsibble(
            "2022-09", "2022-10")),
   .mean = pred_h2o_all_x$predict,
   index = date)
-```
-
-```{r}
+# Similar transformation for lm and arima.
 predictions_tbl$date <- yearmonth(predictions_tbl$date)
+
 pred_lm_fc <- predictions_tbl %>%
   rename(.mean = value) %>%
   mutate(.model = rep("lm", 10)) %>%
   relocate(.model)
-```
-
-```{r}
+  
 error_tbl_arima$date <- yearmonth(error_tbl_arima$date)
+
 pred_arima2_fc <- error_tbl_arima %>%
   select(date, pred) %>%
   rename(.mean = pred) %>%
@@ -932,30 +865,25 @@ pred_arima2_fc <- error_tbl_arima %>%
   relocate(.model)
 ```
 
+Now gather all together, calculate the average forecast, and performance measures.
 
 ```{r}
+# Gather all.
 all_fc <- as_tsibble(fpp3_fc) %>%
   select(.model, date, .mean) %>%
   bind_rows(pred_h2o_fc, pred_h2o_DL_fc, pred_h2o_all_fc,
             pred_lm_fc, pred_arima2_fc)
-all_fc
-```
-
-```{r}
+# We need this to calculate mape.
 average <- all_fc %>%
   index_by(date) %>%
-  summarise(av_fc = mean(.mean)) %>%
+  summarise(av_fc = mean(.mean)) %>% # This is the average forecast.
   bind_cols(sales = actuals_tbl$sales) %>%
     mutate(error = round((sales - av_fc), 2), 
            error_pct = round((error / sales), 4)) 
 average
 ```
 
-
-
-```{r}
-100*mean(abs(average$error_pct))
-```
+Finally, the forecast.
 
 ```{r fig.cap="Forecast. Average."}
 beer %>%
@@ -970,29 +898,10 @@ beer %>%
   geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
   theme_tq() +
   labs(x = "Date", y = "Sales",
-       caption = c(paste("MAPE=",((round(100*mean(abs(average$error_pct)), 5))))))
+       caption = c(paste("MAPE=",
+                         ((round(100*mean(abs(average$error_pct)), 5))))))
 ```
-
-Let's see all results at once: H2O, linear regression, ARIMA and the average forecast.
-
-<!-- ```{r} -->
-<!-- summary_techniques <- c("H2O without Deep Learning algorithm", -->
-<!--              "H2O including only Deep Learning algorithm", -->
-<!--              "H2O all available algorithms", -->
-<!--              "Multivariate linear regression", -->
-<!--              "ARIMA", -->
-<!--              "Average") -->
-<!-- summary_mape <- c(mean(abs(error_tbl$error_pct))*100, -->
-<!--              mean(abs(error_tbl_DL$error_pct))*100, -->
-<!--              mean(abs(error_tbl_all$error_pct))*100, -->
-<!--              mean(abs(test_error_pct_lm)), -->
-<!--              mean(abs(test_error_pct_arima)), -->
-<!--              100*mean(abs(error_tbl_mean$error_pct))) -->
-<!-- sum <- data.frame(summary_techniques, summary_mape) -->
-<!-- kable(sum, caption = "Summary of results.") %>% -->
-<!-- kable_styling(latex_options = "HOLD_position") -->
-<!-- ``` -->
-
+Let's update our MAPE summary table.
 
 ```{r}
 mape_updated_all <- mape_updated_h2o %>%
@@ -1000,10 +909,11 @@ mape_updated_all <- mape_updated_h2o %>%
           MAPE = mean(abs(test_error_pct_lm))) %>%
   add_row(.model = "ARIMA(1,1,2)(2,1,1)[12]", 
           MAPE = mean(abs(test_error_pct_arima))) %>%
+  add_row(.model = "Average forecast", 
+          MAPE = 100*mean(abs(average$error_pct))) %>%
   arrange(desc(-MAPE))
 mape_updated_all
 ```
-
 
 Nice.
 
