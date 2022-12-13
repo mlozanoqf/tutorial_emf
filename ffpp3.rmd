@@ -544,3 +544,10 @@ mape_updated
 saveRDS(mape_updated, "mape_updated.rds")
 ```
 
+```{r}
+# I save the forecast object to use it in hh2o.rmd
+fpp3_fc <- bind_rows(beer_sn_fc, beer_ets_fc, beer_arima_fc,
+                     beer_nnet_fc)
+saveRDS(fpp3_fc, "fpp3_fc.rds")
+```
+

@@ -12,7 +12,7 @@ rm(list=ls())
 
 \newpage
 
-# Forecasts with H2O.
+# Forecasts with <tt>`h2o`</tt>.
 
 As in the previous section, the problem is to forecast a time series. In particular, the time series is the *Beer, Wine, and Distilled Alcoholic Beverages Sales* as in the original Matt Dancho's example. The data is taken from FRED (Federal Reserve Economic Data). The data belongs to the non-durable goods category, it includes U.S. merchant wholesalers, except manufacturers' sales branches and offices sales. The monthly time series goes from 2010-01-01 to 2022-10-31. And the goal is to use 2022 data (10 months) as a test data to conduct the forecast.
 
@@ -42,7 +42,6 @@ library(tictoc)
 ```{r}
 # This comes from ffpp3.rmd
 mape_updated <- readRDS("mape_updated.rds")
-mape_updated
 ```
 
 We can conveniently download the data directly from the FRED API in one line of code.
@@ -70,7 +69,7 @@ tail(beer)
 
 Better now. 
 
-## The H2O package.
+## The <tt>`h2o`</tt> package.
 
 Machine learning is the study of computer algorithms that improve automatically through experience. There are many ways and approaches to implement machine learning especially in time series forecasts purposes. This document heavily relies on <tt>`h2o`</tt> library. The <tt>`h2o`</tt> package is a product offered by H2O.ai that contains a number of cutting edge machine learning algorithms, performance metrics, and auxiliary functions to make machine learning both powerful and easy to implement.
 
@@ -84,7 +83,7 @@ The main objective here is to use <tt>`h2o`</tt> locally (in your own computer) 
 
 ## The data.
 
-The *validation* dataset is the sample of data used to provide an unbiased evaluation of a model fit on the training dataset while tuning model hyperparameters.
+We need an additional data set. The *validation* dataset is the sample of data used to provide an unbiased evaluation of a model fit on the training dataset while tuning model hyperparameters. The new datasets are the following.
 
 ```{r fig.cap="Beer sales: train, validation and test sets."}
 beer %>%
@@ -116,6 +115,8 @@ beer %>%
        caption = "The models do not know the test region, this is for us 
        to see how well the models do the 10-month ahead forecast.") 
 ```
+
+And the corresponding zoom version.
 
 ```{r fig.cap="Zoom. Beer sales: train, validation and test sets."}
 beer %>%
@@ -159,6 +160,11 @@ beer_aug <- beer %>%
 tail(beer_aug)
 ```
 
+The variable (column) names <tt>`beer_aug`</tt> are:
+
+```{r}
+colnames(beer_aug)
+```
 
 Note how we went from 3 columns in <tt>`beer`</tt> to 31 columns in <tt>`beer_aug`</tt>.
 
@@ -178,6 +184,8 @@ The database did not change too much. Now we have 29 columns in <tt>`beer_clean`
 
 Let’s split the database into a training, validation and test sets following the time ranges in the visualization above. These training sets are the way most machine learning algorithms can be implemented and evaluated. We normally take more observations for the training, and less observations for the validation and test. The test set (the most recent dates) is unknown in the learning process of the models, the test set will be useful for us to be able to compare forecasts versus what really happened. This is how we can measure out-of-sample estimation errors.
 
+These are the 10-months we are interested to forecast.
+
 ```{r}
 # Split into training, validation and test sets.
 train_tbl <- beer_clean %>% filter(year < 2021)
@@ -187,7 +195,7 @@ test_tbl  <- beer_clean %>% filter(year == 2022)
 test_tbl$sales
 ```
 
-Remember our goal is to forecast the first 10 months of 2022.
+Our goal is to forecast the first 10 months of 2022.
 
 ## Prepare for H2O.
 
@@ -213,11 +221,11 @@ Let's list the names of the variables.
 # Set names for h2o.
 y <- "sales"
 x <- setdiff(names(train_h2o), y) # Adds sales to the names list.
-kable(matrix(x, 7, 4), caption = "Summary of variable names.") %>%
-kable_styling(latex_options = "HOLD_position")
+colnames(train_h2o)
 ```
 
-The <tt>`h2o.automl()`</tt> is a function in H2O that automates the process of building a large number of models, with the goal of finding the *best* model without any prior knowledge or effort by the data scientist. The alternative of using <tt>`h2o.automl()`</tt> is to pick some models according to the database characteristics, implement the models, and pick the one with the best performance according to some evaluation criterion. This alternative is time consuming and it could use an intensive computational memory and power, this is why H2O is valuable. If H2O was already amazing, this function makes it even more powerful. 
+
+The <tt>`h2o.automl()`</tt> is a function in H2O that automates the process of building a large number of models, with the goal of finding the *best* model without any prior knowledge or effort by the data scientist. The alternative of using <tt>`h2o.automl()`</tt> is to pick some models according to the database characteristics, implement the models, and pick the one with the best performance according to some evaluation criterion. This alternative is time consuming and it could use an intensive computational memory and power, this is why H2O is valuable.
 
 The available algorithms that <tt>`h2o.automl()`</tt> currently run and compare are (click on each one to see a full description):
 
@@ -228,11 +236,11 @@ The available algorithms that <tt>`h2o.automl()`</tt> currently run and compare 
 * [Deep Learning (Neural Networks).](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/deep-learning.html?highlight=deeplearning)
 * [Stacked Ensembles.](https://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/stacked-ensembles.html?highlight=stackedensemble)
 
-It is a good time to define how we are going to use some concepts at least in this document. Here, we call forecasting *techniques* to the three techniques implemented in this document: machine learning using H2O, linear regression, and ARIMA. When we implement <tt>`h2o.automl()`</tt> function, H2O test for the six *algorithms* listed above. Each algorithm includes many other *models* that belongs to these algorithms in the machine learning process. The result of <tt>`h2o.automl()`</tt> is one model that belongs to one algorithm. This is the difference between forecasting techniques, algorithms, and models. 
+When we implement <tt>`h2o.automl()`</tt> function, H2O test for the six *algorithms* listed above. Each algorithm includes many other *models* that belongs to these algorithms in the machine learning process. The result of <tt>`h2o.automl()`</tt> is one model that belongs to one algorithm. This is the difference between forecasting techniques, algorithms, and models. 
 
 ## Estimate H2O models.
 
-Here, we implement the <tt>`h2o.automl()`</tt> in three different ways because of reproducibility issues. Reproducibility means obtaining consistent computational results using the same input data, computational steps, methods, code, and conditions of analysis. It turns out that Deep Learning cannot be reproducible by construction. Then, we first apply <tt>`h2o.automl()`</tt> without Deep Learning. Second, we apply <tt>`h2o.automl()`</tt> with only Deep Learning (here the results will be different each time we run the code). And third, including all available algorithms in <tt>`h2o.automl()`</tt> (again, the results might change every time we run the code). The first is the only one which can be reproducible and the other two are expected to change every time we run the R code. 
+Here, we implement the <tt>`h2o.automl()`</tt> in three different ways because of reproducibility issues. Reproducibility means obtaining consistent computational results using the same input data, computational steps, methods, code, and conditions of analysis. It turns out that Deep Learning cannot be reproducible by construction. Then, we first apply <tt>`h2o.automl()`</tt> without Deep Learning. Second, we apply <tt>`h2o.automl()`</tt> with only Deep Learning, here the results will be different each time we run the code. And third, including all available algorithms in <tt>`h2o.automl()`</tt>, again, the results might change every time we run the code. The first is the only one which can be reproducible and the other two are expected to change every time we run the R code. 
 
 Please note that in the code below we set <tt>`exclude_algos`</tt> to exclude Deep Learning, and <tt>`seed = 13`</tt> to make sure every time we run the code we can get the same results.
 
@@ -258,14 +266,11 @@ automl_leader <- automl_models_h2o@leader
 automl_leader@algorithm
 ```
 
-See why `r automl_leader@algorithm` was the chosen one:
+See why `r automl_leader@algorithm` was the chosen one. Model rankings: <tt>`h2o.automl()`</tt> without Deep Learning algorithm.
 
 ```{r}
-# Show the first 10.
-kable(head(automl_models_h2o@leaderboard[,1:2], 10),
-caption = "Model rankings: h2o.automl without Deep Learning algorithm.", 
-digits = 2, row.names = TRUE) %>%
-kable_styling(font_size = 16, latex_options = "HOLD_position")
+# Model rankings: h2o.automl without Deep Learning algorithm.
+head(automl_models_h2o@leaderboard[,1:2], 10)
 ```
 
 
@@ -283,7 +288,7 @@ DL <- h2o.automl(x = x, y = y, training_frame = train_h2o,
 t_inner2 <- toc()
 ```
 
-After `r round(as.numeric((t_inner2$toc-t_inner2$tic)/60), 2)` minutes running, the selected model by <tt>`h2o.automl()`</tt> is:
+After `r round(as.numeric((t_inner2$toc-t_inner2$tic)/60), 2)` minutes running, the selected Deep Learning model by <tt>`h2o.automl()`</tt> is:
 
 ```{r}
 # Extract leader model
@@ -291,13 +296,10 @@ automl_DL <- DL@leader
 automl_DL@algorithm
 ```
 
-See why this specific `r automl_DL@algorithm` model was the chosen one:
+See why this specific `r automl_DL@algorithm` model was the chosen one. Model rankings: <tt>`h2o.automl()`</tt> with only Deep Learning algorithm.
 
 ```{r}
-kable(head(DL@leaderboard[,1:2], 10), 
-  caption = "Model rankings: h2o.automl with only Deep Learning algorithm.",
-  digits = 2, row.names = TRUE) %>%
-  kable_styling(font_size = 16, latex_options = "HOLD_position")
+head(DL@leaderboard[,1:2], 10)
 ```
 
 All models belong to the same algorithm, but we clearly choose the first one of the list. The machine learning workflow estimate a number of models using the train region and evaluate them using the validation region. The estimated model parameters then change as they learn from their mistakes. This process is repeated until a specific restriction meets, in this case <tt>`max_runtime_secs`</tt> is set to 60 seconds. At the end, we select the best ranked model.
@@ -306,7 +308,6 @@ Now let's consider the third alternative. This is, run <tt>`h2o.automl()`</tt> w
 
 ```{r}
 tic("inner3")
-
 # This might take some time to run. 
 automl_models_h2o_all <- h2o.automl(x = x, y = y, 
     training_frame = train_h2o, validation_frame = valid_h2o, 
@@ -324,17 +325,13 @@ automl_leader_all <- automl_models_h2o_all@leader
 automl_leader_all@algorithm
 ```
 
-See why `r automl_leader_all@algorithm` model was the chosen one in this specific and unique code compilation:
+See why c model was the chosen one in this specific and unique code compilation. Model rankings: <tt>`h2o.automl`</tt> with all available algorithms
 
 ```{r}
-# Let's show the first 10 of the list.
-kable(head(automl_models_h2o_all@leaderboard[,1:2], 10), 
-    caption = "Model rankings: h2o.automl with all available algorithms.",
-    digits = 2, row.names = TRUE) %>%
-  kable_styling(font_size = 16, latex_options = "HOLD_position")
+head(automl_models_h2o_all@leaderboard[,1:2], 10)
 ```
 
-Let's summarize the results according to the mean residual deviance as this was the criterion in <tt>`stopping_metric`</tt>. The table shows the best ranked model according to our three different runs of <tt>`h2o.automl()`</tt>.
+Let's summarize the results according to the root mean square error *rmse* as this was the criterion in <tt>`stopping_metric`</tt>. The table shows the best ranked model according to our three different runs of <tt>`h2o.automl()`</tt>.
 
 ```{r}
 # Collect model names and the rmse.
@@ -353,11 +350,12 @@ caption = "Top ranked models: h2o.automl rmse.") %>%
 kable_styling(latex_options = "HOLD_position")
 ```
 
+
 This is interesting because this suggest that it makes sense to run the H2O more than one time. It would be good to test for a different <tt>`stopping_metric`</tt>, <tt>`max_runtime_secs`</tt> and <tt>`max_models`</tt>.
 
 ## Predictions.
 
-Here are how the forecasts are calculated.
+Here are the forecasts.
 
 ```{r message=FALSE, warning=FALSE}
 # The h2o.predict function do the job.
@@ -383,7 +381,8 @@ kable_styling(latex_options = "HOLD_position")
 
 The forecast looks good. Note that in some cases it over-estimate and in others under-estimate the real values, but in general these differences are small. Now, let's look at the same information in a plot.
 
-```{r fig.cap="Forecast: H2O without Deep Learning algorithm."}
+
+```{r fig.cap="Forecast. H2O without Deep Learning algorithm."}
 beer %>%
   filter(date > as.Date("2021-01-01")) %>%
     ggplot(aes(x = date, y = sales)) +
@@ -393,13 +392,14 @@ beer %>%
     geom_line(color = "black", size = 0.5) +
     # Predictions.
     geom_point(aes(y = pred), size = 5, 
-               color = "black", alpha = 0.5, shape = 21, 
+               color = "red", alpha = 0.5, shape = 21, 
                fill = "red", data = error_tbl) +
 geom_line(aes(y = pred), color = "red", size = 0.5, data = error_tbl) +
 geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
     # Aesthetics.
     labs(x = "Date", y = "Sales",
-    caption = c(paste("MAPE=",((mean(abs(error_tbl$error_pct))*100)))))
+    caption = c(paste("MAPE=", 
+                      ((round(mean(abs(error_tbl$error_pct))*100, 5))))))
 ```
 
 This is an additional performance summary.
@@ -419,32 +419,30 @@ error_tbl_DL <- beer %>%
     rename(actual = sales) %>%
     mutate(error = actual - pred, error_pct = error / actual) 
 kable(error_tbl_DL, 
-caption = "Detailed performance: h2o.automl only Deep Learning algoritm.",
+caption = "Detailed performance: h2o.automl only Deep Learning algorithm.",
       digits = 3, row.names = TRUE) %>%
 kable_styling(latex_options = "HOLD_position")
 ```
 
 The same information in a plot.
 
-```{r fig.cap="Forecast: H2O including only Deep Learning algorithm."}
+```{r fig.cap="Forecast. H2O including only Deep Learning algorithm."}
 beer %>%
     filter(date > as.Date("2021-01-01")) %>%
     ggplot(aes(x = date, y = sales)) +
-    # Data.
     geom_point(size = 5, color = "black", alpha = 0.5, 
                shape = 21, fill = "black") +
     geom_line(color = "black", size = 0.5) +
-    # Predictions.
     geom_point(aes(y = pred), size = 5, 
-               color = "black", alpha = 0.5, shape = 21, 
+               color = "red", alpha = 0.5, shape = 21, 
                fill = "red", data = error_tbl_DL) +
 geom_line(aes(y = pred), color = "red", size = 0.5, 
           data = error_tbl_DL) +
     geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), 
                linetype = 2) +
-    # Aesthetics.
     labs(x = "Date", y = "Sales",
-    caption = c(paste("MAPE=",((mean(abs(error_tbl_DL$error_pct))*100)))))
+    caption = c(paste("MAPE=",
+                      ((round(mean(abs(error_tbl_DL$error_pct))*100, 5))))))
 ```
 
 Additional performance indicators.
@@ -454,7 +452,7 @@ Additional performance indicators.
 h2o.performance(automl_DL, newdata = test_h2o)
 ```
 
-This is the H2O case with no restrictions, considering all available algorithms.
+Finally, this is the H2O case with no restrictions, considering all available algorithms.
 
 ```{r}
 # 10-period forecast error: h2o.automl all algorithms.
@@ -471,24 +469,22 @@ kable_styling(latex_options = "HOLD_position")
 
 The visual representation.
 
-```{r fig.cap="Forecast: H2O including all available algorithms."}
+```{r fig.cap="Forecast. H2O including all available algorithms."}
 beer %>%
     filter(date > as.Date("2021-01-01")) %>%
     ggplot(aes(x = date, y = sales)) +
-    # Data.
     geom_point(size = 5, color = "black", alpha = 0.5, 
                shape = 21, fill = "black") +
     geom_line(color = "black", size = 0.5) +
-    # Predictions.
     geom_point(aes(y = pred), size = 5, 
-               color = "black", alpha = 0.5, shape = 21, 
+               color = "red", alpha = 0.5, shape = 21, 
                fill = "red", data = error_tbl_all) +
 geom_line(aes(y = pred), color = "red", size = 0.5, 
           data = error_tbl_all) +
 geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
-    # Aesthetics.
     labs(x = "Date", y = "Sales",
-    caption = c(paste("MAPE=",((mean(abs(error_tbl_all$error_pct))*100)))))
+    caption = c(paste("MAPE=",
+                      ((round(mean(abs(error_tbl_all$error_pct))*100, 5))))))
 ```
 
 Additional performance metrics.
@@ -497,7 +493,7 @@ Additional performance metrics.
 h2o.performance(automl_leader_all, newdata = test_h2o)
 ```
 
-These plots show the power of modern forecasting techniques. In finance we care about the future and these techniques can be used as a tool to reduce the uncertainty about the future. Obviously, we cannot predict without errors, but the objective is to achieve the lowest forecasting errors possible. 
+In finance we care about the future and these techniques can be used as a tool to reduce the uncertainty about the future. Obviously, we cannot predict without errors, but the objective is to achieve the lowest forecasting errors possible. 
 
 ## Summary H2O models.
 
@@ -553,7 +549,7 @@ point_forecast_3 <- data.frame(
 point_forecast <- rbind.data.frame(point_forecast_1, point_forecast_2,
                                    point_forecast_3)
 row.names(point_forecast) <- c("Without Deep Learning", 
-                                  "Only Deep Learning", "All algorithms")
+                               "Only Deep Learning", "All algorithms")
 kable(point_forecast, 
 caption = "Top ranked models: Lowest point forecast percentage errors.",
 digits = 6) %>%
@@ -562,19 +558,34 @@ kable_styling(latex_options = "HOLD_position")
 
 We normally do not choose a model according to one specific point forecast. However, it is interesting to see which alternative and which specific date has been forecasted with the highest accuracy.
 
+```{r}
+mape_updated_h2o <- mape_updated %>%
+  add_row(.model = paste("H2O no Deep Learning:", 
+                         automl_leader@algorithm), 
+          MAPE = mean(abs(error_tbl$error_pct))*100) %>%
+  add_row(.model = paste("H2O Deep Learning:",
+                         automl_DL@algorithm),
+          MAPE = mean(abs(error_tbl_DL$error_pct))*100) %>%
+  add_row(.model = paste("H2O all models:", 
+                         automl_leader_all@algorithm),
+                         MAPE = mean(abs(error_tbl_all$error_pct))*100) %>%
+  arrange(desc(-MAPE))
+mape_updated_h2o
+```
 
 # Two more forecast models.
 
+As in the original Matt Dancho's example, we include the linear regression and a different ARIMA package to conduct two more forecasts using the <tt>`auto.arima()`</tt> function.
+
 ## Linear regression.
 
-Let's implement a simple but powerful approach using the <tt>`lm()`</tt> function.
+Let's implement a simple approach using the <tt>`lm()`</tt> function.
 
-## Implement the model.
+## Estimation.
 
-This is the simplest choice, and still has a very high $R^2$. The independent variables are all <tt>`beer_aug`</tt> variables except for <tt>`date`</tt>, <tt>`diff`</tt>, and <tt>`symbol`</tt>.
+This is the simplest choice, and still has a very high adjusted $R^2$. The independent variables are all <tt>`beer_aug`</tt> variables except for <tt>`date`</tt>, <tt>`diff`</tt>, and <tt>`symbol`</tt>.
 
 ```{r}
-# linear regression model used, but can use any model
 fit_lm <- lm(sales ~ ., data = 
                select(beer_aug, -c(date, diff, symbol)))
 summary(fit_lm)
@@ -587,7 +598,6 @@ At first sight, the model looks promising.
 Prediction is easy in R.
 
 ```{r}
-# Make predictions
 pred <- predict(fit_lm, newdata = test_tbl)
 future_idx <- tail(beer$date, 10) # The 10-months forecast period.
 predictions_tbl <- tibble(date  = future_idx, value = pred)
@@ -622,29 +632,23 @@ tibble(me, rmse, mae, mape, mpe) %>%
 
 Visualize our forecast.
 
-```{r fig.cap="Forecast: multivariate linear regression."}
+```{r fig.cap="Forecast. Multivariate linear regression."}
 beer %>%
-    filter(date > as.Date("2021-01-01")) %>%
-    ggplot(aes(x = date, y = sales)) +
-    # Training data.
-    geom_line(color = "black", size = 0.5) +
-    geom_point(color = "black", size = 5, alpha = 0.5) +
-    # Predictions.
-    geom_line(aes(y = value), size = 0.5,
-              color = "red", data = predictions_tbl) +
-    geom_point(aes(y = value), size = 5, alpha = 0.5,
-               color = "red", data = predictions_tbl) +
-    # Actuals
- #   geom_line(color = "black", size = 0.5, data = actuals_tbl) +
- #   geom_point(color = "black", size = 5, alpha = 0.5, data = actuals_tbl) +
-geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
-    # Aesthetics
-    theme_tq() +
-    labs(x = "Date", y = "Sales",
-        caption = c(paste("MAPE=",((mean(abs(test_error_pct_lm)))))))
+  filter(date > as.Date("2021-01-01")) %>%
+  ggplot(aes(x = date, y = sales)) +
+  geom_line(color = "black", size = 0.5) +
+  geom_point(color = "black", size = 5, alpha = 0.5) +
+  geom_line(aes(y = value), size = 0.5,
+            color = "red", data = predictions_tbl) +
+  geom_point(aes(y = value), size = 5, alpha = 0.5,
+             color = "red", data = predictions_tbl) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
+  theme_tq() +
+  labs(x = "Date", y = "Sales",
+       caption = c(paste("MAPE=",((round(mean(abs(test_error_pct_lm)), 5))))))
 ```
 
-This is clearly a good alternative. The H2O machine learning could lead to better results if we consider a longer time-series because in that way the possibilities to learn increases.
+This is clearly a good alternative.
 
 ## ARIMA.
 
@@ -652,10 +656,7 @@ Here, <tt>`sweep`</tt> is used for tidying the <tt>`forecast`</tt> package workf
 
 ## Prepare the data.
 
-The <tt>`tk_ts`</tt> coerce time series objects and tibbles with date/date-time columns to ts (time-series).
-
-
-
+The <tt>`tk_ts()`</tt> function coerce time series objects and tibbles with date/date-time columns to <tt>`ts`</tt> (time-series).
 
 ```{r}
 # Convert from tbl to ts.
@@ -663,18 +664,18 @@ beer_sales_ts <- tk_ts(beer[1:144,], start = 2010, freq = 12)
 beer_sales_ts
 ```
 
-Just verify <tt>`tk_ts`</tt> worked.
+Just verify <tt>`tk_ts()`</tt> function worked.
 
 ```{r}
 # Check that ts-object has a timetk index.
 has_timetk_idx(beer_sales_ts)
 ```
 
-Great. This will be important when we use <tt>`sw_sweep`</tt> later. Next, we’ll model using ARIMA.
+Great. This will be important when we use <tt>`sw_sweep`</tt>. Next, we’ll model using ARIMA.
 
-## Implement the model.
+## Estimation.
 
-We can use the <tt>`auto.arima`</tt> function from the forecast package to model the time series. By doing that, we do not have to impose a specific ARIMA model, the function can test the best specification for us.
+We can use the <tt>`auto.arima()`</tt> function from the <tt>`forecast`</tt> package to model the time series. By doing that, we do not have to impose a specific ARIMA model, the function can test the best specification for us.
 
 ```{r}
 # Model using auto.arima.
@@ -683,14 +684,14 @@ fit_arima <- auto.arima(beer_sales_ts)
 fit_arima
 ```
 
-The <tt>`sw_tidy()`</tt> function returns the model coefficients in a tibble (tidy data frame). This might be useful in some circumstances.
+The results are somewhat different to the ARIMA <tt>`fpp3`</tt> alternative. The <tt>`sw_tidy()`</tt> function returns the model coefficients in a tibble (tidy data frame). This might be useful in some circumstances.
 
 ```{r}
 # sw_tidy - Get model coefficients.
 sw_tidy(fit_arima)
 ```
 
-The <tt>`sw_glance()`</tt> function returns the training set accuracy measures in a tibble (tidy data frame). We use glimpse to aid in quickly reviewing the model metrics.
+The <tt>`sw_glance()`</tt> function returns the training set accuracy measures in a <tt>`tibble`</tt>. We use `</tt>glimpse()`</tt> function to aid in quickly reviewing the model metrics.
 
 ```{r}
 # sw_glance - Get model description and training set accuracy measures.
@@ -711,13 +712,11 @@ sw_augment(fit_arima, timetk_idx = TRUE)
 
 We can visualize the residual diagnostics for the training data to make sure there is no pattern leftover. This looks homoscedastic.
 
-```{r fig.cap="Forecast: ARIMA residual diagnosis."}
+```{r fig.cap="Forecast. ARIMA(1,1,2)(2,1,1)[12] residual diagnosis."}
 sw_augment(fit_arima, timetk_idx = TRUE) %>%
     ggplot(aes(x = index, y = .resid)) +
+    geom_hline(yintercept = 0, color = "red", lwd = 2) + 
     geom_point(size = 5, alpha = 0.5) + 
- # geom_text(aes(label = paste0(index)), 
-   #         vjust = -1, color = "black", size = 3.5) +
-    geom_hline(yintercept = 0, color = "red") + 
     labs(x = "Date", y = "Residuals") +
     scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
     theme_tq()
@@ -739,7 +738,7 @@ class(fcast_arima)
 
 We can use <tt>`sw_sweep()`</tt> to tidy the forecast output. As an added benefit, if the forecast-object has a <tt>`timetk`</tt> index, we can use it to return a date/datetime index as opposed to regular index from the ts-based-object.
 
-First, let’s check if the forecast-object has a timetk index.
+First, let’s check if the forecast-object has a *timetk* index.
 
 ```{r}
 # Check if object has timetk index 
@@ -750,7 +749,7 @@ Great. Now, use <tt>`sw_sweep()`</tt> to tidy the forecast output.
 
 ```{r}
 fcast_tbl <- sw_sweep(fcast_arima, timetk_idx = TRUE)
-tail(fcast_tbl, 12)
+tail(fcast_tbl, 10)
 ```
 
 We can investigate the error on our test set (actuals vs predictions).
@@ -781,43 +780,35 @@ tibble(me, rmse, mae, mape, mpe) %>%
   glimpse()
 ```
 
-Notice that we have the entire forecast in a tibble. We can now more easily visualize the forecast.
+Notice that we have the entire forecast in a <tt>`tibble`</tt>. We can now more easily visualize the forecast.
 
-```{r fig.cap="Forecast: ARIMA."}
+```{r fig.cap="Forecast. ARIMA(1,1,2)(2,1,1)[12]."}
 fcast_tbl %>%
-    filter(index > as.Date("2021-01-01")) %>%
-    ggplot(aes(x = index, y = sales, color = key)) +
-    # 95% CI
-    geom_ribbon(aes(ymin = lo.95, ymax = hi.95), 
-                fill = "#D5DBFF", color = NA, size = 0) +
-    # 80% CI
-    geom_ribbon(aes(ymin = lo.80, ymax = hi.80, fill = key), 
-                fill = "#596DD5", color = NA, size = 0, alpha = 0.8) +
-    # Prediction
+  filter(index > as.Date("2021-01-01")) %>%
+  ggplot(aes(x = index, y = sales, color = key)) +
+  geom_ribbon(aes(ymin = lo.95, ymax = hi.95), 
+              fill = "#D5DBFF", color = NA, size = 0) +
+  geom_ribbon(aes(ymin = lo.80, ymax = hi.80, fill = key), 
+              fill = "#596DD5", color = NA, size = 0, alpha = 0.8) +
   geom_line() +
-geom_point(size = 5, alpha = 0.5) +
-    #geom_line(size = 0.5, color = "black") +
-    #geom_point(size = 5, alpha = 0.5, color = "black") +
-    # Actuals
-    geom_line(aes(x = date, y = sales), color = "black", 
-              data = actuals_tbl) +
-    geom_point(aes(x = date, y = sales), color = "black", size = 5,
-               alpha = 0.5, data = actuals_tbl) +
-        geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), 
-                  linetype = 2) +
-    # Aesthetics
-labs(x = "Date", y = "Sales",
-     caption = c(paste("MAPE=",((mean(abs(test_error_pct_arima))))))) +
-    scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-    scale_color_tq() +
-    scale_fill_tq() +
-    theme_tq()
+  geom_point(size = 5, alpha = 0.5) +
+  geom_line(aes(x = date, y = sales), color = "black", 
+            data = actuals_tbl) +
+  geom_point(aes(x = date, y = sales), color = "black", size = 5,
+             alpha = 0.5, data = actuals_tbl) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), 
+             linetype = 2) +
+  labs(x = "Date", y = "Sales",
+       caption = c(paste("MAPE=",((mean(abs(test_error_pct_arima))))))) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  scale_color_tq() +
+  scale_fill_tq() +
+  theme_tq()
 ```
 
 This is a decent forecast.
 
 # Summary of all results.
-
 
 An interesting question is: *What happens to the accuracy when you average the predictions of all different methods?* This question makes sense because the decision of using one technique or another is not trivial. Taking the average could be useful to avoid extreme results but at the same time it could be hard to interpret as the forecast comes from different techniques. In any case, it is interesting to see how it works.
 
@@ -881,6 +872,106 @@ caption = c(paste("MAPE=",((100*mean(abs(error_tbl_mean$error_pct)))))))
 Not bad, as expected.
 
 
+```{r}
+# This comes from ffpp3.rmd
+fpp3_fc <- readRDS("fpp3_fc.rds")
+```
+
+
+```{r}
+as_tsibble(fpp3_fc) %>%
+  select(.model, date, .mean)
+```
+
+```{r}
+pred_h2o_x<-as.data.frame(pred_h2o)
+pred_h2o_DL_x<-as.data.frame(pred_h2o_DL)
+pred_h2o_all_x<-as.data.frame(pred_h2o_all)
+```
+
+```{r}
+pred_h2o_fc <- tsibble(
+  .model = rep("pred_h2o", 10),
+  date = yearmonth(c("2022-01", "2022-02", "2022-03", "2022-04",
+           "2022-05", "2022-06", "2022-07", "2022-08",
+           "2022-09", "2022-10")),
+  .mean = pred_h2o_x$predict,
+  index = date)
+
+pred_h2o_DL_fc <- tsibble(
+  .model = rep("pred_h2o_DL", 10),
+  date = yearmonth(c("2022-01", "2022-02", "2022-03", "2022-04",
+           "2022-05", "2022-06", "2022-07", "2022-08",
+           "2022-09", "2022-10")),
+  .mean = pred_h2o_DL_x$predict,
+  index = date)
+
+pred_h2o_all_fc <- tsibble(
+  .model = rep("pred_h2o_all", 10),
+  date = yearmonth(c("2022-01", "2022-02", "2022-03", "2022-04",
+           "2022-05", "2022-06", "2022-07", "2022-08",
+           "2022-09", "2022-10")),
+  .mean = pred_h2o_all_x$predict,
+  index = date)
+```
+
+```{r}
+predictions_tbl$date <- yearmonth(predictions_tbl$date)
+pred_lm_fc <- predictions_tbl %>%
+  rename(.mean = value) %>%
+  mutate(.model = rep("lm", 10)) %>%
+  relocate(.model)
+```
+
+```{r}
+error_tbl_arima$date <- yearmonth(error_tbl_arima$date)
+pred_arima2_fc <- error_tbl_arima %>%
+  select(date, pred) %>%
+  rename(.mean = pred) %>%
+  mutate(.model = rep("arima2", 10)) %>%
+  relocate(.model)
+```
+
+
+```{r}
+all_fc <- as_tsibble(fpp3_fc) %>%
+  select(.model, date, .mean) %>%
+  bind_rows(pred_h2o_fc, pred_h2o_DL_fc, pred_h2o_all_fc,
+            pred_lm_fc, pred_arima2_fc)
+all_fc
+```
+
+```{r}
+average <- all_fc %>%
+  index_by(date) %>%
+  summarise(av_fc = mean(.mean)) %>%
+  bind_cols(sales = actuals_tbl$sales) %>%
+    mutate(error = round((sales - av_fc), 2), 
+           error_pct = round((error / sales), 4)) 
+average
+```
+
+
+
+```{r}
+100*mean(abs(average$error_pct))
+```
+
+```{r fig.cap="Forecast. Average."}
+beer %>%
+  filter(date > as.Date("2021-01-01")) %>%
+  ggplot(aes(x = yearmonth(date), y = sales)) +
+  geom_line(color = "black", size = 0.5) +
+  geom_point(color = "black", size = 5, alpha = 0.5) +
+  geom_line(aes(y = av_fc), size = 0.5,
+            color = "red", data = average) +
+  geom_point(aes(y = av_fc), size = 5, alpha = 0.5,
+             color = "red", data = average) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
+  theme_tq() +
+  labs(x = "Date", y = "Sales",
+       caption = c(paste("MAPE=",((round(100*mean(abs(average$error_pct)), 5))))))
+```
 
 Let's see all results at once: H2O, linear regression, ARIMA and the average forecast.
 
@@ -901,6 +992,18 @@ sum <- data.frame(summary_techniques, summary_mape)
 kable(sum, caption = "Summary of results.") %>%
 kable_styling(latex_options = "HOLD_position")
 ```
+
+
+```{r}
+mape_updated_all <- mape_updated_h2o %>%
+  add_row(.model = "Linear model", 
+          MAPE = mean(abs(test_error_pct_lm))) %>%
+  add_row(.model = "ARIMA(1,1,2)(2,1,1)[12]", 
+          MAPE = mean(abs(test_error_pct_arima))) %>%
+  arrange(desc(-MAPE))
+mape_updated_all
+```
+
 
 Nice.
 
