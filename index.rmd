@@ -21,7 +21,6 @@ output:
 abstract: This material relies on @hull2020machine, @hyndman2021forecasting, and on Matt Dancho's Business Science IO freely available codes in R that explains how to implement machine learning workflow using H2O. Some mathematical background is skipped to emphasize the data analysis, model logic, discussion, graphical approach and R coding [@Rref]. As in the philosophy of Donald Knuth [@knuth1984literate], the objective of this document is to explain to human beings what we want a computer to do as literate programming. This is a work in progress and it is under revision.
 bibliography: references.bib
 ---
------------------------
 
 ```{=tex}
 \newpage 
@@ -55,9 +54,13 @@ htmltools::tagList(
 )
 ```
 
-# [`r fa("arrow-circle-left", fill = "black")`](https://mlozanoqf.github.io/) {-}
+````{=html}
+```{r, echo=FALSE, results='asis'}
+xfun::file_string('contact.html')
+```
+````
 
----
+# [`r fa("arrow-circle-left", fill = "black")`](https://mlozanoqf.github.io/) Back to main. {-}
 
 \newpage
 
@@ -75,6 +78,6 @@ htmltools::tagList(
 t_full <- toc()
 ```
 
-This document took `r round(as.numeric((t_full$toc-t_full$tic)/60), 2)` minutes to compile in Rmarkdown, R version 4.2.1.
+This document took `r round(as.numeric((t_full$toc-t_full$tic)/60), 2)` minutes to compile in Rmarkdown, `r R.version.string`.
 
 # References.
