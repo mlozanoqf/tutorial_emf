@@ -1,11 +1,10 @@
 ---
 title: Forecasting with `r fontawesome::fa("r-project")` <span style="color:white">R</span>
-
 subtitle: Dr. Martín Lozano.
 author:
 #- name: Back to main [`r fontawesome::fa("home")`](https://mlozanoqf.github.io/)
 #  affiliation: Academic website. [Web.](https://sites.google.com/site/mlozanoqf/)
-date: "\\faClock \\hspace{1 mm} Current commit: `r format(Sys.time(), '%d/%m/%Y, %H:%M:%S.')`"
+date: Current `r fontawesome::fa("code-commit") ` `r format(Sys.time(), '%d %b %Y, %H:%M:%S.')`
 #  bookdown::gitbook: default
 output: 
   bookdown::html_document2:
@@ -60,10 +59,9 @@ xfun::file_string('contact.html')
 ```
 ````
 
-# [`r fa("arrow-circle-left", fill = "black")`](https://mlozanoqf.github.io/) Back to main. {-}
+# [`r fa("arrow-circle-left", fill = "black")`](https://mlozanoqf.github.io/) [<span style="color: black">Back to main.</span>](https://mlozanoqf.github.io/) {-}
 
 \newpage
-
 
 ```{r fpp3, child = 'ffpp3.rmd'}
 ```
