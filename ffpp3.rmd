@@ -322,7 +322,7 @@ beer_zoom <- beer_tbls %>%
   filter_index("2019-12" ~ .)
 
 beer_sn_fc <- beer_fc %>%
-  filter(.model == "Seasonal naïve") 
+  filter(.model == "fpp3: seasonal naïve") 
 
   ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
   geom_line() +
