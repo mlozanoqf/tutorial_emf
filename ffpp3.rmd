@@ -342,7 +342,8 @@ beer_sn_fc <- beer_fc %>%
              color = "red", alpha = 0.5, shape = 21, 
              fill = "red", data = beer_sn_fc) +
   geom_line(aes(y = .mean), color = "red", size = 0.5, data = beer_sn_fc) +
-  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+    geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), 
+               linetype = 2) +
   labs(y = "Sales", x = "Date",
        caption = c(paste("MAPE=",(round(sn_mape, 5))))) +
   theme(legend.position = "bottom") +
@@ -409,7 +410,8 @@ This is not very clear, here is the zoom version.
              color = "red", alpha = 0.5, shape = 21, 
              fill = "red", data = beer_ets_fc) +
   geom_line(aes(y = .mean), color = "red", size = 0.5, data = beer_ets_fc) +
-  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), 
+               linetype = 2) +
   labs(x = "Date", y = "Sales",
        caption = c(paste("MAPE=",(round(ets_mape, 5))))) +
   theme(legend.position = "bottom") +
@@ -479,7 +481,8 @@ The plot above is not very clear. Here is a zoom version.
              color = "red", alpha = 0.5, shape = 21, 
              fill = "red", data = beer_arima_fc) +
   geom_line(aes(y = .mean), color = "red", size = 0.5, data = beer_arima_fc) +
-  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), 
+               linetype = 2) +
   labs(x = "Date", y = "Sales",
        caption = c(paste("MAPE=",(round(arima_mape, 5))))) +
   theme(legend.position = "bottom") +
@@ -542,7 +545,8 @@ The plot above is not very clear. Here is a zoom version.
              color = "red", alpha = 0.5, shape = 21, 
              fill = "red", data = beer_nnet_fc) +
   geom_line(aes(y = .mean), color = "red", size = 0.5, data = beer_nnet_fc) +
-  geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), 
+               linetype = 2) +
   labs(x = "Date", y = "Sales",
        caption = c(paste("MAPE=",(round(nnet_mape, 5))))) +
   theme(legend.position = "bottom") +
