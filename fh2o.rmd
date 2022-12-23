@@ -113,7 +113,8 @@ beer %>%
   "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
   x = "Date", y = "Sales",
        caption = "The models do not know the test region, this is for us 
-       to see how well the models do the 10-month ahead forecast.") 
+       to see how well the models do the 10-month ahead forecast.") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 And the corresponding zoom version.
@@ -147,7 +148,8 @@ beer %>%
   "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
   x = "Date", y = "Sales",
        caption = "The models do not know the test region, this is for us 
-       to see how well the models do the 10-month ahead forecast.") 
+       to see how well the models do the 10-month ahead forecast.") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 The <tt>`tk_augment_timeseries_signature()`</tt> function expands out the timestamp information column-wise into a machine learning feature set, adding columns of time series information to the original data frame. We’ll again use <tt>`head()`</tt> function for quick inspection of this expansion. See how there are now 31 features extracted from the original database. Not all will be important for the final and chosen models, but some will.
@@ -385,7 +387,7 @@ The forecast looks good. Note that in some cases it over-estimate and in others 
 ```{r fig.cap="Forecast. H2O without Deep Learning algorithm."}
 beer %>%
   filter(date > as.Date("2021-01-01")) %>%
-    ggplot(aes(x = date, y = sales)) +
+    ggplot(aes(x = yearmonth(date), y = sales)) +
     # Data.
     geom_point(size = 5, color = "black", alpha = 0.5, 
                shape = 21, fill = "black") +
@@ -399,7 +401,8 @@ geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
     # Aesthetics.
     labs(x = "Date", y = "Sales",
     caption = c(paste("MAPE=", 
-                      ((round(mean(abs(error_tbl$error_pct))*100, 5))))))
+                      ((round(mean(abs(error_tbl$error_pct))*100, 5)))))) +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 This is an additional performance summary.
@@ -429,7 +432,7 @@ The same information in a plot.
 ```{r fig.cap="Forecast. H2O including only Deep Learning algorithm."}
 beer %>%
     filter(date > as.Date("2021-01-01")) %>%
-    ggplot(aes(x = date, y = sales)) +
+    ggplot(aes(x = yearmonth(date), y = sales)) +
     geom_point(size = 5, color = "black", alpha = 0.5, 
                shape = 21, fill = "black") +
     geom_line(color = "black", size = 0.5) +
@@ -442,7 +445,8 @@ geom_line(aes(y = pred), color = "red", size = 0.5,
                linetype = 2) +
     labs(x = "Date", y = "Sales",
     caption = c(paste("MAPE=",
-                      ((round(mean(abs(error_tbl_DL$error_pct))*100, 5))))))
+                      ((round(mean(abs(error_tbl_DL$error_pct))*100, 5)))))) +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 Additional performance indicators.
@@ -472,7 +476,7 @@ The visual representation.
 ```{r fig.cap="Forecast. H2O including all available algorithms."}
 beer %>%
     filter(date > as.Date("2021-01-01")) %>%
-    ggplot(aes(x = date, y = sales)) +
+    ggplot(aes(x = yearmonth(date), y = sales)) +
     geom_point(size = 5, color = "black", alpha = 0.5, 
                shape = 21, fill = "black") +
     geom_line(color = "black", size = 0.5) +
@@ -484,7 +488,8 @@ geom_line(aes(y = pred), color = "red", size = 0.5,
 geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
     labs(x = "Date", y = "Sales",
     caption = c(paste("MAPE=",
-                      ((round(mean(abs(error_tbl_all$error_pct))*100, 5))))))
+                      ((round(mean(abs(error_tbl_all$error_pct))*100, 5)))))) +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 Additional performance metrics.
@@ -635,7 +640,7 @@ Visualize our forecast.
 ```{r fig.cap="Forecast. Multivariate linear regression."}
 beer %>%
   filter(date > as.Date("2021-01-01")) %>%
-  ggplot(aes(x = date, y = sales)) +
+  ggplot(aes(x = yearmonth(date), y = sales)) +
   geom_line(color = "black", size = 0.5) +
   geom_point(color = "black", size = 5, alpha = 0.5) +
   geom_line(aes(y = value), size = 0.5,
@@ -645,7 +650,8 @@ beer %>%
   geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
   theme_tq() +
   labs(x = "Date", y = "Sales",
-       caption = c(paste("MAPE=",((round(mean(abs(test_error_pct_lm)), 5))))))
+       caption = c(paste("MAPE=",((round(mean(abs(test_error_pct_lm)), 5)))))) +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 This is clearly a good alternative.
@@ -719,7 +725,8 @@ sw_augment(fit_arima, timetk_idx = TRUE) %>%
     geom_point(size = 5, alpha = 0.5) + 
     labs(x = "Date", y = "Residuals") +
     scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-    theme_tq()
+    theme_tq() +
+    scale_y_continuous(labels = scales::dollar)
 ```
 
 Make a forecast using the <tt>`forecast()`</tt> function. This function also delivers some convenient error bounds.
@@ -803,7 +810,8 @@ fcast_tbl %>%
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   scale_color_tq() +
   scale_fill_tq() +
-  theme_tq()
+  theme_tq() +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 This is a decent forecast.
@@ -899,7 +907,8 @@ beer %>%
   theme_tq() +
   labs(x = "Date", y = "Sales",
        caption = c(paste("MAPE=",
-                         ((round(100*mean(abs(average$error_pct)), 5))))))
+                         ((round(100*mean(abs(average$error_pct)), 5)))))) +
+  scale_y_continuous(labels = scales::dollar)
 ```
 Let's update our MAPE summary table.
 

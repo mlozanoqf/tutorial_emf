@@ -91,7 +91,8 @@ beer %>%
   "Train (2010 - 2021), and test set (Jan 2022 to Oct 2022)",
   x = "Date", y = "Sales",
        caption = "The models do not know the test region, this is for us 
-       to see how well the models do the 10-month ahead forecast.") 
+       to see how well the models do the 10-month ahead forecast.") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 Then, the problem is to forecast the 10 months of the test region. This is, from January to October 2022. 
@@ -117,7 +118,8 @@ beer %>%
   "Train (2010 - 2021) and test set (Jan 2022 to Oct 2022)",
   x = "Date", y = "Sales",
        caption = "The models do not know the test region, this is for us 
-       to see how well the models do the 10-month ahead forecast.") 
+       to see how well the models do the 10-month ahead forecast.") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 ## Time series properties.
@@ -138,7 +140,8 @@ beer_tbls %>%
   model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
   components() %>%
   autoplot() +
-  labs(y = "Sales", x = "Date")
+  labs(y = "Sales", x = "Date") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 The trend shows a clear change in the first half of 2020. Let's take a look of it.
 
@@ -157,13 +160,14 @@ beer_tbls %>%
   model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
   components() %>%
   select(date, trend) %>%
-  ggplot(aes(date, trend)) + 
+  ggplot(aes(yearmonth(date), trend)) + 
   geom_point(alpha = 0.3, size = 4) +
   geom_point(aes(x = yearmonth("2020 jun."), y = 13950.99), 
              alpha = 0.3, size = 4, colour = "red") +
   geom_point(aes(x = yearmonth("2020 jul."), y = 15356.13), 
              alpha = 0.3, size = 4, colour = "red") +
-  labs(y = "Trend", x = "Date")
+  labs(y = "Trend", x = "Date") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 There are also three negative spikes in the irregular component.
@@ -182,7 +186,7 @@ beer_tbls %>%
   model(x11 = X_13ARIMA_SEATS(sales ~ x11())) %>%
   components() %>%
   select(date, irregular) %>%
-  ggplot(aes(date, irregular)) + 
+  ggplot(aes(yearmonth(date), irregular)) + 
   geom_point(alpha = 0.3, size = 4) +
   geom_point(aes(x = yearmonth("2020 apr."), y = 0.8894670), 
              alpha = 0.3, size = 4, colour = "red") +
@@ -190,7 +194,8 @@ beer_tbls %>%
              alpha = 0.3, size = 4, colour = "red") +
   geom_point(aes(x = yearmonth("2021 dec."), y = 0.9099203), 
              alpha = 0.3, size = 4, colour = "red") +
-  labs(y = "Irregular", x = "Date")
+  labs(y = "Irregular", x = "Date") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 Apparently, these trend and irregular events are consistent independently of the decomposition technique. We implement the SEATS decomposition below. SEATS stands for *Seasonal Extraction in ARIMA Time Series*. According to @hyndman2021forecasting, this procedure was developed at the Bank of Spain, and is now widely used by government agencies around the world. See @dagum2016seasonal for further details.
@@ -200,7 +205,8 @@ beer_tbls %>%
   model(seats = X_13ARIMA_SEATS(sales ~ seats())) %>%
   components() %>%
   autoplot() +
-  labs(y = "Sales", x = "Date")
+  labs(y = "Sales", x = "Date") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 A seasonal plot is similar to a time plot except that the data are plotted against the individual *seasons*, in this case months, in which the data were observed. 
@@ -208,7 +214,8 @@ A seasonal plot is similar to a time plot except that the data are plotted again
 ```{r fig.cap="Seasonal plot: Beer sales."}
 beer_tbls %>%
   gg_season(sales, labels = "both") +
-  labs(y = "Sales", x = "Date")
+  labs(y = "Sales", x = "Date") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 And this is the zoom version of the plot above.
 
@@ -217,7 +224,8 @@ beer_tbls %>%
   filter_index("2019-01" ~ .) %>%
   gg_season(sales, labels = "both", size = 2) +
   geom_point() +
-  labs(y = "Sales", x = "Date")
+  labs(y = "Sales", x = "Date") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 An alternative plot that emphasises the seasonal patterns is where the data for each month are collected together in separate mini time plots.
@@ -225,7 +233,8 @@ An alternative plot that emphasises the seasonal patterns is where the data for 
 ```{r fig.cap="Seasonal subseries plot of monthly beer sales."}
 beer_tbls %>%
   gg_subseries(sales) +
-  labs(y = "Sales", x = "Date")
+  labs(y = "Sales", x = "Date") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 December is the month of the year with the highest average sales, followed by June. January is the month of the year with the lowest average sales, followed by February.
 
@@ -298,7 +307,8 @@ beer_fc %>%
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
   labs(y = "Sales", x = "Date") +
   guides(colour = guide_legend(title = "Forecast:")) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 The plot above is not very clear. Here is a zoom version.
 
@@ -324,7 +334,7 @@ beer_zoom <- beer_tbls %>%
 beer_sn_fc <- beer_fc %>%
   filter(.model == "fpp3: seasonal naïve") 
 
-  ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
+  ggplot(beer_zoom, aes(yearmonth(date), sales), lwd = 2, alpha = 0.4) +
   geom_line() +
   geom_point(size = 5, color = "black", alpha = 0.5, 
              shape = 21, fill = "black") +
@@ -335,7 +345,8 @@ beer_sn_fc <- beer_fc %>%
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
   labs(y = "Sales", x = "Date",
        caption = c(paste("MAPE=",(round(sn_mape, 5))))) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+    scale_y_continuous(labels = scales::dollar)
 ```
 The simple techniques are not necessarily bad techniques. 
 
@@ -356,7 +367,8 @@ The <tt>`ETS(M,A,M)`</tt> corresponds to a Holt-Winters multiplicative method wi
 ```{r fig.cap="fpp3: ETS components."}
 components(beer_ets) %>%
   autoplot() +
-  labs(x = "Date", y = "Sales")
+  labs(x = "Date", y = "Sales") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 The ETS(M,A,M) 10-month forecast.
@@ -383,12 +395,13 @@ beer_ets %>%
   autoplot(beer_tbls) +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
   labs(x = "Date", y = "Sales") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 This is not very clear, here is the zoom version.
 
 ```{r fig.cap="Zoom. fpp3: ETS(M,A,M) forecast."}
-  ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
+  ggplot(beer_zoom, aes(yearmonth(date), sales), lwd = 2, alpha = 0.4) +
   geom_line() +
   geom_point(size = 5, color = "black", alpha = 0.5, 
              shape = 21, fill = "black") +
@@ -399,7 +412,8 @@ This is not very clear, here is the zoom version.
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
   labs(x = "Date", y = "Sales",
        caption = c(paste("MAPE=",(round(ets_mape, 5))))) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 Update the MAPE table.
 
@@ -450,13 +464,14 @@ Let's plot the forecast results.
 beer_arima_fc %>%
   autoplot(beer_tbls, level = NULL) +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
-  labs(y = "Sales", x = "Date") 
+  labs(y = "Sales", x = "Date") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 The plot above is not very clear. Here is a zoom version.
 
 ```{r fig.cap="Zoom. fpp3: ARIMA(4,1,1)(0,1,1)[12] forecast."}
-  ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
+  ggplot(beer_zoom, aes(yearmonth(date), sales), lwd = 2, alpha = 0.4) +
   geom_line() +
   geom_point(size = 5, color = "black", alpha = 0.5, 
              shape = 21, fill = "black") +
@@ -467,7 +482,8 @@ The plot above is not very clear. Here is a zoom version.
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
   labs(x = "Date", y = "Sales",
        caption = c(paste("MAPE=",(round(arima_mape, 5))))) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 Update the MAPE table.
@@ -511,13 +527,14 @@ Let's plot the forecast results.
 beer_nnet_fc %>%
   autoplot(beer_tbls, level = NULL) +
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
-  labs(y = "Sales", x = "Date") 
+  labs(y = "Sales", x = "Date") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 The plot above is not very clear. Here is a zoom version.
 
 ```{r fig.cap="Zoom. fpp3: NNAR(15,1,8)[12] forecast."}
-  ggplot(beer_zoom, aes(date, sales), lwd = 2, alpha = 0.4) +
+  ggplot(beer_zoom, aes(yearmonth(date), sales), lwd = 2, alpha = 0.4) +
   geom_line() +
   geom_point(size = 5, color = "black", alpha = 0.5, 
              shape = 21, fill = "black") +
@@ -528,7 +545,8 @@ The plot above is not very clear. Here is a zoom version.
   geom_vline(xintercept = as.Date("2022-01-01"), lty = 2) +
   labs(x = "Date", y = "Sales",
        caption = c(paste("MAPE=",(round(nnet_mape, 5))))) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  scale_y_continuous(labels = scales::dollar)
 ```
 
 Update the MAPE table.
