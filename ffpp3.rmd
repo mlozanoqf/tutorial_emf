@@ -9,6 +9,7 @@ title: ''
 ```{r echo=FALSE}
 # This removes all items in environment. 
 rm(list=ls())
+library(vembedr)
 ```
 
 \newpage
@@ -19,6 +20,13 @@ The problem is to forecast a time series. In particular, the time series is the 
 
 For the full database details see: 
 https://fred.stlouisfed.org/series/S4248SM144NCEN
+
+Before start, see: What is forecasting?
+
+```{r}
+embed_url("https://youtu.be/TjVvatkjlsM")
+```
+
 
 ## The data.
 
