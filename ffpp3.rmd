@@ -24,9 +24,8 @@ https://fred.stlouisfed.org/series/S4248SM144NCEN
 Before start, see: What is forecasting?
 
 ```{r}
-embed_url("https://youtu.be/TjVvatkjlsM")
+embed_url("https://youtu.be/zvd9oboayEc?si=DfK9JkSqapE8JHiw")
 ```
-
 
 ## The data.
 
