@@ -1,0 +1,42 @@
+
+
+```{r include=FALSE}
+# This removes all items in environment. 
+# It is a good practice to start your code this way.
+rm(list=ls())
+library(fontawesome)
+library(tictoc)
+tic("full")
+```
+
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(fig.pos = "H", out.extra = "")
+```
+
+
+````{=html}
+```{r, echo=FALSE, results='asis'}
+xfun::file_string('contact.html')
+```
+````
+
+
+```{r fpp3, child = 'ffpp3.rmd'}
+```
+
+
+```{r H2o and ML, child = 'fh2o.rmd'}
+```
+
+
+```{r include=FALSE}
+t_full <- toc()
+```
+
+
+This document took `r round(as.numeric((t_full$toc-t_full$tic)/60), 2)` minutes to compile in Quarto version `r quarto::quarto_version()`, and `r R.version.string`.
+
+#  References. {.unnumbered}
+::: {#refs}
+:::

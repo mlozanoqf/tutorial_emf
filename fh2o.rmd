@@ -1,16 +1,10 @@
----
-title: ''
-#output: bookdown::gitbook:
-  html_document:
-    df_print: paged
----
+
 
 ```{r echo=FALSE}
 # This removes all items in environment. 
 rm(list=ls())
 ```
 
-\newpage
 
 # Forecasts with <tt>`h2o`</tt>.
 
@@ -85,7 +79,9 @@ The main objective here is to use <tt>`h2o`</tt> locally (in your own computer) 
 
 We need an additional data set. The *validation* dataset is the sample of data used to provide an unbiased evaluation of a model fit on the training dataset while tuning model hyperparameters. The new datasets are the following.
 
-```{r fig.cap="Beer sales: train, validation and test sets."}
+```{r}
+#| label: fig-bstvats
+#| fig-cap: "Beer sales: train, validation and test sets."
 beer %>%
   ggplot(aes(date, sales)) +
   # Train Region:
@@ -119,7 +115,9 @@ beer %>%
 
 And the corresponding zoom version.
 
-```{r fig.cap="Zoom. Beer sales: train, validation and test sets."}
+```{r}
+#| label: fig-zbstvats
+#| fig-cap: "Zoom. Beer sales: train, validation and test sets."
 beer %>%
   filter(date > as.Date("2020-01-01")) %>%
   ggplot(aes(date, sales)) +
@@ -384,7 +382,9 @@ kable_styling(latex_options = "HOLD_position")
 The forecast looks good. Note that in some cases it over-estimate and in others under-estimate the real values, but in general these differences are small. Now, let's look at the same information in a plot.
 
 
-```{r fig.cap="Forecast. H2O without Deep Learning algorithm."}
+```{r}
+#| label: fig-fhwdla
+#| fig-cap: "Forecast. H2O without Deep Learning algorithm."
 beer %>%
   filter(date > as.Date("2021-01-01")) %>%
     ggplot(aes(x = yearmonth(date), y = sales)) +
@@ -429,7 +429,9 @@ kable_styling(latex_options = "HOLD_position")
 
 The same information in a plot.
 
-```{r fig.cap="Forecast. H2O including only Deep Learning algorithm."}
+```{r}
+#| label: fig-fhiodla
+#| fig-cap: "Forecast. H2O including only Deep Learning algorithm."
 beer %>%
     filter(date > as.Date("2021-01-01")) %>%
     ggplot(aes(x = yearmonth(date), y = sales)) +
@@ -473,7 +475,9 @@ kable_styling(latex_options = "HOLD_position")
 
 The visual representation.
 
-```{r fig.cap="Forecast. H2O including all available algorithms."}
+```{r}
+#| label: fig-fhiaaa
+#| fig-cap: "Forecast. H2O including all available algorithms."
 beer %>%
     filter(date > as.Date("2021-01-01")) %>%
     ggplot(aes(x = yearmonth(date), y = sales)) +
@@ -637,7 +641,9 @@ tibble(me, rmse, mae, mape, mpe) %>%
 
 Visualize our forecast.
 
-```{r fig.cap="Forecast. Multivariate linear regression."}
+```{r}
+#| label: fig-fmlr
+#| fig-cap: "Forecast. Multivariate linear regression."
 beer %>%
   filter(date > as.Date("2021-01-01")) %>%
   ggplot(aes(x = yearmonth(date), y = sales)) +
@@ -718,7 +724,9 @@ sw_augment(fit_arima, timetk_idx = TRUE)
 
 We can visualize the residual diagnostics for the training data to make sure there is no pattern leftover. This looks homoscedastic.
 
-```{r fig.cap="Forecast. ARIMA(1,1,2)(2,1,1)[12] residual diagnosis."}
+```{r}
+#| label: fig-fard
+#| fig-cap: "Forecast. ARIMA(1,1,2)(2,1,1)[12] residual diagnosis."
 sw_augment(fit_arima, timetk_idx = TRUE) %>%
     ggplot(aes(x = index, y = .resid)) +
     geom_hline(yintercept = 0, color = "red", lwd = 2) + 
@@ -789,7 +797,9 @@ tibble(me, rmse, mae, mape, mpe) %>%
 
 Notice that we have the entire forecast in a <tt>`tibble`</tt>. We can now more easily visualize the forecast.
 
-```{r fig.cap="Forecast. ARIMA(1,1,2)(2,1,1)[12]."}
+```{r}
+#| label: fig-fa
+#| fig-cap: "Forecast. ARIMA(1,1,2)(2,1,1)[12]."
 fcast_tbl %>%
   filter(index > as.Date("2021-01-01")) %>%
   ggplot(aes(x = index, y = sales, color = key)) +
@@ -893,7 +903,9 @@ average
 
 Finally, the forecast.
 
-```{r fig.cap="Forecast. Average."}
+```{r}
+#| label: fig-fav
+#| fig-cap: "Forecast. Average."
 beer %>%
   filter(date > as.Date("2021-01-01")) %>%
   ggplot(aes(x = yearmonth(date), y = sales)) +
