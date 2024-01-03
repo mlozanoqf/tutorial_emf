@@ -228,7 +228,7 @@ document.addEventListener("DOMContentLoaded", function() {
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">December 29, 2023, 12:36:50 pm.</p>
+      <p class="date-modified">January 2, 2024, 23:47:09 pm.</p>
     </div>
   </div>
     
@@ -1143,7 +1143,7 @@ Average of 20 networks, each of which is
 a 15-8-1 network with 137 weights
 options were - linear output units 
 
-sigma^2 estimated as 691.8</code></pre>
+sigma^2 estimated as 695.8</code></pre>
 </div>
 </div>
 <p>The NNAR(15,1,8)[12] model has inputs <span class="math inline">\(y_{t−1}, y_{t−2},..., y_{t−15}\)</span> and 8 neurons in the hidden layer.</p>
@@ -1160,16 +1160,16 @@ sigma^2 estimated as 691.8</code></pre>
 # Key:     .model [1]
    .model             date        sales  .mean
    &lt;chr&gt;             &lt;mth&gt;       &lt;dist&gt;  &lt;dbl&gt;
- 1 NNETAR(sales) 2022 ene. sample[5000] 13446.
- 2 NNETAR(sales) 2022 feb. sample[5000] 14894.
- 3 NNETAR(sales) 2022 mar. sample[5000] 17179.
- 4 NNETAR(sales) 2022 abr. sample[5000] 15317.
- 5 NNETAR(sales) 2022 may. sample[5000] 16560.
- 6 NNETAR(sales) 2022 jun. sample[5000] 18806.
- 7 NNETAR(sales) 2022 jul. sample[5000] 16677.
- 8 NNETAR(sales) 2022 ago. sample[5000] 17509.
- 9 NNETAR(sales) 2022 sep. sample[5000] 16817.
-10 NNETAR(sales) 2022 oct. sample[5000] 17288.</code></pre>
+ 1 NNETAR(sales) 2022 ene. sample[5000] 13368.
+ 2 NNETAR(sales) 2022 feb. sample[5000] 15050.
+ 3 NNETAR(sales) 2022 mar. sample[5000] 17229.
+ 4 NNETAR(sales) 2022 abr. sample[5000] 15877.
+ 5 NNETAR(sales) 2022 may. sample[5000] 17014.
+ 6 NNETAR(sales) 2022 jun. sample[5000] 19459.
+ 7 NNETAR(sales) 2022 jul. sample[5000] 16927.
+ 8 NNETAR(sales) 2022 ago. sample[5000] 17682.
+ 9 NNETAR(sales) 2022 sep. sample[5000] 17197.
+10 NNETAR(sales) 2022 oct. sample[5000] 17268.</code></pre>
 </div>
 </div>
 <p>The best NNET MAPE.</p>
@@ -1182,8 +1182,8 @@ sigma^2 estimated as 691.8</code></pre>
 <span id="cb60-4"><a href="#cb60-4"></a>nnet_mape</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>   MAPE 
-6.70998 </code></pre>
+<pre><code>    MAPE 
+7.464491 </code></pre>
 </div>
 </div>
 <p>Let’s plot the forecast results.</p>
@@ -1249,7 +1249,7 @@ sigma^2 estimated as 691.8</code></pre>
 1 fpp3: seasonal naïve           3.82
 2 fpp3: ETS(M,A,M)               3.95
 3 fpp3: ARIMA(4,1,1)(0,1,1)[12]  4.58
-4 fpp3: NNAR(15,1,8)[12]         6.71
+4 fpp3: NNAR(15,1,8)[12]         7.46
 5 fpp3: naïve                   18.4 
 6 fpp3: drift                   21.2 
 7 fpp3: mean                    23.4 </code></pre>
@@ -1554,19 +1554,19 @@ sigma^2 estimated as 691.8</code></pre>
 H2O is not running yet, starting it now...
 
 Note:  In case of errors look at the following log files:
-    C:\Users\ML\AppData\Local\Temp\RtmpaiBCU5\file3bbc2122198c/h2o_ML_started_from_r.out
-    C:\Users\ML\AppData\Local\Temp\RtmpaiBCU5\file3bbc3fd277a2/h2o_ML_started_from_r.err
+    C:\Users\ML\AppData\Local\Temp\Rtmpuc1RIq\file3eec5888405a/h2o_ML_started_from_r.out
+    C:\Users\ML\AppData\Local\Temp\Rtmpuc1RIq\file3eec16143fc0/h2o_ML_started_from_r.err
 
 
-Starting H2O JVM and connecting:  Connection successful!
+Starting H2O JVM and connecting: ................... Connection successful!
 
 R is connected to the H2O cluster: 
-    H2O cluster uptime:         5 seconds 886 milliseconds 
+    H2O cluster uptime:         20 seconds 739 milliseconds 
     H2O cluster timezone:       America/Mexico_City 
     H2O data parsing timezone:  UTC 
     H2O cluster version:        3.42.0.2 
-    H2O cluster version age:    5 months and 4 days 
-    H2O cluster name:           H2O_started_from_R_ML_sbn534 
+    H2O cluster version age:    5 months and 8 days 
+    H2O cluster name:           H2O_started_from_R_ML_luz283 
     H2O cluster total nodes:    1 
     H2O cluster total memory:   3.52 GB 
     H2O cluster total cores:    4 
@@ -1639,10 +1639,10 @@ R is connected to the H2O cluster:
 <span id="cb90-11"><a href="#cb90-11"></a>t_inner1 <span class="ot">&lt;-</span> <span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>inner1: 498.7 sec elapsed</code></pre>
+<pre><code>inner1: 483 sec elapsed</code></pre>
 </div>
 </div>
-<p>After 8.31 minutes running, the selected model by <tt><code>h2o.automl()</code></tt> is:</p>
+<p>After 8.05 minutes running, the selected model by <tt><code>h2o.automl()</code></tt> is:</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
@@ -1663,16 +1663,16 @@ R is connected to the H2O cluster:
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>                                                  model_id     rmse
-1  StackedEnsemble_BestOfFamily_3_AutoML_1_20231229_115326 1048.771
-2  StackedEnsemble_BestOfFamily_5_AutoML_1_20231229_115326 1061.491
-3             GBM_grid_1_AutoML_1_20231229_115326_model_39 1199.115
-4  StackedEnsemble_BestOfFamily_4_AutoML_1_20231229_115326 1215.447
-5            GBM_grid_1_AutoML_1_20231229_115326_model_219 1263.118
-6             GBM_grid_1_AutoML_1_20231229_115326_model_64 1263.946
-7            GBM_grid_1_AutoML_1_20231229_115326_model_118 1319.513
-8      StackedEnsemble_Best1000_1_AutoML_1_20231229_115326 1356.091
-9     StackedEnsemble_AllModels_5_AutoML_1_20231229_115326 1360.523
-10    StackedEnsemble_AllModels_3_AutoML_1_20231229_115326 1360.523</code></pre>
+1  StackedEnsemble_BestOfFamily_3_AutoML_1_20240102_232756 1048.771
+2  StackedEnsemble_BestOfFamily_5_AutoML_1_20240102_232756 1061.491
+3             GBM_grid_1_AutoML_1_20240102_232756_model_39 1199.115
+4  StackedEnsemble_BestOfFamily_4_AutoML_1_20240102_232756 1215.447
+5             GBM_grid_1_AutoML_1_20240102_232756_model_64 1263.946
+6     StackedEnsemble_AllModels_3_AutoML_1_20240102_232756 1387.804
+7            GBM_grid_1_AutoML_1_20240102_232756_model_105 1394.311
+8             GBM_grid_1_AutoML_1_20240102_232756_model_17 1418.096
+9              GBM_grid_1_AutoML_1_20240102_232756_model_1 1423.704
+10            GBM_grid_1_AutoML_1_20240102_232756_model_73 1439.536</code></pre>
 </div>
 </div>
 <p>The <tt><code>model_id</code></tt> column list the top 10 models with the lowest errors. The value of <tt><code>h2o.automl()</code></tt> is that we can take the best model and use it to conduct our forecast. Remember we proposed to run <tt><code>h2o.automl()</code></tt> three times. Now let’s consider the second alternative (only Deep Learning). There are several ways to implement Deep Learning, this is why it makes sense to use only this family into the <tt><code>h2o.automl()</code></tt> function. Deep Learning cannot be reproducible by construction so adding a seed in this case would be useless.</p>
@@ -1685,28 +1685,21 @@ R is connected to the H2O cluster:
 <span id="cb96-4"><a href="#cb96-4"></a>DL <span class="ot">&lt;-</span> <span class="fu">h2o.automl</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">training_frame =</span> train_h2o, </span>
 <span id="cb96-5"><a href="#cb96-5"></a>    <span class="at">validation_frame =</span> valid_h2o, <span class="at">leaderboard_frame =</span> test_h2o,</span>
 <span id="cb96-6"><a href="#cb96-6"></a>    <span class="at">include_algos =</span> <span class="fu">c</span>(<span class="st">"DeepLearning"</span>), <span class="at">max_runtime_secs =</span> <span class="dv">60</span>, </span>
-<span id="cb96-7"><a href="#cb96-7"></a>    <span class="at">stopping_metric =</span> <span class="st">"RMSE"</span>, <span class="at">verbosity =</span> <span class="cn">NULL</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb96-7"><a href="#cb96-7"></a>    <span class="at">stopping_metric =</span> <span class="st">"RMSE"</span>, <span class="at">verbosity =</span> <span class="cn">NULL</span>)</span>
+<span id="cb96-8"><a href="#cb96-8"></a></span>
+<span id="cb96-9"><a href="#cb96-9"></a>t_inner2 <span class="ot">&lt;-</span> <span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Error in .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,  : 
-  Unexpected CURL error: Timeout was reached: [localhost:54321] Connection timeout after 12919 ms
-[1] "Job request failed Unexpected CURL error: Timeout was reached: [localhost:54321] Connection timeout after 12919 ms, will retry after 3s."</code></pre>
-</div>
-<details>
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1"></a>t_inner2 <span class="ot">&lt;-</span> <span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-stdout">
-<pre><code>inner2: 169.67 sec elapsed</code></pre>
+<pre><code>inner2: 186.84 sec elapsed</code></pre>
 </div>
 </div>
-<p>After 2.83 minutes running, the selected Deep Learning model by <tt><code>h2o.automl()</code></tt> is:</p>
+<p>After 3.11 minutes running, the selected Deep Learning model by <tt><code>h2o.automl()</code></tt> is:</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1"></a><span class="co"># Extract leader model</span></span>
-<span id="cb100-2"><a href="#cb100-2"></a>automl_DL <span class="ot">&lt;-</span> DL<span class="sc">@</span>leader</span>
-<span id="cb100-3"><a href="#cb100-3"></a>automl_DL<span class="sc">@</span>algorithm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1"></a><span class="co"># Extract leader model</span></span>
+<span id="cb98-2"><a href="#cb98-2"></a>automl_DL <span class="ot">&lt;-</span> DL<span class="sc">@</span>leader</span>
+<span id="cb98-3"><a href="#cb98-3"></a>automl_DL<span class="sc">@</span>algorithm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "deeplearning"</code></pre>
@@ -1716,16 +1709,18 @@ R is connected to the H2O cluster:
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb102"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1"></a><span class="fu">head</span>(DL<span class="sc">@</span>leaderboard[,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1"></a><span class="fu">head</span>(DL<span class="sc">@</span>leaderboard[,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>                                              model_id     rmse
-1 DeepLearning_grid_1_AutoML_2_20231229_120144_model_2 1126.309
-2 DeepLearning_grid_1_AutoML_2_20231229_120144_model_1 1158.793
-3 DeepLearning_grid_1_AutoML_2_20231229_120144_model_3 1456.658
-4 DeepLearning_grid_1_AutoML_2_20231229_120144_model_4 1610.395
-5              DeepLearning_1_AutoML_2_20231229_120144 2323.639
-6 DeepLearning_grid_1_AutoML_2_20231229_120144_model_5 3218.946</code></pre>
+1 DeepLearning_grid_1_AutoML_2_20240102_233559_model_2 1097.277
+2 DeepLearning_grid_1_AutoML_2_20240102_233559_model_1 1224.674
+3 DeepLearning_grid_1_AutoML_2_20240102_233559_model_4 1606.307
+4 DeepLearning_grid_1_AutoML_2_20240102_233559_model_3 1697.818
+5              DeepLearning_1_AutoML_2_20240102_233559 1845.579
+6 DeepLearning_grid_1_AutoML_2_20240102_233559_model_7 1904.240
+7 DeepLearning_grid_1_AutoML_2_20240102_233559_model_6 2947.580
+8 DeepLearning_grid_1_AutoML_2_20240102_233559_model_5 3031.368</code></pre>
 </div>
 </div>
 <p>All models belong to the same algorithm, but we clearly choose the first one of the list. The machine learning workflow estimate a number of models using the train region and evaluate them using the validation region. The estimated model parameters then change as they learn from their mistakes. This process is repeated until a specific restriction meets, in this case <tt><code>max_runtime_secs</code></tt> is set to 60 seconds. At the end, we select the best ranked model.</p>
@@ -1733,69 +1728,69 @@ R is connected to the H2O cluster:
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb104"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1"></a><span class="fu">tic</span>(<span class="st">"inner3"</span>)</span>
-<span id="cb104-2"><a href="#cb104-2"></a><span class="co"># This might take some time to run. </span></span>
-<span id="cb104-3"><a href="#cb104-3"></a>automl_models_h2o_all <span class="ot">&lt;-</span> <span class="fu">h2o.automl</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, </span>
-<span id="cb104-4"><a href="#cb104-4"></a>    <span class="at">training_frame =</span> train_h2o, <span class="at">validation_frame =</span> valid_h2o, </span>
-<span id="cb104-5"><a href="#cb104-5"></a>    <span class="at">leaderboard_frame =</span> test_h2o, <span class="at">max_runtime_secs =</span> <span class="dv">60</span>, </span>
-<span id="cb104-6"><a href="#cb104-6"></a>    <span class="at">stopping_metric =</span> <span class="st">"RMSE"</span>, <span class="at">verbosity =</span> <span class="cn">NULL</span>)</span>
-<span id="cb104-7"><a href="#cb104-7"></a></span>
-<span id="cb104-8"><a href="#cb104-8"></a>t_inner3 <span class="ot">&lt;-</span> <span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb102"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1"></a><span class="fu">tic</span>(<span class="st">"inner3"</span>)</span>
+<span id="cb102-2"><a href="#cb102-2"></a><span class="co"># This might take some time to run. </span></span>
+<span id="cb102-3"><a href="#cb102-3"></a>automl_models_h2o_all <span class="ot">&lt;-</span> <span class="fu">h2o.automl</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, </span>
+<span id="cb102-4"><a href="#cb102-4"></a>    <span class="at">training_frame =</span> train_h2o, <span class="at">validation_frame =</span> valid_h2o, </span>
+<span id="cb102-5"><a href="#cb102-5"></a>    <span class="at">leaderboard_frame =</span> test_h2o, <span class="at">max_runtime_secs =</span> <span class="dv">60</span>, </span>
+<span id="cb102-6"><a href="#cb102-6"></a>    <span class="at">stopping_metric =</span> <span class="st">"RMSE"</span>, <span class="at">verbosity =</span> <span class="cn">NULL</span>)</span>
+<span id="cb102-7"><a href="#cb102-7"></a></span>
+<span id="cb102-8"><a href="#cb102-8"></a>t_inner3 <span class="ot">&lt;-</span> <span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>inner3: 1875.7 sec elapsed</code></pre>
+<pre><code>inner3: 428.58 sec elapsed</code></pre>
 </div>
 </div>
-<p>After 31.26 minutes running, the selected model by <tt><code>h2o.automl()</code></tt> is:</p>
+<p>After 7.14 minutes running, the selected model by <tt><code>h2o.automl()</code></tt> is:</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb106"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1"></a><span class="co"># Extract leader model</span></span>
-<span id="cb106-2"><a href="#cb106-2"></a>automl_leader_all <span class="ot">&lt;-</span> automl_models_h2o_all<span class="sc">@</span>leader</span>
-<span id="cb106-3"><a href="#cb106-3"></a>automl_leader_all<span class="sc">@</span>algorithm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb104"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1"></a><span class="co"># Extract leader model</span></span>
+<span id="cb104-2"><a href="#cb104-2"></a>automl_leader_all <span class="ot">&lt;-</span> automl_models_h2o_all<span class="sc">@</span>leader</span>
+<span id="cb104-3"><a href="#cb104-3"></a>automl_leader_all<span class="sc">@</span>algorithm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] "stackedensemble"</code></pre>
+<pre><code>[1] "deeplearning"</code></pre>
 </div>
 </div>
 <p>See why c model was the chosen one in this specific and unique code compilation. Model rankings: <tt><code>h2o.automl</code></tt> with all available algorithms</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb108"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1"></a><span class="fu">head</span>(automl_models_h2o_all<span class="sc">@</span>leaderboard[,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb106"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1"></a><span class="fu">head</span>(automl_models_h2o_all<span class="sc">@</span>leaderboard[,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>                                                           model_id     rmse
-1           StackedEnsemble_BestOfFamily_4_AutoML_3_20231229_120436 1169.734
-2           StackedEnsemble_BestOfFamily_3_AutoML_3_20231229_120436 1175.371
-3  GBM_lr_annealing_selection_AutoML_3_20231229_120436_select_model 1289.940
-4              DeepLearning_grid_1_AutoML_3_20231229_120436_model_1 1310.743
-5              StackedEnsemble_AllModels_3_AutoML_3_20231229_120436 1364.257
-6                     GBM_grid_1_AutoML_3_20231229_120436_model_108 1384.519
-7                      GBM_grid_1_AutoML_3_20231229_120436_model_44 1390.444
-8                      GBM_grid_1_AutoML_3_20231229_120436_model_85 1399.215
-9              StackedEnsemble_AllModels_4_AutoML_3_20231229_120436 1399.910
-10                     GBM_grid_1_AutoML_3_20231229_120436_model_36 1494.810</code></pre>
+<pre><code>                                                  model_id     rmse
+1     DeepLearning_grid_1_AutoML_3_20240102_233908_model_1 1124.802
+2  StackedEnsemble_BestOfFamily_3_AutoML_3_20240102_233908 1168.254
+3             GBM_grid_1_AutoML_3_20240102_233908_model_29 1356.448
+4              GBM_grid_1_AutoML_3_20240102_233908_model_2 1356.683
+5             GBM_grid_1_AutoML_3_20240102_233908_model_28 1367.366
+6  StackedEnsemble_BestOfFamily_4_AutoML_3_20240102_233908 1433.548
+7              GBM_grid_1_AutoML_3_20240102_233908_model_6 1442.305
+8     StackedEnsemble_AllModels_3_AutoML_3_20240102_233908 1458.565
+9             GBM_grid_1_AutoML_3_20240102_233908_model_54 1471.401
+10            GBM_grid_1_AutoML_3_20240102_233908_model_12 1472.120</code></pre>
 </div>
 </div>
 <p>Let’s summarize the results according to the root mean square error <em>rmse</em> as this was the criterion in <tt><code>stopping_metric</code></tt>. The table shows the best ranked model according to our three different runs of <tt><code>h2o.automl()</code></tt>.</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb110"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1"></a><span class="co"># Collect model names and the rmse.</span></span>
-<span id="cb110-2"><a href="#cb110-2"></a>without_DL <span class="ot">&lt;-</span> <span class="fu">c</span>(automl_leader<span class="sc">@</span>algorithm, </span>
-<span id="cb110-3"><a href="#cb110-3"></a>                <span class="fu">round</span>(automl_models_h2o<span class="sc">@</span>leaderboard[<span class="dv">1</span>, <span class="dv">2</span>], <span class="dv">2</span>))</span>
-<span id="cb110-4"><a href="#cb110-4"></a>only_DL <span class="ot">&lt;-</span> <span class="fu">c</span>(automl_DL<span class="sc">@</span>algorithm, </span>
-<span id="cb110-5"><a href="#cb110-5"></a>             <span class="fu">round</span>(DL<span class="sc">@</span>leaderboard[<span class="dv">1</span>,<span class="dv">2</span>], <span class="dv">2</span>))</span>
-<span id="cb110-6"><a href="#cb110-6"></a>all <span class="ot">&lt;-</span> <span class="fu">c</span>(automl_leader_all<span class="sc">@</span>algorithm, </span>
-<span id="cb110-7"><a href="#cb110-7"></a>         <span class="fu">round</span>(automl_models_h2o_all<span class="sc">@</span>leaderboard[<span class="dv">1</span>, <span class="dv">2</span>], <span class="dv">2</span>))</span>
-<span id="cb110-8"><a href="#cb110-8"></a><span class="co"># Three different runs of h2o.automl.</span></span>
-<span id="cb110-9"><a href="#cb110-9"></a>automl_three <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(without_DL, only_DL, all)</span>
-<span id="cb110-10"><a href="#cb110-10"></a><span class="fu">colnames</span>(automl_three) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Without Deep Learning"</span>, <span class="st">"Only Deep Learning"</span>,</span>
-<span id="cb110-11"><a href="#cb110-11"></a>                            <span class="st">"All algorithms"</span>)</span>
-<span id="cb110-12"><a href="#cb110-12"></a><span class="fu">kable</span>(automl_three, </span>
-<span id="cb110-13"><a href="#cb110-13"></a><span class="at">caption =</span> <span class="st">"Top ranked models: h2o.automl rmse."</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb110-14"><a href="#cb110-14"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb108"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1"></a><span class="co"># Collect model names and the rmse.</span></span>
+<span id="cb108-2"><a href="#cb108-2"></a>without_DL <span class="ot">&lt;-</span> <span class="fu">c</span>(automl_leader<span class="sc">@</span>algorithm, </span>
+<span id="cb108-3"><a href="#cb108-3"></a>                <span class="fu">round</span>(automl_models_h2o<span class="sc">@</span>leaderboard[<span class="dv">1</span>, <span class="dv">2</span>], <span class="dv">2</span>))</span>
+<span id="cb108-4"><a href="#cb108-4"></a>only_DL <span class="ot">&lt;-</span> <span class="fu">c</span>(automl_DL<span class="sc">@</span>algorithm, </span>
+<span id="cb108-5"><a href="#cb108-5"></a>             <span class="fu">round</span>(DL<span class="sc">@</span>leaderboard[<span class="dv">1</span>,<span class="dv">2</span>], <span class="dv">2</span>))</span>
+<span id="cb108-6"><a href="#cb108-6"></a>all <span class="ot">&lt;-</span> <span class="fu">c</span>(automl_leader_all<span class="sc">@</span>algorithm, </span>
+<span id="cb108-7"><a href="#cb108-7"></a>         <span class="fu">round</span>(automl_models_h2o_all<span class="sc">@</span>leaderboard[<span class="dv">1</span>, <span class="dv">2</span>], <span class="dv">2</span>))</span>
+<span id="cb108-8"><a href="#cb108-8"></a><span class="co"># Three different runs of h2o.automl.</span></span>
+<span id="cb108-9"><a href="#cb108-9"></a>automl_three <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(without_DL, only_DL, all)</span>
+<span id="cb108-10"><a href="#cb108-10"></a><span class="fu">colnames</span>(automl_three) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Without Deep Learning"</span>, <span class="st">"Only Deep Learning"</span>,</span>
+<span id="cb108-11"><a href="#cb108-11"></a>                            <span class="st">"All algorithms"</span>)</span>
+<span id="cb108-12"><a href="#cb108-12"></a><span class="fu">kable</span>(automl_three, </span>
+<span id="cb108-13"><a href="#cb108-13"></a><span class="at">caption =</span> <span class="st">"Top ranked models: h2o.automl rmse."</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb108-14"><a href="#cb108-14"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table class="table table-sm table-striped small" data-quarto-postprocess="true">
@@ -1811,12 +1806,12 @@ R is connected to the H2O cluster:
 <tr class="odd">
 <td style="text-align: left;">stackedensemble</td>
 <td style="text-align: left;">deeplearning</td>
-<td style="text-align: left;">stackedensemble</td>
+<td style="text-align: left;">deeplearning</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">1048.77</td>
-<td style="text-align: left;">1126.31</td>
-<td style="text-align: left;">1169.73</td>
+<td style="text-align: left;">1097.28</td>
+<td style="text-align: left;">1124.8</td>
 </tr>
 </tbody>
 </table>
@@ -1832,26 +1827,26 @@ R is connected to the H2O cluster:
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1"></a><span class="co"># The h2o.predict function do the job.</span></span>
-<span id="cb111-2"><a href="#cb111-2"></a>pred_h2o <span class="ot">&lt;-</span> <span class="fu">h2o.predict</span>(automl_leader, <span class="at">newdata =</span> test_h2o)</span>
-<span id="cb111-3"><a href="#cb111-3"></a>pred_h2o_DL <span class="ot">&lt;-</span> <span class="fu">h2o.predict</span>(automl_DL, <span class="at">newdata =</span> test_h2o)</span>
-<span id="cb111-4"><a href="#cb111-4"></a>pred_h2o_all <span class="ot">&lt;-</span> <span class="fu">h2o.predict</span>(automl_leader_all, <span class="at">newdata =</span> test_h2o)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb109"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1"></a><span class="co"># The h2o.predict function do the job.</span></span>
+<span id="cb109-2"><a href="#cb109-2"></a>pred_h2o <span class="ot">&lt;-</span> <span class="fu">h2o.predict</span>(automl_leader, <span class="at">newdata =</span> test_h2o)</span>
+<span id="cb109-3"><a href="#cb109-3"></a>pred_h2o_DL <span class="ot">&lt;-</span> <span class="fu">h2o.predict</span>(automl_DL, <span class="at">newdata =</span> test_h2o)</span>
+<span id="cb109-4"><a href="#cb109-4"></a>pred_h2o_all <span class="ot">&lt;-</span> <span class="fu">h2o.predict</span>(automl_leader_all, <span class="at">newdata =</span> test_h2o)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>Let’s show the results in a table. First, the case without Deep Learning.</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb112"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb112-1"><a href="#cb112-1"></a><span class="co"># 10-period forecast error: h2o.automl without Deep Learning.</span></span>
-<span id="cb112-2"><a href="#cb112-2"></a>error_tbl <span class="ot">&lt;-</span> beer <span class="sc">%&gt;%</span> </span>
-<span id="cb112-3"><a href="#cb112-3"></a>    <span class="fu">filter</span>(lubridate<span class="sc">::</span><span class="fu">year</span>(date) <span class="sc">==</span> <span class="dv">2022</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb112-4"><a href="#cb112-4"></a>    <span class="fu">add_column</span>(<span class="at">pred =</span> pred_h2o <span class="sc">%&gt;%</span> <span class="fu">as_tibble</span>() <span class="sc">%&gt;%</span> <span class="fu">pull</span>(predict)) <span class="sc">%&gt;%</span></span>
-<span id="cb112-5"><a href="#cb112-5"></a>    <span class="fu">rename</span>(<span class="at">actual =</span> sales) <span class="sc">%&gt;%</span></span>
-<span id="cb112-6"><a href="#cb112-6"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> actual <span class="sc">-</span> pred, <span class="at">error_pct =</span> error <span class="sc">/</span> actual)</span>
-<span id="cb112-7"><a href="#cb112-7"></a><span class="fu">kable</span>(error_tbl, </span>
-<span id="cb112-8"><a href="#cb112-8"></a><span class="at">caption =</span> <span class="st">"Detailed performance: h2o.automl without Deep Learning algorithm."</span>,</span>
-<span id="cb112-9"><a href="#cb112-9"></a><span class="at">digits =</span> <span class="dv">3</span>, <span class="at">row.names =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb112-10"><a href="#cb112-10"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb110"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1"></a><span class="co"># 10-period forecast error: h2o.automl without Deep Learning.</span></span>
+<span id="cb110-2"><a href="#cb110-2"></a>error_tbl <span class="ot">&lt;-</span> beer <span class="sc">%&gt;%</span> </span>
+<span id="cb110-3"><a href="#cb110-3"></a>    <span class="fu">filter</span>(lubridate<span class="sc">::</span><span class="fu">year</span>(date) <span class="sc">==</span> <span class="dv">2022</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb110-4"><a href="#cb110-4"></a>    <span class="fu">add_column</span>(<span class="at">pred =</span> pred_h2o <span class="sc">%&gt;%</span> <span class="fu">as_tibble</span>() <span class="sc">%&gt;%</span> <span class="fu">pull</span>(predict)) <span class="sc">%&gt;%</span></span>
+<span id="cb110-5"><a href="#cb110-5"></a>    <span class="fu">rename</span>(<span class="at">actual =</span> sales) <span class="sc">%&gt;%</span></span>
+<span id="cb110-6"><a href="#cb110-6"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> actual <span class="sc">-</span> pred, <span class="at">error_pct =</span> error <span class="sc">/</span> actual)</span>
+<span id="cb110-7"><a href="#cb110-7"></a><span class="fu">kable</span>(error_tbl, </span>
+<span id="cb110-8"><a href="#cb110-8"></a><span class="at">caption =</span> <span class="st">"Detailed performance: h2o.automl without Deep Learning algorithm."</span>,</span>
+<span id="cb110-9"><a href="#cb110-9"></a><span class="at">digits =</span> <span class="dv">3</span>, <span class="at">row.names =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb110-10"><a href="#cb110-10"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table class="table table-sm table-striped small" data-quarto-postprocess="true">
@@ -1968,24 +1963,24 @@ R is connected to the H2O cluster:
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb113"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1"></a>beer <span class="sc">%&gt;%</span></span>
-<span id="cb113-2"><a href="#cb113-2"></a>  <span class="fu">filter</span>(date <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb113-3"><a href="#cb113-3"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">yearmonth</span>(date), <span class="at">y =</span> sales)) <span class="sc">+</span></span>
-<span id="cb113-4"><a href="#cb113-4"></a>    <span class="co"># Data.</span></span>
-<span id="cb113-5"><a href="#cb113-5"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">5</span>, <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, </span>
-<span id="cb113-6"><a href="#cb113-6"></a>               <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">fill =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
-<span id="cb113-7"><a href="#cb113-7"></a>    <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb113-8"><a href="#cb113-8"></a>    <span class="co"># Predictions.</span></span>
-<span id="cb113-9"><a href="#cb113-9"></a>    <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">size =</span> <span class="dv">5</span>, </span>
-<span id="cb113-10"><a href="#cb113-10"></a>               <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">shape =</span> <span class="dv">21</span>, </span>
-<span id="cb113-11"><a href="#cb113-11"></a>               <span class="at">fill =</span> <span class="st">"red"</span>, <span class="at">data =</span> error_tbl) <span class="sc">+</span></span>
-<span id="cb113-12"><a href="#cb113-12"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">size =</span> <span class="fl">0.5</span>, <span class="at">data =</span> error_tbl) <span class="sc">+</span></span>
-<span id="cb113-13"><a href="#cb113-13"></a><span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb113-14"><a href="#cb113-14"></a>    <span class="co"># Aesthetics.</span></span>
-<span id="cb113-15"><a href="#cb113-15"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
-<span id="cb113-16"><a href="#cb113-16"></a>    <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>, </span>
-<span id="cb113-17"><a href="#cb113-17"></a>                      ((<span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">5</span>)))))) <span class="sc">+</span></span>
-<span id="cb113-18"><a href="#cb113-18"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1"></a>beer <span class="sc">%&gt;%</span></span>
+<span id="cb111-2"><a href="#cb111-2"></a>  <span class="fu">filter</span>(date <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb111-3"><a href="#cb111-3"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">yearmonth</span>(date), <span class="at">y =</span> sales)) <span class="sc">+</span></span>
+<span id="cb111-4"><a href="#cb111-4"></a>    <span class="co"># Data.</span></span>
+<span id="cb111-5"><a href="#cb111-5"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">5</span>, <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, </span>
+<span id="cb111-6"><a href="#cb111-6"></a>               <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">fill =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb111-7"><a href="#cb111-7"></a>    <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb111-8"><a href="#cb111-8"></a>    <span class="co"># Predictions.</span></span>
+<span id="cb111-9"><a href="#cb111-9"></a>    <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">size =</span> <span class="dv">5</span>, </span>
+<span id="cb111-10"><a href="#cb111-10"></a>               <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">shape =</span> <span class="dv">21</span>, </span>
+<span id="cb111-11"><a href="#cb111-11"></a>               <span class="at">fill =</span> <span class="st">"red"</span>, <span class="at">data =</span> error_tbl) <span class="sc">+</span></span>
+<span id="cb111-12"><a href="#cb111-12"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">size =</span> <span class="fl">0.5</span>, <span class="at">data =</span> error_tbl) <span class="sc">+</span></span>
+<span id="cb111-13"><a href="#cb111-13"></a><span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb111-14"><a href="#cb111-14"></a>    <span class="co"># Aesthetics.</span></span>
+<span id="cb111-15"><a href="#cb111-15"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
+<span id="cb111-16"><a href="#cb111-16"></a>    <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>, </span>
+<span id="cb111-17"><a href="#cb111-17"></a>                      ((<span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">5</span>)))))) <span class="sc">+</span></span>
+<span id="cb111-18"><a href="#cb111-18"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-fhwdla" class="quarto-figure quarto-figure-center anchored">
@@ -2000,8 +1995,8 @@ R is connected to the H2O cluster:
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb114"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb114-1"><a href="#cb114-1"></a><span class="co"># Without Deep Learning.</span></span>
-<span id="cb114-2"><a href="#cb114-2"></a><span class="fu">h2o.performance</span>(automl_leader, <span class="at">newdata =</span> test_h2o)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb112"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb112-1"><a href="#cb112-1"></a><span class="co"># Without Deep Learning.</span></span>
+<span id="cb112-2"><a href="#cb112-2"></a><span class="fu">h2o.performance</span>(automl_leader, <span class="at">newdata =</span> test_h2o)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>H2ORegressionMetrics: stackedensemble
@@ -2017,16 +2012,16 @@ Mean Residual Deviance :  1099921</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb116"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb116-1"><a href="#cb116-1"></a><span class="co"># 10-period forecast error: h2o.automl only Deep Learning.</span></span>
-<span id="cb116-2"><a href="#cb116-2"></a>error_tbl_DL <span class="ot">&lt;-</span> beer <span class="sc">%&gt;%</span> </span>
-<span id="cb116-3"><a href="#cb116-3"></a>    <span class="fu">filter</span>(lubridate<span class="sc">::</span><span class="fu">year</span>(date) <span class="sc">==</span> <span class="dv">2022</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb116-4"><a href="#cb116-4"></a>    <span class="fu">add_column</span>(<span class="at">pred =</span> pred_h2o_DL <span class="sc">%&gt;%</span> <span class="fu">as_tibble</span>() <span class="sc">%&gt;%</span> <span class="fu">pull</span>(predict)) <span class="sc">%&gt;%</span></span>
-<span id="cb116-5"><a href="#cb116-5"></a>    <span class="fu">rename</span>(<span class="at">actual =</span> sales) <span class="sc">%&gt;%</span></span>
-<span id="cb116-6"><a href="#cb116-6"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> actual <span class="sc">-</span> pred, <span class="at">error_pct =</span> error <span class="sc">/</span> actual) </span>
-<span id="cb116-7"><a href="#cb116-7"></a><span class="fu">kable</span>(error_tbl_DL, </span>
-<span id="cb116-8"><a href="#cb116-8"></a><span class="at">caption =</span> <span class="st">"Detailed performance: h2o.automl only Deep Learning algorithm."</span>,</span>
-<span id="cb116-9"><a href="#cb116-9"></a>      <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">row.names =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb116-10"><a href="#cb116-10"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb114"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb114-1"><a href="#cb114-1"></a><span class="co"># 10-period forecast error: h2o.automl only Deep Learning.</span></span>
+<span id="cb114-2"><a href="#cb114-2"></a>error_tbl_DL <span class="ot">&lt;-</span> beer <span class="sc">%&gt;%</span> </span>
+<span id="cb114-3"><a href="#cb114-3"></a>    <span class="fu">filter</span>(lubridate<span class="sc">::</span><span class="fu">year</span>(date) <span class="sc">==</span> <span class="dv">2022</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb114-4"><a href="#cb114-4"></a>    <span class="fu">add_column</span>(<span class="at">pred =</span> pred_h2o_DL <span class="sc">%&gt;%</span> <span class="fu">as_tibble</span>() <span class="sc">%&gt;%</span> <span class="fu">pull</span>(predict)) <span class="sc">%&gt;%</span></span>
+<span id="cb114-5"><a href="#cb114-5"></a>    <span class="fu">rename</span>(<span class="at">actual =</span> sales) <span class="sc">%&gt;%</span></span>
+<span id="cb114-6"><a href="#cb114-6"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> actual <span class="sc">-</span> pred, <span class="at">error_pct =</span> error <span class="sc">/</span> actual) </span>
+<span id="cb114-7"><a href="#cb114-7"></a><span class="fu">kable</span>(error_tbl_DL, </span>
+<span id="cb114-8"><a href="#cb114-8"></a><span class="at">caption =</span> <span class="st">"Detailed performance: h2o.automl only Deep Learning algorithm."</span>,</span>
+<span id="cb114-9"><a href="#cb114-9"></a>      <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">row.names =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb114-10"><a href="#cb114-10"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table class="table table-sm table-striped small" data-quarto-postprocess="true">
@@ -2048,90 +2043,90 @@ Mean Residual Deviance :  1099921</code></pre>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-01-01</td>
 <td style="text-align: right;">11862</td>
-<td style="text-align: right;">10888.50</td>
-<td style="text-align: right;">973.501</td>
-<td style="text-align: right;">0.082</td>
+<td style="text-align: right;">11385.33</td>
+<td style="text-align: right;">476.672</td>
+<td style="text-align: right;">0.040</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">2</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-02-01</td>
 <td style="text-align: right;">13358</td>
-<td style="text-align: right;">12772.18</td>
-<td style="text-align: right;">585.816</td>
-<td style="text-align: right;">0.044</td>
+<td style="text-align: right;">12621.34</td>
+<td style="text-align: right;">736.661</td>
+<td style="text-align: right;">0.055</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">3</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-03-01</td>
 <td style="text-align: right;">16216</td>
-<td style="text-align: right;">14582.89</td>
-<td style="text-align: right;">1633.112</td>
-<td style="text-align: right;">0.101</td>
+<td style="text-align: right;">14964.52</td>
+<td style="text-align: right;">1251.481</td>
+<td style="text-align: right;">0.077</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">4</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-04-01</td>
 <td style="text-align: right;">15766</td>
-<td style="text-align: right;">14147.70</td>
-<td style="text-align: right;">1618.302</td>
-<td style="text-align: right;">0.103</td>
+<td style="text-align: right;">13176.31</td>
+<td style="text-align: right;">2589.694</td>
+<td style="text-align: right;">0.164</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">5</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-05-01</td>
 <td style="text-align: right;">16755</td>
-<td style="text-align: right;">16301.28</td>
-<td style="text-align: right;">453.724</td>
-<td style="text-align: right;">0.027</td>
+<td style="text-align: right;">15743.94</td>
+<td style="text-align: right;">1011.055</td>
+<td style="text-align: right;">0.060</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">6</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-06-01</td>
 <td style="text-align: right;">17882</td>
-<td style="text-align: right;">17532.96</td>
-<td style="text-align: right;">349.041</td>
-<td style="text-align: right;">0.020</td>
+<td style="text-align: right;">17173.48</td>
+<td style="text-align: right;">708.523</td>
+<td style="text-align: right;">0.040</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">7</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-07-01</td>
 <td style="text-align: right;">15168</td>
-<td style="text-align: right;">15816.00</td>
-<td style="text-align: right;">-648.001</td>
-<td style="text-align: right;">-0.043</td>
+<td style="text-align: right;">14506.11</td>
+<td style="text-align: right;">661.887</td>
+<td style="text-align: right;">0.044</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">8</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-08-01</td>
 <td style="text-align: right;">16977</td>
-<td style="text-align: right;">17745.03</td>
-<td style="text-align: right;">-768.027</td>
-<td style="text-align: right;">-0.045</td>
+<td style="text-align: right;">16311.52</td>
+<td style="text-align: right;">665.476</td>
+<td style="text-align: right;">0.039</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">9</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-09-01</td>
 <td style="text-align: right;">16430</td>
-<td style="text-align: right;">17371.81</td>
-<td style="text-align: right;">-941.815</td>
-<td style="text-align: right;">-0.057</td>
+<td style="text-align: right;">15845.58</td>
+<td style="text-align: right;">584.421</td>
+<td style="text-align: right;">0.036</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">10</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-10-01</td>
 <td style="text-align: right;">15480</td>
-<td style="text-align: right;">17450.89</td>
-<td style="text-align: right;">-1970.886</td>
-<td style="text-align: right;">-0.127</td>
+<td style="text-align: right;">15980.83</td>
+<td style="text-align: right;">-500.831</td>
+<td style="text-align: right;">-0.032</td>
 </tr>
 </tbody>
 </table>
@@ -2143,23 +2138,23 @@ Mean Residual Deviance :  1099921</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb117"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb117-1"><a href="#cb117-1"></a>beer <span class="sc">%&gt;%</span></span>
-<span id="cb117-2"><a href="#cb117-2"></a>    <span class="fu">filter</span>(date <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb117-3"><a href="#cb117-3"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">yearmonth</span>(date), <span class="at">y =</span> sales)) <span class="sc">+</span></span>
-<span id="cb117-4"><a href="#cb117-4"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">5</span>, <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, </span>
-<span id="cb117-5"><a href="#cb117-5"></a>               <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">fill =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
-<span id="cb117-6"><a href="#cb117-6"></a>    <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb117-7"><a href="#cb117-7"></a>    <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">size =</span> <span class="dv">5</span>, </span>
-<span id="cb117-8"><a href="#cb117-8"></a>               <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">shape =</span> <span class="dv">21</span>, </span>
-<span id="cb117-9"><a href="#cb117-9"></a>               <span class="at">fill =</span> <span class="st">"red"</span>, <span class="at">data =</span> error_tbl_DL) <span class="sc">+</span></span>
-<span id="cb117-10"><a href="#cb117-10"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">size =</span> <span class="fl">0.5</span>, </span>
-<span id="cb117-11"><a href="#cb117-11"></a>          <span class="at">data =</span> error_tbl_DL) <span class="sc">+</span></span>
-<span id="cb117-12"><a href="#cb117-12"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), </span>
-<span id="cb117-13"><a href="#cb117-13"></a>               <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb117-14"><a href="#cb117-14"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
-<span id="cb117-15"><a href="#cb117-15"></a>    <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>,</span>
-<span id="cb117-16"><a href="#cb117-16"></a>                      ((<span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl_DL<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">5</span>)))))) <span class="sc">+</span></span>
-<span id="cb117-17"><a href="#cb117-17"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb115"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb115-1"><a href="#cb115-1"></a>beer <span class="sc">%&gt;%</span></span>
+<span id="cb115-2"><a href="#cb115-2"></a>    <span class="fu">filter</span>(date <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb115-3"><a href="#cb115-3"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">yearmonth</span>(date), <span class="at">y =</span> sales)) <span class="sc">+</span></span>
+<span id="cb115-4"><a href="#cb115-4"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">5</span>, <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, </span>
+<span id="cb115-5"><a href="#cb115-5"></a>               <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">fill =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb115-6"><a href="#cb115-6"></a>    <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb115-7"><a href="#cb115-7"></a>    <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">size =</span> <span class="dv">5</span>, </span>
+<span id="cb115-8"><a href="#cb115-8"></a>               <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">shape =</span> <span class="dv">21</span>, </span>
+<span id="cb115-9"><a href="#cb115-9"></a>               <span class="at">fill =</span> <span class="st">"red"</span>, <span class="at">data =</span> error_tbl_DL) <span class="sc">+</span></span>
+<span id="cb115-10"><a href="#cb115-10"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">size =</span> <span class="fl">0.5</span>, </span>
+<span id="cb115-11"><a href="#cb115-11"></a>          <span class="at">data =</span> error_tbl_DL) <span class="sc">+</span></span>
+<span id="cb115-12"><a href="#cb115-12"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), </span>
+<span id="cb115-13"><a href="#cb115-13"></a>               <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb115-14"><a href="#cb115-14"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
+<span id="cb115-15"><a href="#cb115-15"></a>    <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>,</span>
+<span id="cb115-16"><a href="#cb115-16"></a>                      ((<span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl_DL<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">5</span>)))))) <span class="sc">+</span></span>
+<span id="cb115-17"><a href="#cb115-17"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-fhiodla" class="quarto-figure quarto-figure-center anchored">
@@ -2174,33 +2169,33 @@ Mean Residual Deviance :  1099921</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb118"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb118-1"><a href="#cb118-1"></a><span class="co"># Only Deep Learning.</span></span>
-<span id="cb118-2"><a href="#cb118-2"></a><span class="fu">h2o.performance</span>(automl_DL, <span class="at">newdata =</span> test_h2o)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb116"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb116-1"><a href="#cb116-1"></a><span class="co"># Only Deep Learning.</span></span>
+<span id="cb116-2"><a href="#cb116-2"></a><span class="fu">h2o.performance</span>(automl_DL, <span class="at">newdata =</span> test_h2o)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>H2ORegressionMetrics: deeplearning
 
-MSE:  1268571
-RMSE:  1126.309
-MAE:  994.2226
-RMSLE:  0.07392785
-Mean Residual Deviance :  1268571</code></pre>
+MSE:  1204017
+RMSE:  1097.277
+MAE:  918.67
+RMSLE:  0.07413783
+Mean Residual Deviance :  1204017</code></pre>
 </div>
 </div>
 <p>Finally, this is the H2O case with no restrictions, considering all available algorithms.</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb120"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb120-1"><a href="#cb120-1"></a><span class="co"># 10-period forecast error: h2o.automl all algorithms.</span></span>
-<span id="cb120-2"><a href="#cb120-2"></a>error_tbl_all <span class="ot">&lt;-</span> beer <span class="sc">%&gt;%</span> </span>
-<span id="cb120-3"><a href="#cb120-3"></a>    <span class="fu">filter</span>(lubridate<span class="sc">::</span><span class="fu">year</span>(date) <span class="sc">==</span> <span class="dv">2022</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb120-4"><a href="#cb120-4"></a>    <span class="fu">add_column</span>(<span class="at">pred =</span> pred_h2o_all <span class="sc">%&gt;%</span> <span class="fu">as_tibble</span>() <span class="sc">%&gt;%</span> <span class="fu">pull</span>(predict)) <span class="sc">%&gt;%</span></span>
-<span id="cb120-5"><a href="#cb120-5"></a>    <span class="fu">rename</span>(<span class="at">actual =</span> sales) <span class="sc">%&gt;%</span></span>
-<span id="cb120-6"><a href="#cb120-6"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> actual <span class="sc">-</span> pred, <span class="at">error_pct =</span> error <span class="sc">/</span> actual) </span>
-<span id="cb120-7"><a href="#cb120-7"></a><span class="fu">kable</span>(error_tbl_all, </span>
-<span id="cb120-8"><a href="#cb120-8"></a>      <span class="at">caption =</span> <span class="st">"Detailed performance: h2o.automl all algorithms."</span>,</span>
-<span id="cb120-9"><a href="#cb120-9"></a>      <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">row.names =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb120-10"><a href="#cb120-10"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb118"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb118-1"><a href="#cb118-1"></a><span class="co"># 10-period forecast error: h2o.automl all algorithms.</span></span>
+<span id="cb118-2"><a href="#cb118-2"></a>error_tbl_all <span class="ot">&lt;-</span> beer <span class="sc">%&gt;%</span> </span>
+<span id="cb118-3"><a href="#cb118-3"></a>    <span class="fu">filter</span>(lubridate<span class="sc">::</span><span class="fu">year</span>(date) <span class="sc">==</span> <span class="dv">2022</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb118-4"><a href="#cb118-4"></a>    <span class="fu">add_column</span>(<span class="at">pred =</span> pred_h2o_all <span class="sc">%&gt;%</span> <span class="fu">as_tibble</span>() <span class="sc">%&gt;%</span> <span class="fu">pull</span>(predict)) <span class="sc">%&gt;%</span></span>
+<span id="cb118-5"><a href="#cb118-5"></a>    <span class="fu">rename</span>(<span class="at">actual =</span> sales) <span class="sc">%&gt;%</span></span>
+<span id="cb118-6"><a href="#cb118-6"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> actual <span class="sc">-</span> pred, <span class="at">error_pct =</span> error <span class="sc">/</span> actual) </span>
+<span id="cb118-7"><a href="#cb118-7"></a><span class="fu">kable</span>(error_tbl_all, </span>
+<span id="cb118-8"><a href="#cb118-8"></a>      <span class="at">caption =</span> <span class="st">"Detailed performance: h2o.automl all algorithms."</span>,</span>
+<span id="cb118-9"><a href="#cb118-9"></a>      <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">row.names =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb118-10"><a href="#cb118-10"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table class="table table-sm table-striped small" data-quarto-postprocess="true">
@@ -2222,90 +2217,90 @@ Mean Residual Deviance :  1268571</code></pre>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-01-01</td>
 <td style="text-align: right;">11862</td>
-<td style="text-align: right;">12070.10</td>
-<td style="text-align: right;">-208.096</td>
-<td style="text-align: right;">-0.018</td>
+<td style="text-align: right;">11198.81</td>
+<td style="text-align: right;">663.188</td>
+<td style="text-align: right;">0.056</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">2</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-02-01</td>
 <td style="text-align: right;">13358</td>
-<td style="text-align: right;">13131.61</td>
-<td style="text-align: right;">226.385</td>
-<td style="text-align: right;">0.017</td>
+<td style="text-align: right;">12626.40</td>
+<td style="text-align: right;">731.597</td>
+<td style="text-align: right;">0.055</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">3</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-03-01</td>
 <td style="text-align: right;">16216</td>
-<td style="text-align: right;">15492.77</td>
-<td style="text-align: right;">723.234</td>
-<td style="text-align: right;">0.045</td>
+<td style="text-align: right;">15160.14</td>
+<td style="text-align: right;">1055.863</td>
+<td style="text-align: right;">0.065</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">4</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-04-01</td>
 <td style="text-align: right;">15766</td>
-<td style="text-align: right;">13955.74</td>
-<td style="text-align: right;">1810.263</td>
-<td style="text-align: right;">0.115</td>
+<td style="text-align: right;">13233.17</td>
+<td style="text-align: right;">2532.834</td>
+<td style="text-align: right;">0.161</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">5</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-05-01</td>
 <td style="text-align: right;">16755</td>
-<td style="text-align: right;">15555.93</td>
-<td style="text-align: right;">1199.073</td>
-<td style="text-align: right;">0.072</td>
+<td style="text-align: right;">15685.44</td>
+<td style="text-align: right;">1069.563</td>
+<td style="text-align: right;">0.064</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">6</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-06-01</td>
 <td style="text-align: right;">17882</td>
-<td style="text-align: right;">15555.93</td>
-<td style="text-align: right;">2326.073</td>
-<td style="text-align: right;">0.130</td>
+<td style="text-align: right;">16769.15</td>
+<td style="text-align: right;">1112.853</td>
+<td style="text-align: right;">0.062</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">7</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-07-01</td>
 <td style="text-align: right;">15168</td>
-<td style="text-align: right;">15555.93</td>
-<td style="text-align: right;">-387.927</td>
-<td style="text-align: right;">-0.026</td>
+<td style="text-align: right;">14271.80</td>
+<td style="text-align: right;">896.203</td>
+<td style="text-align: right;">0.059</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">8</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-08-01</td>
 <td style="text-align: right;">16977</td>
-<td style="text-align: right;">15555.93</td>
-<td style="text-align: right;">1421.073</td>
-<td style="text-align: right;">0.084</td>
+<td style="text-align: right;">16299.33</td>
+<td style="text-align: right;">677.674</td>
+<td style="text-align: right;">0.040</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">9</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-09-01</td>
 <td style="text-align: right;">16430</td>
-<td style="text-align: right;">15555.93</td>
-<td style="text-align: right;">874.073</td>
-<td style="text-align: right;">0.053</td>
+<td style="text-align: right;">15893.26</td>
+<td style="text-align: right;">536.738</td>
+<td style="text-align: right;">0.033</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">10</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-10-01</td>
 <td style="text-align: right;">15480</td>
-<td style="text-align: right;">15555.93</td>
-<td style="text-align: right;">-75.927</td>
-<td style="text-align: right;">-0.005</td>
+<td style="text-align: right;">15942.31</td>
+<td style="text-align: right;">-462.314</td>
+<td style="text-align: right;">-0.030</td>
 </tr>
 </tbody>
 </table>
@@ -2317,22 +2312,22 @@ Mean Residual Deviance :  1268571</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb121"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1"></a>beer <span class="sc">%&gt;%</span></span>
-<span id="cb121-2"><a href="#cb121-2"></a>    <span class="fu">filter</span>(date <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb121-3"><a href="#cb121-3"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">yearmonth</span>(date), <span class="at">y =</span> sales)) <span class="sc">+</span></span>
-<span id="cb121-4"><a href="#cb121-4"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">5</span>, <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, </span>
-<span id="cb121-5"><a href="#cb121-5"></a>               <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">fill =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
-<span id="cb121-6"><a href="#cb121-6"></a>    <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb121-7"><a href="#cb121-7"></a>    <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">size =</span> <span class="dv">5</span>, </span>
-<span id="cb121-8"><a href="#cb121-8"></a>               <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">shape =</span> <span class="dv">21</span>, </span>
-<span id="cb121-9"><a href="#cb121-9"></a>               <span class="at">fill =</span> <span class="st">"red"</span>, <span class="at">data =</span> error_tbl_all) <span class="sc">+</span></span>
-<span id="cb121-10"><a href="#cb121-10"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">size =</span> <span class="fl">0.5</span>, </span>
-<span id="cb121-11"><a href="#cb121-11"></a>          <span class="at">data =</span> error_tbl_all) <span class="sc">+</span></span>
-<span id="cb121-12"><a href="#cb121-12"></a><span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb121-13"><a href="#cb121-13"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
-<span id="cb121-14"><a href="#cb121-14"></a>    <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>,</span>
-<span id="cb121-15"><a href="#cb121-15"></a>                      ((<span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl_all<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">5</span>)))))) <span class="sc">+</span></span>
-<span id="cb121-16"><a href="#cb121-16"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb119"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1"></a>beer <span class="sc">%&gt;%</span></span>
+<span id="cb119-2"><a href="#cb119-2"></a>    <span class="fu">filter</span>(date <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb119-3"><a href="#cb119-3"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">yearmonth</span>(date), <span class="at">y =</span> sales)) <span class="sc">+</span></span>
+<span id="cb119-4"><a href="#cb119-4"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">5</span>, <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, </span>
+<span id="cb119-5"><a href="#cb119-5"></a>               <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">fill =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb119-6"><a href="#cb119-6"></a>    <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb119-7"><a href="#cb119-7"></a>    <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">size =</span> <span class="dv">5</span>, </span>
+<span id="cb119-8"><a href="#cb119-8"></a>               <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">shape =</span> <span class="dv">21</span>, </span>
+<span id="cb119-9"><a href="#cb119-9"></a>               <span class="at">fill =</span> <span class="st">"red"</span>, <span class="at">data =</span> error_tbl_all) <span class="sc">+</span></span>
+<span id="cb119-10"><a href="#cb119-10"></a><span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> pred), <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">size =</span> <span class="fl">0.5</span>, </span>
+<span id="cb119-11"><a href="#cb119-11"></a>          <span class="at">data =</span> error_tbl_all) <span class="sc">+</span></span>
+<span id="cb119-12"><a href="#cb119-12"></a><span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb119-13"><a href="#cb119-13"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
+<span id="cb119-14"><a href="#cb119-14"></a>    <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>,</span>
+<span id="cb119-15"><a href="#cb119-15"></a>                      ((<span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl_all<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>, <span class="dv">5</span>)))))) <span class="sc">+</span></span>
+<span id="cb119-16"><a href="#cb119-16"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-fhiaaa" class="quarto-figure quarto-figure-center anchored">
@@ -2347,16 +2342,16 @@ Mean Residual Deviance :  1268571</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb122"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb122-1"><a href="#cb122-1"></a><span class="fu">h2o.performance</span>(automl_leader_all, <span class="at">newdata =</span> test_h2o)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb120"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb120-1"><a href="#cb120-1"></a><span class="fu">h2o.performance</span>(automl_leader_all, <span class="at">newdata =</span> test_h2o)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>H2ORegressionMetrics: stackedensemble
+<pre><code>H2ORegressionMetrics: deeplearning
 
-MSE:  1368277
-RMSE:  1169.734
-MAE:  925.2123
-RMSLE:  0.07332806
-Mean Residual Deviance :  1368277</code></pre>
+MSE:  1265180
+RMSE:  1124.802
+MAE:  973.8827
+RMSLE:  0.0758259
+Mean Residual Deviance :  1265180</code></pre>
 </div>
 </div>
 <p>In finance we care about the future and these techniques can be used as a tool to reduce the uncertainty about the future. Obviously, we cannot predict without errors, but the objective is to achieve the lowest forecasting errors possible.</p>
@@ -2367,33 +2362,33 @@ Mean Residual Deviance :  1368277</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb124"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb124-1"><a href="#cb124-1"></a><span class="co"># There might be a more compact way to create this table.</span></span>
-<span id="cb124-2"><a href="#cb124-2"></a>error_tbl_summ <span class="ot">&lt;-</span> error_tbl <span class="sc">%&gt;%</span></span>
-<span id="cb124-3"><a href="#cb124-3"></a>    <span class="fu">summarise</span>(<span class="at">model =</span> automl_leader<span class="sc">@</span>algorithm,</span>
-<span id="cb124-4"><a href="#cb124-4"></a>      <span class="at">me =</span> <span class="fu">mean</span>(error), <span class="at">rmse =</span> <span class="fu">mean</span>(error<span class="sc">^</span><span class="dv">2</span>)<span class="sc">^</span><span class="fl">0.5</span>,</span>
-<span id="cb124-5"><a href="#cb124-5"></a>              <span class="at">mae  =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error)), <span class="at">mape =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_pct)),</span>
-<span id="cb124-6"><a href="#cb124-6"></a>              <span class="at">mpe  =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(error_pct)) </span>
-<span id="cb124-7"><a href="#cb124-7"></a>error_tbl_DL_summ <span class="ot">&lt;-</span> error_tbl_DL <span class="sc">%&gt;%</span></span>
-<span id="cb124-8"><a href="#cb124-8"></a>    <span class="fu">summarise</span>(<span class="at">model =</span> automl_DL<span class="sc">@</span>algorithm,</span>
-<span id="cb124-9"><a href="#cb124-9"></a>      <span class="at">me =</span> <span class="fu">mean</span>(error), <span class="at">rmse =</span> <span class="fu">mean</span>(error<span class="sc">^</span><span class="dv">2</span>)<span class="sc">^</span><span class="fl">0.5</span>,</span>
-<span id="cb124-10"><a href="#cb124-10"></a>              <span class="at">mae =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error)), <span class="at">mape =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_pct)),</span>
-<span id="cb124-11"><a href="#cb124-11"></a>              <span class="at">mpe =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(error_pct))</span>
-<span id="cb124-12"><a href="#cb124-12"></a>error_tbl_all_summ <span class="ot">&lt;-</span> error_tbl_all <span class="sc">%&gt;%</span></span>
-<span id="cb124-13"><a href="#cb124-13"></a>    <span class="fu">summarise</span>(<span class="at">model =</span> automl_leader_all<span class="sc">@</span>algorithm,</span>
-<span id="cb124-14"><a href="#cb124-14"></a>      <span class="at">me =</span> <span class="fu">mean</span>(error), <span class="at">rmse =</span> <span class="fu">mean</span>(error<span class="sc">^</span><span class="dv">2</span>)<span class="sc">^</span><span class="fl">0.5</span>,</span>
-<span id="cb124-15"><a href="#cb124-15"></a>              <span class="at">mae  =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error)), <span class="at">mape =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_pct)),</span>
-<span id="cb124-16"><a href="#cb124-16"></a>              <span class="at">mpe  =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(error_pct))</span>
-<span id="cb124-17"><a href="#cb124-17"></a>error_automl_summ <span class="ot">&lt;-</span> <span class="fu">rbind</span>(error_tbl_summ, error_tbl_DL_summ,</span>
-<span id="cb124-18"><a href="#cb124-18"></a>                                error_tbl_all_summ) <span class="sc">%&gt;%</span></span>
-<span id="cb124-19"><a href="#cb124-19"></a>  <span class="fu">as.data.frame</span>()</span>
-<span id="cb124-20"><a href="#cb124-20"></a></span>
-<span id="cb124-21"><a href="#cb124-21"></a><span class="fu">row.names</span>(error_automl_summ) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Without Deep Learning"</span>, </span>
-<span id="cb124-22"><a href="#cb124-22"></a>                                  <span class="st">"Only Deep Learning"</span>, <span class="st">"All algorithms"</span>)</span>
-<span id="cb124-23"><a href="#cb124-23"></a></span>
-<span id="cb124-24"><a href="#cb124-24"></a><span class="fu">kable</span>(error_automl_summ, </span>
-<span id="cb124-25"><a href="#cb124-25"></a><span class="at">caption =</span> <span class="st">"Top ranked models: h2o.automl summary forecasting errors."</span>,</span>
-<span id="cb124-26"><a href="#cb124-26"></a><span class="at">digits =</span> <span class="dv">2</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb124-27"><a href="#cb124-27"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb122"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb122-1"><a href="#cb122-1"></a><span class="co"># There might be a more compact way to create this table.</span></span>
+<span id="cb122-2"><a href="#cb122-2"></a>error_tbl_summ <span class="ot">&lt;-</span> error_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb122-3"><a href="#cb122-3"></a>    <span class="fu">summarise</span>(<span class="at">model =</span> automl_leader<span class="sc">@</span>algorithm,</span>
+<span id="cb122-4"><a href="#cb122-4"></a>      <span class="at">me =</span> <span class="fu">mean</span>(error), <span class="at">rmse =</span> <span class="fu">mean</span>(error<span class="sc">^</span><span class="dv">2</span>)<span class="sc">^</span><span class="fl">0.5</span>,</span>
+<span id="cb122-5"><a href="#cb122-5"></a>              <span class="at">mae  =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error)), <span class="at">mape =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_pct)),</span>
+<span id="cb122-6"><a href="#cb122-6"></a>              <span class="at">mpe  =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(error_pct)) </span>
+<span id="cb122-7"><a href="#cb122-7"></a>error_tbl_DL_summ <span class="ot">&lt;-</span> error_tbl_DL <span class="sc">%&gt;%</span></span>
+<span id="cb122-8"><a href="#cb122-8"></a>    <span class="fu">summarise</span>(<span class="at">model =</span> automl_DL<span class="sc">@</span>algorithm,</span>
+<span id="cb122-9"><a href="#cb122-9"></a>      <span class="at">me =</span> <span class="fu">mean</span>(error), <span class="at">rmse =</span> <span class="fu">mean</span>(error<span class="sc">^</span><span class="dv">2</span>)<span class="sc">^</span><span class="fl">0.5</span>,</span>
+<span id="cb122-10"><a href="#cb122-10"></a>              <span class="at">mae =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error)), <span class="at">mape =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_pct)),</span>
+<span id="cb122-11"><a href="#cb122-11"></a>              <span class="at">mpe =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(error_pct))</span>
+<span id="cb122-12"><a href="#cb122-12"></a>error_tbl_all_summ <span class="ot">&lt;-</span> error_tbl_all <span class="sc">%&gt;%</span></span>
+<span id="cb122-13"><a href="#cb122-13"></a>    <span class="fu">summarise</span>(<span class="at">model =</span> automl_leader_all<span class="sc">@</span>algorithm,</span>
+<span id="cb122-14"><a href="#cb122-14"></a>      <span class="at">me =</span> <span class="fu">mean</span>(error), <span class="at">rmse =</span> <span class="fu">mean</span>(error<span class="sc">^</span><span class="dv">2</span>)<span class="sc">^</span><span class="fl">0.5</span>,</span>
+<span id="cb122-15"><a href="#cb122-15"></a>              <span class="at">mae  =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error)), <span class="at">mape =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_pct)),</span>
+<span id="cb122-16"><a href="#cb122-16"></a>              <span class="at">mpe  =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(error_pct))</span>
+<span id="cb122-17"><a href="#cb122-17"></a>error_automl_summ <span class="ot">&lt;-</span> <span class="fu">rbind</span>(error_tbl_summ, error_tbl_DL_summ,</span>
+<span id="cb122-18"><a href="#cb122-18"></a>                                error_tbl_all_summ) <span class="sc">%&gt;%</span></span>
+<span id="cb122-19"><a href="#cb122-19"></a>  <span class="fu">as.data.frame</span>()</span>
+<span id="cb122-20"><a href="#cb122-20"></a></span>
+<span id="cb122-21"><a href="#cb122-21"></a><span class="fu">row.names</span>(error_automl_summ) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Without Deep Learning"</span>, </span>
+<span id="cb122-22"><a href="#cb122-22"></a>                                  <span class="st">"Only Deep Learning"</span>, <span class="st">"All algorithms"</span>)</span>
+<span id="cb122-23"><a href="#cb122-23"></a></span>
+<span id="cb122-24"><a href="#cb122-24"></a><span class="fu">kable</span>(error_automl_summ, </span>
+<span id="cb122-25"><a href="#cb122-25"></a><span class="at">caption =</span> <span class="st">"Top ranked models: h2o.automl summary forecasting errors."</span>,</span>
+<span id="cb122-26"><a href="#cb122-26"></a><span class="at">digits =</span> <span class="dv">2</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb122-27"><a href="#cb122-27"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table class="table table-sm table-striped small" data-quarto-postprocess="true">
@@ -2422,20 +2417,20 @@ Mean Residual Deviance :  1368277</code></pre>
 <tr class="even">
 <td style="text-align: left;">Only Deep Learning</td>
 <td style="text-align: left;">deeplearning</td>
-<td style="text-align: right;">128.48</td>
-<td style="text-align: right;">1126.31</td>
-<td style="text-align: right;">994.22</td>
-<td style="text-align: right;">6.48</td>
-<td style="text-align: right;">1.03</td>
+<td style="text-align: right;">818.50</td>
+<td style="text-align: right;">1097.28</td>
+<td style="text-align: right;">918.67</td>
+<td style="text-align: right;">5.87</td>
+<td style="text-align: right;">5.23</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">All algorithms</td>
-<td style="text-align: left;">stackedensemble</td>
-<td style="text-align: right;">790.82</td>
-<td style="text-align: right;">1169.73</td>
-<td style="text-align: right;">925.21</td>
-<td style="text-align: right;">5.63</td>
-<td style="text-align: right;">4.67</td>
+<td style="text-align: left;">deeplearning</td>
+<td style="text-align: right;">881.42</td>
+<td style="text-align: right;">1124.80</td>
+<td style="text-align: right;">973.88</td>
+<td style="text-align: right;">6.24</td>
+<td style="text-align: right;">5.64</td>
 </tr>
 </tbody>
 </table>
@@ -2448,26 +2443,26 @@ Mean Residual Deviance :  1368277</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb125"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb125-1"><a href="#cb125-1"></a>point_forecast_1 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb125-2"><a href="#cb125-2"></a>  <span class="at">model =</span> automl_leader<span class="sc">@</span>algorithm,</span>
-<span id="cb125-3"><a href="#cb125-3"></a>  error_tbl[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl<span class="sc">$</span>error_pct)), <span class="dv">2</span>], </span>
-<span id="cb125-4"><a href="#cb125-4"></a>  <span class="at">error =</span> error_tbl[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl<span class="sc">$</span>error_pct)), <span class="dv">6</span>])</span>
-<span id="cb125-5"><a href="#cb125-5"></a>point_forecast_2 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb125-6"><a href="#cb125-6"></a>  <span class="at">model =</span> automl_DL<span class="sc">@</span>algorithm,</span>
-<span id="cb125-7"><a href="#cb125-7"></a>  error_tbl_DL[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl_DL<span class="sc">$</span>error_pct)), <span class="dv">2</span>],</span>
-<span id="cb125-8"><a href="#cb125-8"></a>  <span class="at">error =</span> error_tbl_DL[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl_DL<span class="sc">$</span>error_pct)), <span class="dv">6</span>])</span>
-<span id="cb125-9"><a href="#cb125-9"></a>point_forecast_3 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb125-10"><a href="#cb125-10"></a>  <span class="at">model =</span> automl_leader_all<span class="sc">@</span>algorithm,</span>
-<span id="cb125-11"><a href="#cb125-11"></a>  error_tbl_all[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl_all<span class="sc">$</span>error_pct)), <span class="dv">2</span>],</span>
-<span id="cb125-12"><a href="#cb125-12"></a>  <span class="at">error =</span> error_tbl_all[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl_all<span class="sc">$</span>error_pct)), <span class="dv">6</span>])</span>
-<span id="cb125-13"><a href="#cb125-13"></a>point_forecast <span class="ot">&lt;-</span> <span class="fu">rbind.data.frame</span>(point_forecast_1, point_forecast_2,</span>
-<span id="cb125-14"><a href="#cb125-14"></a>                                   point_forecast_3)</span>
-<span id="cb125-15"><a href="#cb125-15"></a><span class="fu">row.names</span>(point_forecast) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Without Deep Learning"</span>, </span>
-<span id="cb125-16"><a href="#cb125-16"></a>                               <span class="st">"Only Deep Learning"</span>, <span class="st">"All algorithms"</span>)</span>
-<span id="cb125-17"><a href="#cb125-17"></a><span class="fu">kable</span>(point_forecast, </span>
-<span id="cb125-18"><a href="#cb125-18"></a><span class="at">caption =</span> <span class="st">"Top ranked models: Lowest point forecast percentage errors."</span>,</span>
-<span id="cb125-19"><a href="#cb125-19"></a><span class="at">digits =</span> <span class="dv">6</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb125-20"><a href="#cb125-20"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb123"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb123-1"><a href="#cb123-1"></a>point_forecast_1 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb123-2"><a href="#cb123-2"></a>  <span class="at">model =</span> automl_leader<span class="sc">@</span>algorithm,</span>
+<span id="cb123-3"><a href="#cb123-3"></a>  error_tbl[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl<span class="sc">$</span>error_pct)), <span class="dv">2</span>], </span>
+<span id="cb123-4"><a href="#cb123-4"></a>  <span class="at">error =</span> error_tbl[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl<span class="sc">$</span>error_pct)), <span class="dv">6</span>])</span>
+<span id="cb123-5"><a href="#cb123-5"></a>point_forecast_2 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb123-6"><a href="#cb123-6"></a>  <span class="at">model =</span> automl_DL<span class="sc">@</span>algorithm,</span>
+<span id="cb123-7"><a href="#cb123-7"></a>  error_tbl_DL[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl_DL<span class="sc">$</span>error_pct)), <span class="dv">2</span>],</span>
+<span id="cb123-8"><a href="#cb123-8"></a>  <span class="at">error =</span> error_tbl_DL[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl_DL<span class="sc">$</span>error_pct)), <span class="dv">6</span>])</span>
+<span id="cb123-9"><a href="#cb123-9"></a>point_forecast_3 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb123-10"><a href="#cb123-10"></a>  <span class="at">model =</span> automl_leader_all<span class="sc">@</span>algorithm,</span>
+<span id="cb123-11"><a href="#cb123-11"></a>  error_tbl_all[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl_all<span class="sc">$</span>error_pct)), <span class="dv">2</span>],</span>
+<span id="cb123-12"><a href="#cb123-12"></a>  <span class="at">error =</span> error_tbl_all[<span class="fu">which.min</span>(<span class="fu">abs</span>(error_tbl_all<span class="sc">$</span>error_pct)), <span class="dv">6</span>])</span>
+<span id="cb123-13"><a href="#cb123-13"></a>point_forecast <span class="ot">&lt;-</span> <span class="fu">rbind.data.frame</span>(point_forecast_1, point_forecast_2,</span>
+<span id="cb123-14"><a href="#cb123-14"></a>                                   point_forecast_3)</span>
+<span id="cb123-15"><a href="#cb123-15"></a><span class="fu">row.names</span>(point_forecast) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Without Deep Learning"</span>, </span>
+<span id="cb123-16"><a href="#cb123-16"></a>                               <span class="st">"Only Deep Learning"</span>, <span class="st">"All algorithms"</span>)</span>
+<span id="cb123-17"><a href="#cb123-17"></a><span class="fu">kable</span>(point_forecast, </span>
+<span id="cb123-18"><a href="#cb123-18"></a><span class="at">caption =</span> <span class="st">"Top ranked models: Lowest point forecast percentage errors."</span>,</span>
+<span id="cb123-19"><a href="#cb123-19"></a><span class="at">digits =</span> <span class="dv">6</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb123-20"><a href="#cb123-20"></a><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">"HOLD_position"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table class="table table-sm table-striped small" data-quarto-postprocess="true">
@@ -2490,14 +2485,14 @@ Mean Residual Deviance :  1368277</code></pre>
 <tr class="even">
 <td style="text-align: left;">Only Deep Learning</td>
 <td style="text-align: left;">deeplearning</td>
-<td style="text-align: left;">2022-06-01</td>
-<td style="text-align: right;">0.019519</td>
+<td style="text-align: left;">2022-10-01</td>
+<td style="text-align: right;">-0.032353</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">All algorithms</td>
-<td style="text-align: left;">stackedensemble</td>
+<td style="text-align: left;">deeplearning</td>
 <td style="text-align: left;">2022-10-01</td>
-<td style="text-align: right;">-0.004905</td>
+<td style="text-align: right;">-0.029865</td>
 </tr>
 </tbody>
 </table>
@@ -2509,18 +2504,18 @@ Mean Residual Deviance :  1368277</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb126"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb126-1"><a href="#cb126-1"></a>mape_updated_h2o <span class="ot">&lt;-</span> mape_updated <span class="sc">%&gt;%</span></span>
-<span id="cb126-2"><a href="#cb126-2"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="fu">paste</span>(<span class="st">"H2O no Deep Learning:"</span>, </span>
-<span id="cb126-3"><a href="#cb126-3"></a>                         automl_leader<span class="sc">@</span>algorithm), </span>
-<span id="cb126-4"><a href="#cb126-4"></a>          <span class="at">MAPE =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb126-5"><a href="#cb126-5"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="fu">paste</span>(<span class="st">"H2O Deep Learning:"</span>,</span>
-<span id="cb126-6"><a href="#cb126-6"></a>                         automl_DL<span class="sc">@</span>algorithm),</span>
-<span id="cb126-7"><a href="#cb126-7"></a>          <span class="at">MAPE =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl_DL<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb126-8"><a href="#cb126-8"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="fu">paste</span>(<span class="st">"H2O all models:"</span>, </span>
-<span id="cb126-9"><a href="#cb126-9"></a>                         automl_leader_all<span class="sc">@</span>algorithm),</span>
-<span id="cb126-10"><a href="#cb126-10"></a>                         <span class="at">MAPE =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl_all<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb126-11"><a href="#cb126-11"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="sc">-</span>MAPE))</span>
-<span id="cb126-12"><a href="#cb126-12"></a>mape_updated_h2o</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb124"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb124-1"><a href="#cb124-1"></a>mape_updated_h2o <span class="ot">&lt;-</span> mape_updated <span class="sc">%&gt;%</span></span>
+<span id="cb124-2"><a href="#cb124-2"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="fu">paste</span>(<span class="st">"H2O no Deep Learning:"</span>, </span>
+<span id="cb124-3"><a href="#cb124-3"></a>                         automl_leader<span class="sc">@</span>algorithm), </span>
+<span id="cb124-4"><a href="#cb124-4"></a>          <span class="at">MAPE =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb124-5"><a href="#cb124-5"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="fu">paste</span>(<span class="st">"H2O Deep Learning:"</span>,</span>
+<span id="cb124-6"><a href="#cb124-6"></a>                         automl_DL<span class="sc">@</span>algorithm),</span>
+<span id="cb124-7"><a href="#cb124-7"></a>          <span class="at">MAPE =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl_DL<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb124-8"><a href="#cb124-8"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="fu">paste</span>(<span class="st">"H2O all models:"</span>, </span>
+<span id="cb124-9"><a href="#cb124-9"></a>                         automl_leader_all<span class="sc">@</span>algorithm),</span>
+<span id="cb124-10"><a href="#cb124-10"></a>                         <span class="at">MAPE =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(error_tbl_all<span class="sc">$</span>error_pct))<span class="sc">*</span><span class="dv">100</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb124-11"><a href="#cb124-11"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="sc">-</span>MAPE))</span>
+<span id="cb124-12"><a href="#cb124-12"></a>mape_updated_h2o</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 10 × 2
@@ -2529,10 +2524,10 @@ Mean Residual Deviance :  1368277</code></pre>
  1 fpp3: seasonal naïve                   3.82
  2 fpp3: ETS(M,A,M)                       3.95
  3 fpp3: ARIMA(4,1,1)(0,1,1)[12]          4.58
- 4 H2O all models: stackedensemble        5.63
- 5 H2O no Deep Learning: stackedensemble  5.72
- 6 H2O Deep Learning: deeplearning        6.48
- 7 fpp3: NNAR(15,1,8)[12]                 6.71
+ 4 H2O no Deep Learning: stackedensemble  5.72
+ 5 H2O Deep Learning: deeplearning        5.87
+ 6 H2O all models: deeplearning           6.24
+ 7 fpp3: NNAR(15,1,8)[12]                 7.46
  8 fpp3: naïve                           18.4 
  9 fpp3: drift                           21.2 
 10 fpp3: mean                            23.4 </code></pre>
@@ -2553,9 +2548,9 @@ Mean Residual Deviance :  1368277</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb128"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb128-1"><a href="#cb128-1"></a>fit_lm <span class="ot">&lt;-</span> <span class="fu">lm</span>(sales <span class="sc">~</span> ., <span class="at">data =</span> </span>
-<span id="cb128-2"><a href="#cb128-2"></a>               <span class="fu">select</span>(beer_aug, <span class="sc">-</span><span class="fu">c</span>(date, diff, symbol)))</span>
-<span id="cb128-3"><a href="#cb128-3"></a><span class="fu">summary</span>(fit_lm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb126"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb126-1"><a href="#cb126-1"></a>fit_lm <span class="ot">&lt;-</span> <span class="fu">lm</span>(sales <span class="sc">~</span> ., <span class="at">data =</span> </span>
+<span id="cb126-2"><a href="#cb126-2"></a>               <span class="fu">select</span>(beer_aug, <span class="sc">-</span><span class="fu">c</span>(date, diff, symbol)))</span>
+<span id="cb126-3"><a href="#cb126-3"></a><span class="fu">summary</span>(fit_lm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>
@@ -2628,10 +2623,10 @@ F-statistic: 101.9 on 26 and 127 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb130"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb130-1"><a href="#cb130-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit_lm, <span class="at">newdata =</span> test_tbl)</span>
-<span id="cb130-2"><a href="#cb130-2"></a>future_idx <span class="ot">&lt;-</span> <span class="fu">tail</span>(beer<span class="sc">$</span>date, <span class="dv">10</span>) <span class="co"># The 10-months forecast period.</span></span>
-<span id="cb130-3"><a href="#cb130-3"></a>predictions_tbl <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">date  =</span> future_idx, <span class="at">value =</span> pred)</span>
-<span id="cb130-4"><a href="#cb130-4"></a>predictions_tbl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb128"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb128-1"><a href="#cb128-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit_lm, <span class="at">newdata =</span> test_tbl)</span>
+<span id="cb128-2"><a href="#cb128-2"></a>future_idx <span class="ot">&lt;-</span> <span class="fu">tail</span>(beer<span class="sc">$</span>date, <span class="dv">10</span>) <span class="co"># The 10-months forecast period.</span></span>
+<span id="cb128-3"><a href="#cb128-3"></a>predictions_tbl <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">date  =</span> future_idx, <span class="at">value =</span> pred)</span>
+<span id="cb128-4"><a href="#cb128-4"></a>predictions_tbl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 10 × 2
@@ -2653,12 +2648,12 @@ F-statistic: 101.9 on 26 and 127 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb132"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb132-1"><a href="#cb132-1"></a><span class="co"># Investigate test error</span></span>
-<span id="cb132-2"><a href="#cb132-2"></a>actuals_tbl <span class="ot">&lt;-</span> <span class="fu">tail</span>(beer[<span class="sc">-</span><span class="dv">1</span>], <span class="dv">10</span>)</span>
-<span id="cb132-3"><a href="#cb132-3"></a>error_tbl_lm <span class="ot">&lt;-</span> <span class="fu">left_join</span>(actuals_tbl, predictions_tbl) <span class="sc">%&gt;%</span></span>
-<span id="cb132-4"><a href="#cb132-4"></a>    <span class="fu">rename</span>(<span class="at">actual =</span> sales, <span class="at">pred =</span> value) <span class="sc">%&gt;%</span></span>
-<span id="cb132-5"><a href="#cb132-5"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> actual <span class="sc">-</span> pred, <span class="at">error_pct =</span> error <span class="sc">/</span> actual) </span>
-<span id="cb132-6"><a href="#cb132-6"></a>error_tbl_lm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb130"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb130-1"><a href="#cb130-1"></a><span class="co"># Investigate test error</span></span>
+<span id="cb130-2"><a href="#cb130-2"></a>actuals_tbl <span class="ot">&lt;-</span> <span class="fu">tail</span>(beer[<span class="sc">-</span><span class="dv">1</span>], <span class="dv">10</span>)</span>
+<span id="cb130-3"><a href="#cb130-3"></a>error_tbl_lm <span class="ot">&lt;-</span> <span class="fu">left_join</span>(actuals_tbl, predictions_tbl) <span class="sc">%&gt;%</span></span>
+<span id="cb130-4"><a href="#cb130-4"></a>    <span class="fu">rename</span>(<span class="at">actual =</span> sales, <span class="at">pred =</span> value) <span class="sc">%&gt;%</span></span>
+<span id="cb130-5"><a href="#cb130-5"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> actual <span class="sc">-</span> pred, <span class="at">error_pct =</span> error <span class="sc">/</span> actual) </span>
+<span id="cb130-6"><a href="#cb130-6"></a>error_tbl_lm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 10 × 5
@@ -2680,16 +2675,16 @@ F-statistic: 101.9 on 26 and 127 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb134"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb134-1"><a href="#cb134-1"></a><span class="co"># Calculating test error metrics</span></span>
-<span id="cb134-2"><a href="#cb134-2"></a>test_residuals_lm <span class="ot">&lt;-</span> error_tbl_lm<span class="sc">$</span>error</span>
-<span id="cb134-3"><a href="#cb134-3"></a>test_error_pct_lm <span class="ot">&lt;-</span> error_tbl_lm<span class="sc">$</span>error_pct <span class="sc">*</span> <span class="dv">100</span> <span class="co"># Percentage error.</span></span>
-<span id="cb134-4"><a href="#cb134-4"></a>me   <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_residuals_lm, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb134-5"><a href="#cb134-5"></a>rmse <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_residuals_lm<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)<span class="sc">^</span><span class="fl">0.5</span></span>
-<span id="cb134-6"><a href="#cb134-6"></a>mae  <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_residuals_lm), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb134-7"><a href="#cb134-7"></a>mape <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_lm), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb134-8"><a href="#cb134-8"></a>mpe  <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_error_pct_lm, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb134-9"><a href="#cb134-9"></a><span class="fu">tibble</span>(me, rmse, mae, mape, mpe) <span class="sc">%&gt;%</span> </span>
-<span id="cb134-10"><a href="#cb134-10"></a>  <span class="fu">glimpse</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb132"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb132-1"><a href="#cb132-1"></a><span class="co"># Calculating test error metrics</span></span>
+<span id="cb132-2"><a href="#cb132-2"></a>test_residuals_lm <span class="ot">&lt;-</span> error_tbl_lm<span class="sc">$</span>error</span>
+<span id="cb132-3"><a href="#cb132-3"></a>test_error_pct_lm <span class="ot">&lt;-</span> error_tbl_lm<span class="sc">$</span>error_pct <span class="sc">*</span> <span class="dv">100</span> <span class="co"># Percentage error.</span></span>
+<span id="cb132-4"><a href="#cb132-4"></a>me   <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_residuals_lm, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb132-5"><a href="#cb132-5"></a>rmse <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_residuals_lm<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)<span class="sc">^</span><span class="fl">0.5</span></span>
+<span id="cb132-6"><a href="#cb132-6"></a>mae  <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_residuals_lm), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb132-7"><a href="#cb132-7"></a>mape <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_lm), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb132-8"><a href="#cb132-8"></a>mpe  <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_error_pct_lm, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb132-9"><a href="#cb132-9"></a><span class="fu">tibble</span>(me, rmse, mae, mape, mpe) <span class="sc">%&gt;%</span> </span>
+<span id="cb132-10"><a href="#cb132-10"></a>  <span class="fu">glimpse</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Rows: 1
@@ -2705,20 +2700,20 @@ $ mpe  &lt;dbl&gt; 2.540329</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb136"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb136-1"><a href="#cb136-1"></a>beer <span class="sc">%&gt;%</span></span>
-<span id="cb136-2"><a href="#cb136-2"></a>  <span class="fu">filter</span>(date <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb136-3"><a href="#cb136-3"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">yearmonth</span>(date), <span class="at">y =</span> sales)) <span class="sc">+</span></span>
-<span id="cb136-4"><a href="#cb136-4"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb136-5"><a href="#cb136-5"></a>  <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb136-6"><a href="#cb136-6"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> value), <span class="at">size =</span> <span class="fl">0.5</span>,</span>
-<span id="cb136-7"><a href="#cb136-7"></a>            <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">data =</span> predictions_tbl) <span class="sc">+</span></span>
-<span id="cb136-8"><a href="#cb136-8"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> value), <span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
-<span id="cb136-9"><a href="#cb136-9"></a>             <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">data =</span> predictions_tbl) <span class="sc">+</span></span>
-<span id="cb136-10"><a href="#cb136-10"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb136-11"><a href="#cb136-11"></a>  <span class="fu">theme_tq</span>() <span class="sc">+</span></span>
-<span id="cb136-12"><a href="#cb136-12"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
-<span id="cb136-13"><a href="#cb136-13"></a>       <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>,((<span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_lm)), <span class="dv">5</span>)))))) <span class="sc">+</span></span>
-<span id="cb136-14"><a href="#cb136-14"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb134"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb134-1"><a href="#cb134-1"></a>beer <span class="sc">%&gt;%</span></span>
+<span id="cb134-2"><a href="#cb134-2"></a>  <span class="fu">filter</span>(date <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb134-3"><a href="#cb134-3"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">yearmonth</span>(date), <span class="at">y =</span> sales)) <span class="sc">+</span></span>
+<span id="cb134-4"><a href="#cb134-4"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb134-5"><a href="#cb134-5"></a>  <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb134-6"><a href="#cb134-6"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> value), <span class="at">size =</span> <span class="fl">0.5</span>,</span>
+<span id="cb134-7"><a href="#cb134-7"></a>            <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">data =</span> predictions_tbl) <span class="sc">+</span></span>
+<span id="cb134-8"><a href="#cb134-8"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> value), <span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
+<span id="cb134-9"><a href="#cb134-9"></a>             <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">data =</span> predictions_tbl) <span class="sc">+</span></span>
+<span id="cb134-10"><a href="#cb134-10"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb134-11"><a href="#cb134-11"></a>  <span class="fu">theme_tq</span>() <span class="sc">+</span></span>
+<span id="cb134-12"><a href="#cb134-12"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
+<span id="cb134-13"><a href="#cb134-13"></a>       <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>,((<span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_lm)), <span class="dv">5</span>)))))) <span class="sc">+</span></span>
+<span id="cb134-14"><a href="#cb134-14"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-fmlr" class="quarto-figure quarto-figure-center anchored">
@@ -2741,9 +2736,9 @@ $ mpe  &lt;dbl&gt; 2.540329</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb137"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1"></a><span class="co"># Convert from tbl to ts.</span></span>
-<span id="cb137-2"><a href="#cb137-2"></a>beer_sales_ts <span class="ot">&lt;-</span> <span class="fu">tk_ts</span>(beer[<span class="dv">1</span><span class="sc">:</span><span class="dv">144</span>,], <span class="at">start =</span> <span class="dv">2010</span>, <span class="at">freq =</span> <span class="dv">12</span>)</span>
-<span id="cb137-3"><a href="#cb137-3"></a>beer_sales_ts</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb135"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1"></a><span class="co"># Convert from tbl to ts.</span></span>
+<span id="cb135-2"><a href="#cb135-2"></a>beer_sales_ts <span class="ot">&lt;-</span> <span class="fu">tk_ts</span>(beer[<span class="dv">1</span><span class="sc">:</span><span class="dv">144</span>,], <span class="at">start =</span> <span class="dv">2010</span>, <span class="at">freq =</span> <span class="dv">12</span>)</span>
+<span id="cb135-3"><a href="#cb135-3"></a>beer_sales_ts</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>       Jan   Feb   Mar   Apr   May   Jun   Jul   Aug   Sep   Oct   Nov   Dec
@@ -2765,8 +2760,8 @@ $ mpe  &lt;dbl&gt; 2.540329</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb139"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1"></a><span class="co"># Check that ts-object has a timetk index.</span></span>
-<span id="cb139-2"><a href="#cb139-2"></a><span class="fu">has_timetk_idx</span>(beer_sales_ts)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb137"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1"></a><span class="co"># Check that ts-object has a timetk index.</span></span>
+<span id="cb137-2"><a href="#cb137-2"></a><span class="fu">has_timetk_idx</span>(beer_sales_ts)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] TRUE</code></pre>
@@ -2780,10 +2775,10 @@ $ mpe  &lt;dbl&gt; 2.540329</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb141"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb141-1"><a href="#cb141-1"></a><span class="co"># Model using auto.arima.</span></span>
-<span id="cb141-2"><a href="#cb141-2"></a><span class="fu">set.seed</span>(<span class="dv">13</span>)</span>
-<span id="cb141-3"><a href="#cb141-3"></a>fit_arima <span class="ot">&lt;-</span> <span class="fu">auto.arima</span>(beer_sales_ts)</span>
-<span id="cb141-4"><a href="#cb141-4"></a>fit_arima</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb139"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1"></a><span class="co"># Model using auto.arima.</span></span>
+<span id="cb139-2"><a href="#cb139-2"></a><span class="fu">set.seed</span>(<span class="dv">13</span>)</span>
+<span id="cb139-3"><a href="#cb139-3"></a>fit_arima <span class="ot">&lt;-</span> <span class="fu">auto.arima</span>(beer_sales_ts)</span>
+<span id="cb139-4"><a href="#cb139-4"></a>fit_arima</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Series: beer_sales_ts 
@@ -2802,8 +2797,8 @@ AIC=2046.39   AICc=2047.3   BIC=2066.52</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb143"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1"></a><span class="co"># sw_tidy - Get model coefficients.</span></span>
-<span id="cb143-2"><a href="#cb143-2"></a><span class="fu">sw_tidy</span>(fit_arima)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb141"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb141-1"><a href="#cb141-1"></a><span class="co"># sw_tidy - Get model coefficients.</span></span>
+<span id="cb141-2"><a href="#cb141-2"></a><span class="fu">sw_tidy</span>(fit_arima)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 6 × 2
@@ -2821,9 +2816,9 @@ AIC=2046.39   AICc=2047.3   BIC=2066.52</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb145"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb145-1"><a href="#cb145-1"></a><span class="co"># sw_glance - Get model description and training set accuracy measures.</span></span>
-<span id="cb145-2"><a href="#cb145-2"></a><span class="fu">sw_glance</span>(fit_arima) <span class="sc">%&gt;%</span></span>
-<span id="cb145-3"><a href="#cb145-3"></a>    <span class="fu">glimpse</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb143"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1"></a><span class="co"># sw_glance - Get model description and training set accuracy measures.</span></span>
+<span id="cb143-2"><a href="#cb143-2"></a><span class="fu">sw_glance</span>(fit_arima) <span class="sc">%&gt;%</span></span>
+<span id="cb143-3"><a href="#cb143-3"></a>    <span class="fu">glimpse</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Rows: 1
@@ -2850,8 +2845,8 @@ $ ACF1       &lt;dbl&gt; -0.03583636</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb147"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb147-1"><a href="#cb147-1"></a><span class="co"># sw_augment - get model residuals</span></span>
-<span id="cb147-2"><a href="#cb147-2"></a><span class="fu">sw_augment</span>(fit_arima, <span class="at">timetk_idx =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb145"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb145-1"><a href="#cb145-1"></a><span class="co"># sw_augment - get model residuals</span></span>
+<span id="cb145-2"><a href="#cb145-2"></a><span class="fu">sw_augment</span>(fit_arima, <span class="at">timetk_idx =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 144 × 4
@@ -2874,14 +2869,14 @@ $ ACF1       &lt;dbl&gt; -0.03583636</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb149"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb149-1"><a href="#cb149-1"></a><span class="fu">sw_augment</span>(fit_arima, <span class="at">timetk_idx =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb149-2"><a href="#cb149-2"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> .resid)) <span class="sc">+</span></span>
-<span id="cb149-3"><a href="#cb149-3"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">lwd =</span> <span class="dv">2</span>) <span class="sc">+</span> </span>
-<span id="cb149-4"><a href="#cb149-4"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span> </span>
-<span id="cb149-5"><a href="#cb149-5"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Residuals"</span>) <span class="sc">+</span></span>
-<span id="cb149-6"><a href="#cb149-6"></a>    <span class="fu">scale_x_date</span>(<span class="at">date_breaks =</span> <span class="st">"1 year"</span>, <span class="at">date_labels =</span> <span class="st">"%Y"</span>) <span class="sc">+</span></span>
-<span id="cb149-7"><a href="#cb149-7"></a>    <span class="fu">theme_tq</span>() <span class="sc">+</span></span>
-<span id="cb149-8"><a href="#cb149-8"></a>    <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb147"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb147-1"><a href="#cb147-1"></a><span class="fu">sw_augment</span>(fit_arima, <span class="at">timetk_idx =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb147-2"><a href="#cb147-2"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> .resid)) <span class="sc">+</span></span>
+<span id="cb147-3"><a href="#cb147-3"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">lwd =</span> <span class="dv">2</span>) <span class="sc">+</span> </span>
+<span id="cb147-4"><a href="#cb147-4"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb147-5"><a href="#cb147-5"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Residuals"</span>) <span class="sc">+</span></span>
+<span id="cb147-6"><a href="#cb147-6"></a>    <span class="fu">scale_x_date</span>(<span class="at">date_breaks =</span> <span class="st">"1 year"</span>, <span class="at">date_labels =</span> <span class="st">"%Y"</span>) <span class="sc">+</span></span>
+<span id="cb147-7"><a href="#cb147-7"></a>    <span class="fu">theme_tq</span>() <span class="sc">+</span></span>
+<span id="cb147-8"><a href="#cb147-8"></a>    <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-fard" class="quarto-figure quarto-figure-center anchored">
@@ -2896,9 +2891,9 @@ $ ACF1       &lt;dbl&gt; -0.03583636</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb150"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb150-1"><a href="#cb150-1"></a><span class="co"># Forecast next 10 months</span></span>
-<span id="cb150-2"><a href="#cb150-2"></a>fcast_arima <span class="ot">&lt;-</span> <span class="fu">forecast</span>(fit_arima, <span class="at">h =</span> <span class="dv">10</span>)</span>
-<span id="cb150-3"><a href="#cb150-3"></a>fcast_arima</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb148"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb148-1"><a href="#cb148-1"></a><span class="co"># Forecast next 10 months</span></span>
+<span id="cb148-2"><a href="#cb148-2"></a>fcast_arima <span class="ot">&lt;-</span> <span class="fu">forecast</span>(fit_arima, <span class="at">h =</span> <span class="dv">10</span>)</span>
+<span id="cb148-3"><a href="#cb148-3"></a>fcast_arima</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>         Point Forecast    Lo 80    Hi 80    Lo 95    Hi 95
@@ -2918,7 +2913,7 @@ Oct 2022       16394.12 15531.64 17256.61 15075.06 17713.19</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb152"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb152-1"><a href="#cb152-1"></a><span class="fu">class</span>(fcast_arima)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb150"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb150-1"><a href="#cb150-1"></a><span class="fu">class</span>(fcast_arima)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "forecast"</code></pre>
@@ -2929,8 +2924,8 @@ Oct 2022       16394.12 15531.64 17256.61 15075.06 17713.19</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb154"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb154-1"><a href="#cb154-1"></a><span class="co"># Check if object has timetk index </span></span>
-<span id="cb154-2"><a href="#cb154-2"></a><span class="fu">has_timetk_idx</span>(fcast_arima)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb152"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb152-1"><a href="#cb152-1"></a><span class="co"># Check if object has timetk index </span></span>
+<span id="cb152-2"><a href="#cb152-2"></a><span class="fu">has_timetk_idx</span>(fcast_arima)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] TRUE</code></pre>
@@ -2940,8 +2935,8 @@ Oct 2022       16394.12 15531.64 17256.61 15075.06 17713.19</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb156"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb156-1"><a href="#cb156-1"></a>fcast_tbl <span class="ot">&lt;-</span> <span class="fu">sw_sweep</span>(fcast_arima, <span class="at">timetk_idx =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb156-2"><a href="#cb156-2"></a><span class="fu">tail</span>(fcast_tbl, <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb154"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb154-1"><a href="#cb154-1"></a>fcast_tbl <span class="ot">&lt;-</span> <span class="fu">sw_sweep</span>(fcast_arima, <span class="at">timetk_idx =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb154-2"><a href="#cb154-2"></a><span class="fu">tail</span>(fcast_tbl, <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 10 × 7
@@ -2963,14 +2958,14 @@ Oct 2022       16394.12 15531.64 17256.61 15075.06 17713.19</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb158"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb158-1"><a href="#cb158-1"></a><span class="co"># Investigate test error </span></span>
-<span id="cb158-2"><a href="#cb158-2"></a>error_tbl_arima <span class="ot">&lt;-</span> <span class="fu">left_join</span>(actuals_tbl, fcast_tbl, </span>
-<span id="cb158-3"><a href="#cb158-3"></a>                             <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"date"</span> <span class="ot">=</span> <span class="st">"index"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb158-4"><a href="#cb158-4"></a>    <span class="fu">rename</span>(<span class="at">actual =</span> sales.x, <span class="at">pred =</span> sales.y) <span class="sc">%&gt;%</span></span>
-<span id="cb158-5"><a href="#cb158-5"></a>    <span class="fu">select</span>(date, actual, pred) <span class="sc">%&gt;%</span></span>
-<span id="cb158-6"><a href="#cb158-6"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> <span class="fu">round</span>((actual <span class="sc">-</span> pred), <span class="dv">2</span>), </span>
-<span id="cb158-7"><a href="#cb158-7"></a>           <span class="at">error_pct =</span> <span class="fu">round</span>((error <span class="sc">/</span> actual), <span class="dv">4</span>)) </span>
-<span id="cb158-8"><a href="#cb158-8"></a>error_tbl_arima</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb156"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb156-1"><a href="#cb156-1"></a><span class="co"># Investigate test error </span></span>
+<span id="cb156-2"><a href="#cb156-2"></a>error_tbl_arima <span class="ot">&lt;-</span> <span class="fu">left_join</span>(actuals_tbl, fcast_tbl, </span>
+<span id="cb156-3"><a href="#cb156-3"></a>                             <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"date"</span> <span class="ot">=</span> <span class="st">"index"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb156-4"><a href="#cb156-4"></a>    <span class="fu">rename</span>(<span class="at">actual =</span> sales.x, <span class="at">pred =</span> sales.y) <span class="sc">%&gt;%</span></span>
+<span id="cb156-5"><a href="#cb156-5"></a>    <span class="fu">select</span>(date, actual, pred) <span class="sc">%&gt;%</span></span>
+<span id="cb156-6"><a href="#cb156-6"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> <span class="fu">round</span>((actual <span class="sc">-</span> pred), <span class="dv">2</span>), </span>
+<span id="cb156-7"><a href="#cb156-7"></a>           <span class="at">error_pct =</span> <span class="fu">round</span>((error <span class="sc">/</span> actual), <span class="dv">4</span>)) </span>
+<span id="cb156-8"><a href="#cb156-8"></a>error_tbl_arima</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 10 × 5
@@ -2992,16 +2987,16 @@ Oct 2022       16394.12 15531.64 17256.61 15075.06 17713.19</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb160"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb160-1"><a href="#cb160-1"></a><span class="co"># Calculate test error metrics</span></span>
-<span id="cb160-2"><a href="#cb160-2"></a>test_residuals_arima <span class="ot">&lt;-</span> error_tbl_arima<span class="sc">$</span>error</span>
-<span id="cb160-3"><a href="#cb160-3"></a>test_error_pct_arima <span class="ot">&lt;-</span> error_tbl_arima<span class="sc">$</span>error_pct <span class="sc">*</span> <span class="dv">100</span> <span class="co"># Percentage error</span></span>
-<span id="cb160-4"><a href="#cb160-4"></a>me   <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_residuals_arima, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb160-5"><a href="#cb160-5"></a>rmse <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_residuals_arima<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm=</span><span class="cn">TRUE</span>)<span class="sc">^</span><span class="fl">0.5</span></span>
-<span id="cb160-6"><a href="#cb160-6"></a>mae  <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_residuals_arima), <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb160-7"><a href="#cb160-7"></a>mape <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_arima), <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb160-8"><a href="#cb160-8"></a>mpe  <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_error_pct_arima, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb160-9"><a href="#cb160-9"></a><span class="fu">tibble</span>(me, rmse, mae, mape, mpe) <span class="sc">%&gt;%</span> </span>
-<span id="cb160-10"><a href="#cb160-10"></a>  <span class="fu">glimpse</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb158"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb158-1"><a href="#cb158-1"></a><span class="co"># Calculate test error metrics</span></span>
+<span id="cb158-2"><a href="#cb158-2"></a>test_residuals_arima <span class="ot">&lt;-</span> error_tbl_arima<span class="sc">$</span>error</span>
+<span id="cb158-3"><a href="#cb158-3"></a>test_error_pct_arima <span class="ot">&lt;-</span> error_tbl_arima<span class="sc">$</span>error_pct <span class="sc">*</span> <span class="dv">100</span> <span class="co"># Percentage error</span></span>
+<span id="cb158-4"><a href="#cb158-4"></a>me   <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_residuals_arima, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb158-5"><a href="#cb158-5"></a>rmse <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_residuals_arima<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm=</span><span class="cn">TRUE</span>)<span class="sc">^</span><span class="fl">0.5</span></span>
+<span id="cb158-6"><a href="#cb158-6"></a>mae  <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_residuals_arima), <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb158-7"><a href="#cb158-7"></a>mape <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_arima), <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb158-8"><a href="#cb158-8"></a>mpe  <span class="ot">&lt;-</span> <span class="fu">mean</span>(test_error_pct_arima, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb158-9"><a href="#cb158-9"></a><span class="fu">tibble</span>(me, rmse, mae, mape, mpe) <span class="sc">%&gt;%</span> </span>
+<span id="cb158-10"><a href="#cb158-10"></a>  <span class="fu">glimpse</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Rows: 1
@@ -3017,28 +3012,28 @@ $ mpe  &lt;dbl&gt; -3.433</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb162"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb162-1"><a href="#cb162-1"></a>fcast_tbl <span class="sc">%&gt;%</span></span>
-<span id="cb162-2"><a href="#cb162-2"></a>  <span class="fu">filter</span>(index <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb162-3"><a href="#cb162-3"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> sales, <span class="at">color =</span> key)) <span class="sc">+</span></span>
-<span id="cb162-4"><a href="#cb162-4"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lo<span class="fl">.95</span>, <span class="at">ymax =</span> hi<span class="fl">.95</span>), </span>
-<span id="cb162-5"><a href="#cb162-5"></a>              <span class="at">fill =</span> <span class="st">"#D5DBFF"</span>, <span class="at">color =</span> <span class="cn">NA</span>, <span class="at">size =</span> <span class="dv">0</span>) <span class="sc">+</span></span>
-<span id="cb162-6"><a href="#cb162-6"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lo<span class="fl">.80</span>, <span class="at">ymax =</span> hi<span class="fl">.80</span>, <span class="at">fill =</span> key), </span>
-<span id="cb162-7"><a href="#cb162-7"></a>              <span class="at">fill =</span> <span class="st">"#596DD5"</span>, <span class="at">color =</span> <span class="cn">NA</span>, <span class="at">size =</span> <span class="dv">0</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
-<span id="cb162-8"><a href="#cb162-8"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb162-9"><a href="#cb162-9"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb162-10"><a href="#cb162-10"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> sales), <span class="at">color =</span> <span class="st">"black"</span>, </span>
-<span id="cb162-11"><a href="#cb162-11"></a>            <span class="at">data =</span> actuals_tbl) <span class="sc">+</span></span>
-<span id="cb162-12"><a href="#cb162-12"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> sales), <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="dv">5</span>,</span>
-<span id="cb162-13"><a href="#cb162-13"></a>             <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">data =</span> actuals_tbl) <span class="sc">+</span></span>
-<span id="cb162-14"><a href="#cb162-14"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), </span>
-<span id="cb162-15"><a href="#cb162-15"></a>             <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb162-16"><a href="#cb162-16"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
-<span id="cb162-17"><a href="#cb162-17"></a>       <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>,((<span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_arima))))))) <span class="sc">+</span></span>
-<span id="cb162-18"><a href="#cb162-18"></a>  <span class="fu">scale_x_date</span>(<span class="at">date_breaks =</span> <span class="st">"1 year"</span>, <span class="at">date_labels =</span> <span class="st">"%Y"</span>) <span class="sc">+</span></span>
-<span id="cb162-19"><a href="#cb162-19"></a>  <span class="fu">scale_color_tq</span>() <span class="sc">+</span></span>
-<span id="cb162-20"><a href="#cb162-20"></a>  <span class="fu">scale_fill_tq</span>() <span class="sc">+</span></span>
-<span id="cb162-21"><a href="#cb162-21"></a>  <span class="fu">theme_tq</span>() <span class="sc">+</span></span>
-<span id="cb162-22"><a href="#cb162-22"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb160"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb160-1"><a href="#cb160-1"></a>fcast_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb160-2"><a href="#cb160-2"></a>  <span class="fu">filter</span>(index <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb160-3"><a href="#cb160-3"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> sales, <span class="at">color =</span> key)) <span class="sc">+</span></span>
+<span id="cb160-4"><a href="#cb160-4"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lo<span class="fl">.95</span>, <span class="at">ymax =</span> hi<span class="fl">.95</span>), </span>
+<span id="cb160-5"><a href="#cb160-5"></a>              <span class="at">fill =</span> <span class="st">"#D5DBFF"</span>, <span class="at">color =</span> <span class="cn">NA</span>, <span class="at">size =</span> <span class="dv">0</span>) <span class="sc">+</span></span>
+<span id="cb160-6"><a href="#cb160-6"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> lo<span class="fl">.80</span>, <span class="at">ymax =</span> hi<span class="fl">.80</span>, <span class="at">fill =</span> key), </span>
+<span id="cb160-7"><a href="#cb160-7"></a>              <span class="at">fill =</span> <span class="st">"#596DD5"</span>, <span class="at">color =</span> <span class="cn">NA</span>, <span class="at">size =</span> <span class="dv">0</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb160-8"><a href="#cb160-8"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb160-9"><a href="#cb160-9"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb160-10"><a href="#cb160-10"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> sales), <span class="at">color =</span> <span class="st">"black"</span>, </span>
+<span id="cb160-11"><a href="#cb160-11"></a>            <span class="at">data =</span> actuals_tbl) <span class="sc">+</span></span>
+<span id="cb160-12"><a href="#cb160-12"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> sales), <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="dv">5</span>,</span>
+<span id="cb160-13"><a href="#cb160-13"></a>             <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">data =</span> actuals_tbl) <span class="sc">+</span></span>
+<span id="cb160-14"><a href="#cb160-14"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), </span>
+<span id="cb160-15"><a href="#cb160-15"></a>             <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb160-16"><a href="#cb160-16"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
+<span id="cb160-17"><a href="#cb160-17"></a>       <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>,((<span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_arima))))))) <span class="sc">+</span></span>
+<span id="cb160-18"><a href="#cb160-18"></a>  <span class="fu">scale_x_date</span>(<span class="at">date_breaks =</span> <span class="st">"1 year"</span>, <span class="at">date_labels =</span> <span class="st">"%Y"</span>) <span class="sc">+</span></span>
+<span id="cb160-19"><a href="#cb160-19"></a>  <span class="fu">scale_color_tq</span>() <span class="sc">+</span></span>
+<span id="cb160-20"><a href="#cb160-20"></a>  <span class="fu">scale_fill_tq</span>() <span class="sc">+</span></span>
+<span id="cb160-21"><a href="#cb160-21"></a>  <span class="fu">theme_tq</span>() <span class="sc">+</span></span>
+<span id="cb160-22"><a href="#cb160-22"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-fa" class="quarto-figure quarto-figure-center anchored">
@@ -3059,110 +3054,110 @@ $ mpe  &lt;dbl&gt; -3.433</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb163"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb163-1"><a href="#cb163-1"></a><span class="co"># This comes from ffpp3.rmd</span></span>
-<span id="cb163-2"><a href="#cb163-2"></a>fpp3_fc <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"fpp3_fc.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb161"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb161-1"><a href="#cb161-1"></a><span class="co"># This comes from ffpp3.rmd</span></span>
+<span id="cb161-2"><a href="#cb161-2"></a>fpp3_fc <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"fpp3_fc.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>We need to add our H2O forecast into <tt><code>fpp3_fc</code></tt>.</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb164"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb164-1"><a href="#cb164-1"></a><span class="co"># Transform h2o object to a simple data frame.</span></span>
-<span id="cb164-2"><a href="#cb164-2"></a>pred_h2o_x <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(pred_h2o)</span>
-<span id="cb164-3"><a href="#cb164-3"></a>pred_h2o_DL_x <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(pred_h2o_DL)</span>
-<span id="cb164-4"><a href="#cb164-4"></a>pred_h2o_all_x <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(pred_h2o_all)</span>
-<span id="cb164-5"><a href="#cb164-5"></a><span class="co"># Transform the data frame to a tsibble.</span></span>
-<span id="cb164-6"><a href="#cb164-6"></a>pred_h2o_fc <span class="ot">&lt;-</span> <span class="fu">tsibble</span>(</span>
-<span id="cb164-7"><a href="#cb164-7"></a>  <span class="at">.model =</span> <span class="fu">rep</span>(<span class="st">"pred_h2o"</span>, <span class="dv">10</span>),</span>
-<span id="cb164-8"><a href="#cb164-8"></a>  <span class="at">date =</span> <span class="fu">yearmonth</span>(<span class="fu">c</span>(<span class="st">"2022-01"</span>, <span class="st">"2022-02"</span>, <span class="st">"2022-03"</span>, <span class="st">"2022-04"</span>,</span>
-<span id="cb164-9"><a href="#cb164-9"></a>           <span class="st">"2022-05"</span>, <span class="st">"2022-06"</span>, <span class="st">"2022-07"</span>, <span class="st">"2022-08"</span>,</span>
-<span id="cb164-10"><a href="#cb164-10"></a>           <span class="st">"2022-09"</span>, <span class="st">"2022-10"</span>)),</span>
-<span id="cb164-11"><a href="#cb164-11"></a>  <span class="at">.mean =</span> pred_h2o_x<span class="sc">$</span>predict,</span>
-<span id="cb164-12"><a href="#cb164-12"></a>  <span class="at">index =</span> date)</span>
-<span id="cb164-13"><a href="#cb164-13"></a>pred_h2o_DL_fc <span class="ot">&lt;-</span> <span class="fu">tsibble</span>(</span>
-<span id="cb164-14"><a href="#cb164-14"></a>  <span class="at">.model =</span> <span class="fu">rep</span>(<span class="st">"pred_h2o_DL"</span>, <span class="dv">10</span>),</span>
-<span id="cb164-15"><a href="#cb164-15"></a>  <span class="at">date =</span> <span class="fu">yearmonth</span>(<span class="fu">c</span>(<span class="st">"2022-01"</span>, <span class="st">"2022-02"</span>, <span class="st">"2022-03"</span>, <span class="st">"2022-04"</span>,</span>
-<span id="cb164-16"><a href="#cb164-16"></a>           <span class="st">"2022-05"</span>, <span class="st">"2022-06"</span>, <span class="st">"2022-07"</span>, <span class="st">"2022-08"</span>,</span>
-<span id="cb164-17"><a href="#cb164-17"></a>           <span class="st">"2022-09"</span>, <span class="st">"2022-10"</span>)),</span>
-<span id="cb164-18"><a href="#cb164-18"></a>  <span class="at">.mean =</span> pred_h2o_DL_x<span class="sc">$</span>predict,</span>
-<span id="cb164-19"><a href="#cb164-19"></a>  <span class="at">index =</span> date)</span>
-<span id="cb164-20"><a href="#cb164-20"></a>pred_h2o_all_fc <span class="ot">&lt;-</span> <span class="fu">tsibble</span>(</span>
-<span id="cb164-21"><a href="#cb164-21"></a>  <span class="at">.model =</span> <span class="fu">rep</span>(<span class="st">"pred_h2o_all"</span>, <span class="dv">10</span>),</span>
-<span id="cb164-22"><a href="#cb164-22"></a>  <span class="at">date =</span> <span class="fu">yearmonth</span>(<span class="fu">c</span>(<span class="st">"2022-01"</span>, <span class="st">"2022-02"</span>, <span class="st">"2022-03"</span>, <span class="st">"2022-04"</span>,</span>
-<span id="cb164-23"><a href="#cb164-23"></a>           <span class="st">"2022-05"</span>, <span class="st">"2022-06"</span>, <span class="st">"2022-07"</span>, <span class="st">"2022-08"</span>,</span>
-<span id="cb164-24"><a href="#cb164-24"></a>           <span class="st">"2022-09"</span>, <span class="st">"2022-10"</span>)),</span>
-<span id="cb164-25"><a href="#cb164-25"></a>  <span class="at">.mean =</span> pred_h2o_all_x<span class="sc">$</span>predict,</span>
-<span id="cb164-26"><a href="#cb164-26"></a>  <span class="at">index =</span> date)</span>
-<span id="cb164-27"><a href="#cb164-27"></a><span class="co"># Similar transformation for lm and arima.</span></span>
-<span id="cb164-28"><a href="#cb164-28"></a>predictions_tbl<span class="sc">$</span>date <span class="ot">&lt;-</span> <span class="fu">yearmonth</span>(predictions_tbl<span class="sc">$</span>date)</span>
-<span id="cb164-29"><a href="#cb164-29"></a></span>
-<span id="cb164-30"><a href="#cb164-30"></a>pred_lm_fc <span class="ot">&lt;-</span> predictions_tbl <span class="sc">%&gt;%</span></span>
-<span id="cb164-31"><a href="#cb164-31"></a>  <span class="fu">rename</span>(<span class="at">.mean =</span> value) <span class="sc">%&gt;%</span></span>
-<span id="cb164-32"><a href="#cb164-32"></a>  <span class="fu">mutate</span>(<span class="at">.model =</span> <span class="fu">rep</span>(<span class="st">"lm"</span>, <span class="dv">10</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb164-33"><a href="#cb164-33"></a>  <span class="fu">relocate</span>(.model)</span>
-<span id="cb164-34"><a href="#cb164-34"></a>  </span>
-<span id="cb164-35"><a href="#cb164-35"></a>error_tbl_arima<span class="sc">$</span>date <span class="ot">&lt;-</span> <span class="fu">yearmonth</span>(error_tbl_arima<span class="sc">$</span>date)</span>
-<span id="cb164-36"><a href="#cb164-36"></a></span>
-<span id="cb164-37"><a href="#cb164-37"></a>pred_arima2_fc <span class="ot">&lt;-</span> error_tbl_arima <span class="sc">%&gt;%</span></span>
-<span id="cb164-38"><a href="#cb164-38"></a>  <span class="fu">select</span>(date, pred) <span class="sc">%&gt;%</span></span>
-<span id="cb164-39"><a href="#cb164-39"></a>  <span class="fu">rename</span>(<span class="at">.mean =</span> pred) <span class="sc">%&gt;%</span></span>
-<span id="cb164-40"><a href="#cb164-40"></a>  <span class="fu">mutate</span>(<span class="at">.model =</span> <span class="fu">rep</span>(<span class="st">"arima2"</span>, <span class="dv">10</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb164-41"><a href="#cb164-41"></a>  <span class="fu">relocate</span>(.model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb162"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb162-1"><a href="#cb162-1"></a><span class="co"># Transform h2o object to a simple data frame.</span></span>
+<span id="cb162-2"><a href="#cb162-2"></a>pred_h2o_x <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(pred_h2o)</span>
+<span id="cb162-3"><a href="#cb162-3"></a>pred_h2o_DL_x <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(pred_h2o_DL)</span>
+<span id="cb162-4"><a href="#cb162-4"></a>pred_h2o_all_x <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(pred_h2o_all)</span>
+<span id="cb162-5"><a href="#cb162-5"></a><span class="co"># Transform the data frame to a tsibble.</span></span>
+<span id="cb162-6"><a href="#cb162-6"></a>pred_h2o_fc <span class="ot">&lt;-</span> <span class="fu">tsibble</span>(</span>
+<span id="cb162-7"><a href="#cb162-7"></a>  <span class="at">.model =</span> <span class="fu">rep</span>(<span class="st">"pred_h2o"</span>, <span class="dv">10</span>),</span>
+<span id="cb162-8"><a href="#cb162-8"></a>  <span class="at">date =</span> <span class="fu">yearmonth</span>(<span class="fu">c</span>(<span class="st">"2022-01"</span>, <span class="st">"2022-02"</span>, <span class="st">"2022-03"</span>, <span class="st">"2022-04"</span>,</span>
+<span id="cb162-9"><a href="#cb162-9"></a>           <span class="st">"2022-05"</span>, <span class="st">"2022-06"</span>, <span class="st">"2022-07"</span>, <span class="st">"2022-08"</span>,</span>
+<span id="cb162-10"><a href="#cb162-10"></a>           <span class="st">"2022-09"</span>, <span class="st">"2022-10"</span>)),</span>
+<span id="cb162-11"><a href="#cb162-11"></a>  <span class="at">.mean =</span> pred_h2o_x<span class="sc">$</span>predict,</span>
+<span id="cb162-12"><a href="#cb162-12"></a>  <span class="at">index =</span> date)</span>
+<span id="cb162-13"><a href="#cb162-13"></a>pred_h2o_DL_fc <span class="ot">&lt;-</span> <span class="fu">tsibble</span>(</span>
+<span id="cb162-14"><a href="#cb162-14"></a>  <span class="at">.model =</span> <span class="fu">rep</span>(<span class="st">"pred_h2o_DL"</span>, <span class="dv">10</span>),</span>
+<span id="cb162-15"><a href="#cb162-15"></a>  <span class="at">date =</span> <span class="fu">yearmonth</span>(<span class="fu">c</span>(<span class="st">"2022-01"</span>, <span class="st">"2022-02"</span>, <span class="st">"2022-03"</span>, <span class="st">"2022-04"</span>,</span>
+<span id="cb162-16"><a href="#cb162-16"></a>           <span class="st">"2022-05"</span>, <span class="st">"2022-06"</span>, <span class="st">"2022-07"</span>, <span class="st">"2022-08"</span>,</span>
+<span id="cb162-17"><a href="#cb162-17"></a>           <span class="st">"2022-09"</span>, <span class="st">"2022-10"</span>)),</span>
+<span id="cb162-18"><a href="#cb162-18"></a>  <span class="at">.mean =</span> pred_h2o_DL_x<span class="sc">$</span>predict,</span>
+<span id="cb162-19"><a href="#cb162-19"></a>  <span class="at">index =</span> date)</span>
+<span id="cb162-20"><a href="#cb162-20"></a>pred_h2o_all_fc <span class="ot">&lt;-</span> <span class="fu">tsibble</span>(</span>
+<span id="cb162-21"><a href="#cb162-21"></a>  <span class="at">.model =</span> <span class="fu">rep</span>(<span class="st">"pred_h2o_all"</span>, <span class="dv">10</span>),</span>
+<span id="cb162-22"><a href="#cb162-22"></a>  <span class="at">date =</span> <span class="fu">yearmonth</span>(<span class="fu">c</span>(<span class="st">"2022-01"</span>, <span class="st">"2022-02"</span>, <span class="st">"2022-03"</span>, <span class="st">"2022-04"</span>,</span>
+<span id="cb162-23"><a href="#cb162-23"></a>           <span class="st">"2022-05"</span>, <span class="st">"2022-06"</span>, <span class="st">"2022-07"</span>, <span class="st">"2022-08"</span>,</span>
+<span id="cb162-24"><a href="#cb162-24"></a>           <span class="st">"2022-09"</span>, <span class="st">"2022-10"</span>)),</span>
+<span id="cb162-25"><a href="#cb162-25"></a>  <span class="at">.mean =</span> pred_h2o_all_x<span class="sc">$</span>predict,</span>
+<span id="cb162-26"><a href="#cb162-26"></a>  <span class="at">index =</span> date)</span>
+<span id="cb162-27"><a href="#cb162-27"></a><span class="co"># Similar transformation for lm and arima.</span></span>
+<span id="cb162-28"><a href="#cb162-28"></a>predictions_tbl<span class="sc">$</span>date <span class="ot">&lt;-</span> <span class="fu">yearmonth</span>(predictions_tbl<span class="sc">$</span>date)</span>
+<span id="cb162-29"><a href="#cb162-29"></a></span>
+<span id="cb162-30"><a href="#cb162-30"></a>pred_lm_fc <span class="ot">&lt;-</span> predictions_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb162-31"><a href="#cb162-31"></a>  <span class="fu">rename</span>(<span class="at">.mean =</span> value) <span class="sc">%&gt;%</span></span>
+<span id="cb162-32"><a href="#cb162-32"></a>  <span class="fu">mutate</span>(<span class="at">.model =</span> <span class="fu">rep</span>(<span class="st">"lm"</span>, <span class="dv">10</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb162-33"><a href="#cb162-33"></a>  <span class="fu">relocate</span>(.model)</span>
+<span id="cb162-34"><a href="#cb162-34"></a>  </span>
+<span id="cb162-35"><a href="#cb162-35"></a>error_tbl_arima<span class="sc">$</span>date <span class="ot">&lt;-</span> <span class="fu">yearmonth</span>(error_tbl_arima<span class="sc">$</span>date)</span>
+<span id="cb162-36"><a href="#cb162-36"></a></span>
+<span id="cb162-37"><a href="#cb162-37"></a>pred_arima2_fc <span class="ot">&lt;-</span> error_tbl_arima <span class="sc">%&gt;%</span></span>
+<span id="cb162-38"><a href="#cb162-38"></a>  <span class="fu">select</span>(date, pred) <span class="sc">%&gt;%</span></span>
+<span id="cb162-39"><a href="#cb162-39"></a>  <span class="fu">rename</span>(<span class="at">.mean =</span> pred) <span class="sc">%&gt;%</span></span>
+<span id="cb162-40"><a href="#cb162-40"></a>  <span class="fu">mutate</span>(<span class="at">.model =</span> <span class="fu">rep</span>(<span class="st">"arima2"</span>, <span class="dv">10</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb162-41"><a href="#cb162-41"></a>  <span class="fu">relocate</span>(.model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>Now gather all together, calculate the average forecast, and performance measures.</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb165"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb165-1"><a href="#cb165-1"></a><span class="co"># Gather all.</span></span>
-<span id="cb165-2"><a href="#cb165-2"></a>all_fc <span class="ot">&lt;-</span> <span class="fu">as_tsibble</span>(fpp3_fc) <span class="sc">%&gt;%</span></span>
-<span id="cb165-3"><a href="#cb165-3"></a>  <span class="fu">select</span>(.model, date, .mean) <span class="sc">%&gt;%</span></span>
-<span id="cb165-4"><a href="#cb165-4"></a>  <span class="fu">bind_rows</span>(pred_h2o_fc, pred_h2o_DL_fc, pred_h2o_all_fc,</span>
-<span id="cb165-5"><a href="#cb165-5"></a>            pred_lm_fc, pred_arima2_fc)</span>
-<span id="cb165-6"><a href="#cb165-6"></a><span class="co"># We need this to calculate mape.</span></span>
-<span id="cb165-7"><a href="#cb165-7"></a>average <span class="ot">&lt;-</span> all_fc <span class="sc">%&gt;%</span></span>
-<span id="cb165-8"><a href="#cb165-8"></a>  <span class="fu">index_by</span>(date) <span class="sc">%&gt;%</span></span>
-<span id="cb165-9"><a href="#cb165-9"></a>  <span class="fu">summarise</span>(<span class="at">av_fc =</span> <span class="fu">mean</span>(.mean)) <span class="sc">%&gt;%</span> <span class="co"># This is the average forecast.</span></span>
-<span id="cb165-10"><a href="#cb165-10"></a>  <span class="fu">bind_cols</span>(<span class="at">sales =</span> actuals_tbl<span class="sc">$</span>sales) <span class="sc">%&gt;%</span></span>
-<span id="cb165-11"><a href="#cb165-11"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> <span class="fu">round</span>((sales <span class="sc">-</span> av_fc), <span class="dv">2</span>), </span>
-<span id="cb165-12"><a href="#cb165-12"></a>           <span class="at">error_pct =</span> <span class="fu">round</span>((error <span class="sc">/</span> sales), <span class="dv">4</span>)) </span>
-<span id="cb165-13"><a href="#cb165-13"></a>average</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb163"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb163-1"><a href="#cb163-1"></a><span class="co"># Gather all.</span></span>
+<span id="cb163-2"><a href="#cb163-2"></a>all_fc <span class="ot">&lt;-</span> <span class="fu">as_tsibble</span>(fpp3_fc) <span class="sc">%&gt;%</span></span>
+<span id="cb163-3"><a href="#cb163-3"></a>  <span class="fu">select</span>(.model, date, .mean) <span class="sc">%&gt;%</span></span>
+<span id="cb163-4"><a href="#cb163-4"></a>  <span class="fu">bind_rows</span>(pred_h2o_fc, pred_h2o_DL_fc, pred_h2o_all_fc,</span>
+<span id="cb163-5"><a href="#cb163-5"></a>            pred_lm_fc, pred_arima2_fc)</span>
+<span id="cb163-6"><a href="#cb163-6"></a><span class="co"># We need this to calculate mape.</span></span>
+<span id="cb163-7"><a href="#cb163-7"></a>average <span class="ot">&lt;-</span> all_fc <span class="sc">%&gt;%</span></span>
+<span id="cb163-8"><a href="#cb163-8"></a>  <span class="fu">index_by</span>(date) <span class="sc">%&gt;%</span></span>
+<span id="cb163-9"><a href="#cb163-9"></a>  <span class="fu">summarise</span>(<span class="at">av_fc =</span> <span class="fu">mean</span>(.mean)) <span class="sc">%&gt;%</span> <span class="co"># This is the average forecast.</span></span>
+<span id="cb163-10"><a href="#cb163-10"></a>  <span class="fu">bind_cols</span>(<span class="at">sales =</span> actuals_tbl<span class="sc">$</span>sales) <span class="sc">%&gt;%</span></span>
+<span id="cb163-11"><a href="#cb163-11"></a>    <span class="fu">mutate</span>(<span class="at">error =</span> <span class="fu">round</span>((sales <span class="sc">-</span> av_fc), <span class="dv">2</span>), </span>
+<span id="cb163-12"><a href="#cb163-12"></a>           <span class="at">error_pct =</span> <span class="fu">round</span>((error <span class="sc">/</span> sales), <span class="dv">4</span>)) </span>
+<span id="cb163-13"><a href="#cb163-13"></a>average</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tsibble: 10 x 5 [1M]
         date  av_fc sales  error error_pct
        &lt;mth&gt;  &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt;     &lt;dbl&gt;
- 1 2022 ene. 12203. 11862  -341.   -0.0288
- 2 2022 feb. 13494. 13358  -136.   -0.0102
- 3 2022 mar. 15691. 16216   525.    0.0324
- 4 2022 abr. 15105. 15766   661.    0.0419
- 5 2022 may. 16343. 16755   412.    0.0246
- 6 2022 jun. 17553. 17882   329.    0.0184
- 7 2022 jul. 15830. 15168  -662.   -0.0436
- 8 2022 ago. 16791. 16977   186.    0.011 
- 9 2022 sep. 16222. 16430   208.    0.0127
-10 2022 oct. 16500. 15480 -1020.   -0.0659</code></pre>
+ 1 2022 ene. 12153. 11862 -291.    -0.0245
+ 2 2022 feb. 13438. 13358  -80.3   -0.006 
+ 3 2022 mar. 15702. 16216  514.     0.0317
+ 4 2022 abr. 14979. 15766  787.     0.0499
+ 5 2022 may. 16346. 16755  409.     0.0244
+ 6 2022 jun. 17721. 17882  161.     0.009 
+ 7 2022 jul. 15569. 15168 -401.    -0.0265
+ 8 2022 ago. 16733. 16977  244.     0.0144
+ 9 2022 sep. 16132. 16430  298.     0.0181
+10 2022 oct. 16377. 15480 -897.    -0.0579</code></pre>
 </div>
 </div>
 <p>Finally, the forecast.</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb167"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb167-1"><a href="#cb167-1"></a>beer <span class="sc">%&gt;%</span></span>
-<span id="cb167-2"><a href="#cb167-2"></a>  <span class="fu">filter</span>(date <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb167-3"><a href="#cb167-3"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">yearmonth</span>(date), <span class="at">y =</span> sales)) <span class="sc">+</span></span>
-<span id="cb167-4"><a href="#cb167-4"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb167-5"><a href="#cb167-5"></a>  <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb167-6"><a href="#cb167-6"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> av_fc), <span class="at">size =</span> <span class="fl">0.5</span>,</span>
-<span id="cb167-7"><a href="#cb167-7"></a>            <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">data =</span> average) <span class="sc">+</span></span>
-<span id="cb167-8"><a href="#cb167-8"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> av_fc), <span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
-<span id="cb167-9"><a href="#cb167-9"></a>             <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">data =</span> average) <span class="sc">+</span></span>
-<span id="cb167-10"><a href="#cb167-10"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb167-11"><a href="#cb167-11"></a>  <span class="fu">theme_tq</span>() <span class="sc">+</span></span>
-<span id="cb167-12"><a href="#cb167-12"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
-<span id="cb167-13"><a href="#cb167-13"></a>       <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>,</span>
-<span id="cb167-14"><a href="#cb167-14"></a>                         ((<span class="fu">round</span>(<span class="dv">100</span><span class="sc">*</span><span class="fu">mean</span>(<span class="fu">abs</span>(average<span class="sc">$</span>error_pct)), <span class="dv">5</span>)))))) <span class="sc">+</span></span>
-<span id="cb167-15"><a href="#cb167-15"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb165"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb165-1"><a href="#cb165-1"></a>beer <span class="sc">%&gt;%</span></span>
+<span id="cb165-2"><a href="#cb165-2"></a>  <span class="fu">filter</span>(date <span class="sc">&gt;</span> <span class="fu">as.Date</span>(<span class="st">"2021-01-01"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb165-3"><a href="#cb165-3"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">yearmonth</span>(date), <span class="at">y =</span> sales)) <span class="sc">+</span></span>
+<span id="cb165-4"><a href="#cb165-4"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb165-5"><a href="#cb165-5"></a>  <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"black"</span>, <span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb165-6"><a href="#cb165-6"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> av_fc), <span class="at">size =</span> <span class="fl">0.5</span>,</span>
+<span id="cb165-7"><a href="#cb165-7"></a>            <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">data =</span> average) <span class="sc">+</span></span>
+<span id="cb165-8"><a href="#cb165-8"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> av_fc), <span class="at">size =</span> <span class="dv">5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
+<span id="cb165-9"><a href="#cb165-9"></a>             <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">data =</span> average) <span class="sc">+</span></span>
+<span id="cb165-10"><a href="#cb165-10"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">as.numeric</span>(<span class="fu">as.Date</span>(<span class="st">"2021-12-01"</span>)), <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb165-11"><a href="#cb165-11"></a>  <span class="fu">theme_tq</span>() <span class="sc">+</span></span>
+<span id="cb165-12"><a href="#cb165-12"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Date"</span>, <span class="at">y =</span> <span class="st">"Sales"</span>,</span>
+<span id="cb165-13"><a href="#cb165-13"></a>       <span class="at">caption =</span> <span class="fu">c</span>(<span class="fu">paste</span>(<span class="st">"MAPE="</span>,</span>
+<span id="cb165-14"><a href="#cb165-14"></a>                         ((<span class="fu">round</span>(<span class="dv">100</span><span class="sc">*</span><span class="fu">mean</span>(<span class="fu">abs</span>(average<span class="sc">$</span>error_pct)), <span class="dv">5</span>)))))) <span class="sc">+</span></span>
+<span id="cb165-15"><a href="#cb165-15"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>dollar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-fav" class="quarto-figure quarto-figure-center anchored">
@@ -3177,30 +3172,30 @@ $ mpe  &lt;dbl&gt; -3.433</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb168"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb168-1"><a href="#cb168-1"></a>mape_updated_all <span class="ot">&lt;-</span> mape_updated_h2o <span class="sc">%&gt;%</span></span>
-<span id="cb168-2"><a href="#cb168-2"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="st">"Linear model"</span>, </span>
-<span id="cb168-3"><a href="#cb168-3"></a>          <span class="at">MAPE =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_lm))) <span class="sc">%&gt;%</span></span>
-<span id="cb168-4"><a href="#cb168-4"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="st">"ARIMA(1,1,2)(2,1,1)[12]"</span>, </span>
-<span id="cb168-5"><a href="#cb168-5"></a>          <span class="at">MAPE =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_arima))) <span class="sc">%&gt;%</span></span>
-<span id="cb168-6"><a href="#cb168-6"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="st">"Average forecast"</span>, </span>
-<span id="cb168-7"><a href="#cb168-7"></a>          <span class="at">MAPE =</span> <span class="dv">100</span><span class="sc">*</span><span class="fu">mean</span>(<span class="fu">abs</span>(average<span class="sc">$</span>error_pct))) <span class="sc">%&gt;%</span></span>
-<span id="cb168-8"><a href="#cb168-8"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="sc">-</span>MAPE))</span>
-<span id="cb168-9"><a href="#cb168-9"></a>mape_updated_all</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb166"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb166-1"><a href="#cb166-1"></a>mape_updated_all <span class="ot">&lt;-</span> mape_updated_h2o <span class="sc">%&gt;%</span></span>
+<span id="cb166-2"><a href="#cb166-2"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="st">"Linear model"</span>, </span>
+<span id="cb166-3"><a href="#cb166-3"></a>          <span class="at">MAPE =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_lm))) <span class="sc">%&gt;%</span></span>
+<span id="cb166-4"><a href="#cb166-4"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="st">"ARIMA(1,1,2)(2,1,1)[12]"</span>, </span>
+<span id="cb166-5"><a href="#cb166-5"></a>          <span class="at">MAPE =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(test_error_pct_arima))) <span class="sc">%&gt;%</span></span>
+<span id="cb166-6"><a href="#cb166-6"></a>  <span class="fu">add_row</span>(<span class="at">.model =</span> <span class="st">"Average forecast"</span>, </span>
+<span id="cb166-7"><a href="#cb166-7"></a>          <span class="at">MAPE =</span> <span class="dv">100</span><span class="sc">*</span><span class="fu">mean</span>(<span class="fu">abs</span>(average<span class="sc">$</span>error_pct))) <span class="sc">%&gt;%</span></span>
+<span id="cb166-8"><a href="#cb166-8"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(<span class="sc">-</span>MAPE))</span>
+<span id="cb166-9"><a href="#cb166-9"></a>mape_updated_all</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 13 × 2
    .model                                 MAPE
    &lt;chr&gt;                                 &lt;dbl&gt;
- 1 Average forecast                       2.90
+ 1 Average forecast                       2.62
  2 ARIMA(1,1,2)(2,1,1)[12]                3.72
  3 Linear model                           3.77
  4 fpp3: seasonal naïve                   3.82
  5 fpp3: ETS(M,A,M)                       3.95
  6 fpp3: ARIMA(4,1,1)(0,1,1)[12]          4.58
- 7 H2O all models: stackedensemble        5.63
- 8 H2O no Deep Learning: stackedensemble  5.72
- 9 H2O Deep Learning: deeplearning        6.48
-10 fpp3: NNAR(15,1,8)[12]                 6.71
+ 7 H2O no Deep Learning: stackedensemble  5.72
+ 8 H2O Deep Learning: deeplearning        5.87
+ 9 H2O all models: deeplearning           6.24
+10 fpp3: NNAR(15,1,8)[12]                 7.46
 11 fpp3: naïve                           18.4 
 12 fpp3: drift                           21.2 
 13 fpp3: mean                            23.4 </code></pre>
@@ -3210,7 +3205,7 @@ $ mpe  &lt;dbl&gt; -3.433</code></pre>
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb170"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb170-1"><a href="#cb170-1"></a><span class="fu">h2o.shutdown</span>(<span class="at">prompt =</span> <span class="cn">TRUE</span>) <span class="co"># yes (Y) instead of TRUE?</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb168"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb168-1"><a href="#cb168-1"></a><span class="fu">h2o.shutdown</span>(<span class="at">prompt =</span> <span class="cn">TRUE</span>) <span class="co"># yes (Y) instead of TRUE?</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Are you sure you want to shutdown the H2O instance running at http://localhost:54321/ (Y/N)? </code></pre>
@@ -3225,7 +3220,7 @@ $ mpe  &lt;dbl&gt; -3.433</code></pre>
 <li><a href="https://www.business-science.io/code-tools/2017/10/25/demo_week_sweep.html">Tidy Forecasting with sweep</a></li>
 <li><a href="http://docs.h2o.ai/h2o-tutorials/latest-stable/index.html">H2O Tutorials</a></li>
 </ul>
-<p>This document took 47.01 minutes to compile in Quarto version 1.3.450, and R version 4.3.2 (2023-10-31 ucrt).</p>
+<p>This document took 24.39 minutes to compile in Quarto version 1.3.450, and R version 4.3.2 (2023-10-31 ucrt).</p>
 </section>
 </section>
 <section id="references." class="level1 unnumbered">
