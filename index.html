@@ -200,6 +200,16 @@ document.addEventListener("DOMContentLoaded", function() {
   <ul class="collapse">
   <li><a href="#unsorted-references." id="toc-unsorted-references." class="nav-link" data-scroll-target="#unsorted-references."><span class="header-section-number">5.1</span> Unsorted references.</a></li>
   </ul></li>
+  <li><a href="#robotrader-in-fa-brands-python" id="toc-robotrader-in-fa-brands-python" class="nav-link" data-scroll-target="#robotrader-in-fa-brands-python"><span class="header-section-number">6</span> Robotrader in <i class="fa-brands fa-python" aria-label="python"></i></a>
+  <ul class="collapse">
+  <li><a href="#download-the-data." id="toc-download-the-data." class="nav-link" data-scroll-target="#download-the-data."><span class="header-section-number">6.1</span> Download the data.</a></li>
+  <li><a href="#visualize-the-data." id="toc-visualize-the-data." class="nav-link" data-scroll-target="#visualize-the-data."><span class="header-section-number">6.2</span> Visualize the data.</a></li>
+  <li><a href="#simple-moving-averages." id="toc-simple-moving-averages." class="nav-link" data-scroll-target="#simple-moving-averages."><span class="header-section-number">6.3</span> Simple moving averages.</a></li>
+  <li><a href="#preliminaries-to-classify-returns." id="toc-preliminaries-to-classify-returns." class="nav-link" data-scroll-target="#preliminaries-to-classify-returns."><span class="header-section-number">6.4</span> Preliminaries to classify returns.</a></li>
+  <li><a href="#set-up-the-model." id="toc-set-up-the-model." class="nav-link" data-scroll-target="#set-up-the-model."><span class="header-section-number">6.5</span> Set up the model.</a></li>
+  <li><a href="#evalute-the-model." id="toc-evalute-the-model." class="nav-link" data-scroll-target="#evalute-the-model."><span class="header-section-number">6.6</span> Evalute the model.</a></li>
+  <li><a href="#visualize-the-results." id="toc-visualize-the-results." class="nav-link" data-scroll-target="#visualize-the-results."><span class="header-section-number">6.7</span> Visualize the results.</a></li>
+  </ul></li>
   <li><a href="#references." id="toc-references." class="nav-link" data-scroll-target="#references.">References.</a></li>
   </ul>
 </nav>
@@ -228,7 +238,7 @@ document.addEventListener("DOMContentLoaded", function() {
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">January 2, 2024, 23:47:09 pm.</p>
+      <p class="date-modified">January 9, 2024, 00:30:32 am.</p>
     </div>
   </div>
     
@@ -1143,7 +1153,7 @@ Average of 20 networks, each of which is
 a 15-8-1 network with 137 weights
 options were - linear output units 
 
-sigma^2 estimated as 695.8</code></pre>
+sigma^2 estimated as 971.7</code></pre>
 </div>
 </div>
 <p>The NNAR(15,1,8)[12] model has inputs <span class="math inline">\(y_{t−1}, y_{t−2},..., y_{t−15}\)</span> and 8 neurons in the hidden layer.</p>
@@ -1160,16 +1170,16 @@ sigma^2 estimated as 695.8</code></pre>
 # Key:     .model [1]
    .model             date        sales  .mean
    &lt;chr&gt;             &lt;mth&gt;       &lt;dist&gt;  &lt;dbl&gt;
- 1 NNETAR(sales) 2022 ene. sample[5000] 13368.
- 2 NNETAR(sales) 2022 feb. sample[5000] 15050.
- 3 NNETAR(sales) 2022 mar. sample[5000] 17229.
- 4 NNETAR(sales) 2022 abr. sample[5000] 15877.
- 5 NNETAR(sales) 2022 may. sample[5000] 17014.
- 6 NNETAR(sales) 2022 jun. sample[5000] 19459.
- 7 NNETAR(sales) 2022 jul. sample[5000] 16927.
- 8 NNETAR(sales) 2022 ago. sample[5000] 17682.
- 9 NNETAR(sales) 2022 sep. sample[5000] 17197.
-10 NNETAR(sales) 2022 oct. sample[5000] 17268.</code></pre>
+ 1 NNETAR(sales) 2022 ene. sample[5000] 13734.
+ 2 NNETAR(sales) 2022 feb. sample[5000] 15194.
+ 3 NNETAR(sales) 2022 mar. sample[5000] 16761.
+ 4 NNETAR(sales) 2022 abr. sample[5000] 15569.
+ 5 NNETAR(sales) 2022 may. sample[5000] 16905.
+ 6 NNETAR(sales) 2022 jun. sample[5000] 18337.
+ 7 NNETAR(sales) 2022 jul. sample[5000] 16878.
+ 8 NNETAR(sales) 2022 ago. sample[5000] 17990.
+ 9 NNETAR(sales) 2022 sep. sample[5000] 16612.
+10 NNETAR(sales) 2022 oct. sample[5000] 16816.</code></pre>
 </div>
 </div>
 <p>The best NNET MAPE.</p>
@@ -1182,8 +1192,8 @@ sigma^2 estimated as 695.8</code></pre>
 <span id="cb60-4"><a href="#cb60-4"></a>nnet_mape</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>    MAPE 
-7.464491 </code></pre>
+<pre><code>   MAPE 
+6.45572 </code></pre>
 </div>
 </div>
 <p>Let’s plot the forecast results.</p>
@@ -1249,7 +1259,7 @@ sigma^2 estimated as 695.8</code></pre>
 1 fpp3: seasonal naïve           3.82
 2 fpp3: ETS(M,A,M)               3.95
 3 fpp3: ARIMA(4,1,1)(0,1,1)[12]  4.58
-4 fpp3: NNAR(15,1,8)[12]         7.46
+4 fpp3: NNAR(15,1,8)[12]         6.46
 5 fpp3: naïve                   18.4 
 6 fpp3: drift                   21.2 
 7 fpp3: mean                    23.4 </code></pre>
@@ -1554,19 +1564,19 @@ sigma^2 estimated as 695.8</code></pre>
 H2O is not running yet, starting it now...
 
 Note:  In case of errors look at the following log files:
-    C:\Users\ML\AppData\Local\Temp\Rtmpuc1RIq\file3eec5888405a/h2o_ML_started_from_r.out
-    C:\Users\ML\AppData\Local\Temp\Rtmpuc1RIq\file3eec16143fc0/h2o_ML_started_from_r.err
+    C:\Users\ML\AppData\Local\Temp\RtmpeIDv38\file4e3c605865f7/h2o_ML_started_from_r.out
+    C:\Users\ML\AppData\Local\Temp\RtmpeIDv38\file4e3c20c854f9/h2o_ML_started_from_r.err
 
 
-Starting H2O JVM and connecting: ................... Connection successful!
+Starting H2O JVM and connecting: .. Connection successful!
 
 R is connected to the H2O cluster: 
-    H2O cluster uptime:         20 seconds 739 milliseconds 
+    H2O cluster uptime:         9 seconds 853 milliseconds 
     H2O cluster timezone:       America/Mexico_City 
     H2O data parsing timezone:  UTC 
     H2O cluster version:        3.42.0.2 
-    H2O cluster version age:    5 months and 8 days 
-    H2O cluster name:           H2O_started_from_R_ML_luz283 
+    H2O cluster version age:    5 months and 14 days 
+    H2O cluster name:           H2O_started_from_R_ML_ctt216 
     H2O cluster total nodes:    1 
     H2O cluster total memory:   3.52 GB 
     H2O cluster total cores:    4 
@@ -1639,10 +1649,10 @@ R is connected to the H2O cluster:
 <span id="cb90-11"><a href="#cb90-11"></a>t_inner1 <span class="ot">&lt;-</span> <span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>inner1: 483 sec elapsed</code></pre>
+<pre><code>inner1: 505.81 sec elapsed</code></pre>
 </div>
 </div>
-<p>After 8.05 minutes running, the selected model by <tt><code>h2o.automl()</code></tt> is:</p>
+<p>After 8.43 minutes running, the selected model by <tt><code>h2o.automl()</code></tt> is:</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
@@ -1662,17 +1672,17 @@ R is connected to the H2O cluster:
 <span id="cb94-2"><a href="#cb94-2"></a><span class="fu">head</span>(automl_models_h2o<span class="sc">@</span>leaderboard[,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>                                                  model_id     rmse
-1  StackedEnsemble_BestOfFamily_3_AutoML_1_20240102_232756 1048.771
-2  StackedEnsemble_BestOfFamily_5_AutoML_1_20240102_232756 1061.491
-3             GBM_grid_1_AutoML_1_20240102_232756_model_39 1199.115
-4  StackedEnsemble_BestOfFamily_4_AutoML_1_20240102_232756 1215.447
-5             GBM_grid_1_AutoML_1_20240102_232756_model_64 1263.946
-6     StackedEnsemble_AllModels_3_AutoML_1_20240102_232756 1387.804
-7            GBM_grid_1_AutoML_1_20240102_232756_model_105 1394.311
-8             GBM_grid_1_AutoML_1_20240102_232756_model_17 1418.096
-9              GBM_grid_1_AutoML_1_20240102_232756_model_1 1423.704
-10            GBM_grid_1_AutoML_1_20240102_232756_model_73 1439.536</code></pre>
+<pre><code>                                                 model_id     rmse
+1  StackedEnsemble_BestOfFamily_3_AutoML_1_20240109_00755 1048.771
+2  StackedEnsemble_BestOfFamily_5_AutoML_1_20240109_00755 1061.491
+3             GBM_grid_1_AutoML_1_20240109_00755_model_39 1199.115
+4  StackedEnsemble_BestOfFamily_4_AutoML_1_20240109_00755 1215.447
+5            GBM_grid_1_AutoML_1_20240109_00755_model_219 1263.118
+6             GBM_grid_1_AutoML_1_20240109_00755_model_64 1263.946
+7            GBM_grid_1_AutoML_1_20240109_00755_model_118 1319.513
+8      StackedEnsemble_Best1000_1_AutoML_1_20240109_00755 1354.083
+9     StackedEnsemble_AllModels_5_AutoML_1_20240109_00755 1360.523
+10    StackedEnsemble_AllModels_3_AutoML_1_20240109_00755 1360.523</code></pre>
 </div>
 </div>
 <p>The <tt><code>model_id</code></tt> column list the top 10 models with the lowest errors. The value of <tt><code>h2o.automl()</code></tt> is that we can take the best model and use it to conduct our forecast. Remember we proposed to run <tt><code>h2o.automl()</code></tt> three times. Now let’s consider the second alternative (only Deep Learning). There are several ways to implement Deep Learning, this is why it makes sense to use only this family into the <tt><code>h2o.automl()</code></tt> function. Deep Learning cannot be reproducible by construction so adding a seed in this case would be useless.</p>
@@ -1690,10 +1700,10 @@ R is connected to the H2O cluster:
 <span id="cb96-9"><a href="#cb96-9"></a>t_inner2 <span class="ot">&lt;-</span> <span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>inner2: 186.84 sec elapsed</code></pre>
+<pre><code>inner2: 183.33 sec elapsed</code></pre>
 </div>
 </div>
-<p>After 3.11 minutes running, the selected Deep Learning model by <tt><code>h2o.automl()</code></tt> is:</p>
+<p>After 3.06 minutes running, the selected Deep Learning model by <tt><code>h2o.automl()</code></tt> is:</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
@@ -1712,15 +1722,15 @@ R is connected to the H2O cluster:
 <div class="sourceCode cell-code" id="cb100"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1"></a><span class="fu">head</span>(DL<span class="sc">@</span>leaderboard[,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>                                              model_id     rmse
-1 DeepLearning_grid_1_AutoML_2_20240102_233559_model_2 1097.277
-2 DeepLearning_grid_1_AutoML_2_20240102_233559_model_1 1224.674
-3 DeepLearning_grid_1_AutoML_2_20240102_233559_model_4 1606.307
-4 DeepLearning_grid_1_AutoML_2_20240102_233559_model_3 1697.818
-5              DeepLearning_1_AutoML_2_20240102_233559 1845.579
-6 DeepLearning_grid_1_AutoML_2_20240102_233559_model_7 1904.240
-7 DeepLearning_grid_1_AutoML_2_20240102_233559_model_6 2947.580
-8 DeepLearning_grid_1_AutoML_2_20240102_233559_model_5 3031.368</code></pre>
+<pre><code>                                             model_id     rmse
+1 DeepLearning_grid_1_AutoML_2_20240109_01621_model_2 1028.497
+2 DeepLearning_grid_1_AutoML_2_20240109_01621_model_1 1212.859
+3 DeepLearning_grid_1_AutoML_2_20240109_01621_model_4 1489.465
+4 DeepLearning_grid_1_AutoML_2_20240109_01621_model_6 1826.080
+5 DeepLearning_grid_1_AutoML_2_20240109_01621_model_7 1859.433
+6 DeepLearning_grid_1_AutoML_2_20240109_01621_model_5 1895.855
+7 DeepLearning_grid_1_AutoML_2_20240109_01621_model_3 2068.979
+8              DeepLearning_1_AutoML_2_20240109_01621 2374.515</code></pre>
 </div>
 </div>
 <p>All models belong to the same algorithm, but we clearly choose the first one of the list. The machine learning workflow estimate a number of models using the train region and evaluate them using the validation region. The estimated model parameters then change as they learn from their mistakes. This process is repeated until a specific restriction meets, in this case <tt><code>max_runtime_secs</code></tt> is set to 60 seconds. At the end, we select the best ranked model.</p>
@@ -1738,10 +1748,10 @@ R is connected to the H2O cluster:
 <span id="cb102-8"><a href="#cb102-8"></a>t_inner3 <span class="ot">&lt;-</span> <span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>inner3: 428.58 sec elapsed</code></pre>
+<pre><code>inner3: 511.15 sec elapsed</code></pre>
 </div>
 </div>
-<p>After 7.14 minutes running, the selected model by <tt><code>h2o.automl()</code></tt> is:</p>
+<p>After 8.52 minutes running, the selected model by <tt><code>h2o.automl()</code></tt> is:</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
@@ -1750,7 +1760,7 @@ R is connected to the H2O cluster:
 <span id="cb104-3"><a href="#cb104-3"></a>automl_leader_all<span class="sc">@</span>algorithm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] "deeplearning"</code></pre>
+<pre><code>[1] "stackedensemble"</code></pre>
 </div>
 </div>
 <p>See why c model was the chosen one in this specific and unique code compilation. Model rankings: <tt><code>h2o.automl</code></tt> with all available algorithms</p>
@@ -1760,17 +1770,17 @@ R is connected to the H2O cluster:
 <div class="sourceCode cell-code" id="cb106"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1"></a><span class="fu">head</span>(automl_models_h2o_all<span class="sc">@</span>leaderboard[,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>                                                  model_id     rmse
-1     DeepLearning_grid_1_AutoML_3_20240102_233908_model_1 1124.802
-2  StackedEnsemble_BestOfFamily_3_AutoML_3_20240102_233908 1168.254
-3             GBM_grid_1_AutoML_3_20240102_233908_model_29 1356.448
-4              GBM_grid_1_AutoML_3_20240102_233908_model_2 1356.683
-5             GBM_grid_1_AutoML_3_20240102_233908_model_28 1367.366
-6  StackedEnsemble_BestOfFamily_4_AutoML_3_20240102_233908 1433.548
-7              GBM_grid_1_AutoML_3_20240102_233908_model_6 1442.305
-8     StackedEnsemble_AllModels_3_AutoML_3_20240102_233908 1458.565
-9             GBM_grid_1_AutoML_3_20240102_233908_model_54 1471.401
-10            GBM_grid_1_AutoML_3_20240102_233908_model_12 1472.120</code></pre>
+<pre><code>                                                 model_id     rmse
+1  StackedEnsemble_BestOfFamily_3_AutoML_3_20240109_01927 1071.224
+2     DeepLearning_grid_1_AutoML_3_20240109_01927_model_2 1320.492
+3             GBM_grid_1_AutoML_3_20240109_01927_model_65 1330.039
+4     StackedEnsemble_AllModels_3_AutoML_3_20240109_01927 1389.254
+5             GBM_grid_1_AutoML_3_20240109_01927_model_56 1402.098
+6              GBM_grid_1_AutoML_3_20240109_01927_model_9 1406.070
+7     StackedEnsemble_AllModels_4_AutoML_3_20240109_01927 1417.645
+8            GBM_grid_1_AutoML_3_20240109_01927_model_115 1423.343
+9              GBM_grid_1_AutoML_3_20240109_01927_model_5 1426.755
+10           GBM_grid_1_AutoML_3_20240109_01927_model_121 1435.739</code></pre>
 </div>
 </div>
 <p>Let’s summarize the results according to the root mean square error <em>rmse</em> as this was the criterion in <tt><code>stopping_metric</code></tt>. The table shows the best ranked model according to our three different runs of <tt><code>h2o.automl()</code></tt>.</p>
@@ -1806,12 +1816,12 @@ R is connected to the H2O cluster:
 <tr class="odd">
 <td style="text-align: left;">stackedensemble</td>
 <td style="text-align: left;">deeplearning</td>
-<td style="text-align: left;">deeplearning</td>
+<td style="text-align: left;">stackedensemble</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">1048.77</td>
-<td style="text-align: left;">1097.28</td>
-<td style="text-align: left;">1124.8</td>
+<td style="text-align: left;">1028.5</td>
+<td style="text-align: left;">1071.22</td>
 </tr>
 </tbody>
 </table>
@@ -2043,90 +2053,90 @@ Mean Residual Deviance :  1099921</code></pre>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-01-01</td>
 <td style="text-align: right;">11862</td>
-<td style="text-align: right;">11385.33</td>
-<td style="text-align: right;">476.672</td>
-<td style="text-align: right;">0.040</td>
+<td style="text-align: right;">12058.95</td>
+<td style="text-align: right;">-196.955</td>
+<td style="text-align: right;">-0.017</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">2</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-02-01</td>
 <td style="text-align: right;">13358</td>
-<td style="text-align: right;">12621.34</td>
-<td style="text-align: right;">736.661</td>
-<td style="text-align: right;">0.055</td>
+<td style="text-align: right;">12953.52</td>
+<td style="text-align: right;">404.475</td>
+<td style="text-align: right;">0.030</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">3</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-03-01</td>
 <td style="text-align: right;">16216</td>
-<td style="text-align: right;">14964.52</td>
-<td style="text-align: right;">1251.481</td>
-<td style="text-align: right;">0.077</td>
+<td style="text-align: right;">15106.23</td>
+<td style="text-align: right;">1109.774</td>
+<td style="text-align: right;">0.068</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">4</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-04-01</td>
 <td style="text-align: right;">15766</td>
-<td style="text-align: right;">13176.31</td>
-<td style="text-align: right;">2589.694</td>
-<td style="text-align: right;">0.164</td>
+<td style="text-align: right;">13705.46</td>
+<td style="text-align: right;">2060.542</td>
+<td style="text-align: right;">0.131</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">5</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-05-01</td>
 <td style="text-align: right;">16755</td>
-<td style="text-align: right;">15743.94</td>
-<td style="text-align: right;">1011.055</td>
-<td style="text-align: right;">0.060</td>
+<td style="text-align: right;">16933.65</td>
+<td style="text-align: right;">-178.654</td>
+<td style="text-align: right;">-0.011</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">6</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-06-01</td>
 <td style="text-align: right;">17882</td>
-<td style="text-align: right;">17173.48</td>
-<td style="text-align: right;">708.523</td>
-<td style="text-align: right;">0.040</td>
+<td style="text-align: right;">18073.03</td>
+<td style="text-align: right;">-191.025</td>
+<td style="text-align: right;">-0.011</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">7</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-07-01</td>
 <td style="text-align: right;">15168</td>
-<td style="text-align: right;">14506.11</td>
-<td style="text-align: right;">661.887</td>
-<td style="text-align: right;">0.044</td>
+<td style="text-align: right;">15369.71</td>
+<td style="text-align: right;">-201.706</td>
+<td style="text-align: right;">-0.013</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">8</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-08-01</td>
 <td style="text-align: right;">16977</td>
-<td style="text-align: right;">16311.52</td>
-<td style="text-align: right;">665.476</td>
-<td style="text-align: right;">0.039</td>
+<td style="text-align: right;">17655.58</td>
+<td style="text-align: right;">-678.577</td>
+<td style="text-align: right;">-0.040</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">9</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-09-01</td>
 <td style="text-align: right;">16430</td>
-<td style="text-align: right;">15845.58</td>
-<td style="text-align: right;">584.421</td>
-<td style="text-align: right;">0.036</td>
+<td style="text-align: right;">17419.44</td>
+<td style="text-align: right;">-989.443</td>
+<td style="text-align: right;">-0.060</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">10</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-10-01</td>
 <td style="text-align: right;">15480</td>
-<td style="text-align: right;">15980.83</td>
-<td style="text-align: right;">-500.831</td>
-<td style="text-align: right;">-0.032</td>
+<td style="text-align: right;">17310.21</td>
+<td style="text-align: right;">-1830.214</td>
+<td style="text-align: right;">-0.118</td>
 </tr>
 </tbody>
 </table>
@@ -2175,11 +2185,11 @@ Mean Residual Deviance :  1099921</code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code>H2ORegressionMetrics: deeplearning
 
-MSE:  1204017
-RMSE:  1097.277
-MAE:  918.67
-RMSLE:  0.07413783
-Mean Residual Deviance :  1204017</code></pre>
+MSE:  1057807
+RMSE:  1028.497
+MAE:  784.1365
+RMSLE:  0.0661037
+Mean Residual Deviance :  1057807</code></pre>
 </div>
 </div>
 <p>Finally, this is the H2O case with no restrictions, considering all available algorithms.</p>
@@ -2217,90 +2227,90 @@ Mean Residual Deviance :  1204017</code></pre>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-01-01</td>
 <td style="text-align: right;">11862</td>
-<td style="text-align: right;">11198.81</td>
-<td style="text-align: right;">663.188</td>
-<td style="text-align: right;">0.056</td>
+<td style="text-align: right;">11827.03</td>
+<td style="text-align: right;">34.970</td>
+<td style="text-align: right;">0.003</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">2</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-02-01</td>
 <td style="text-align: right;">13358</td>
-<td style="text-align: right;">12626.40</td>
-<td style="text-align: right;">731.597</td>
-<td style="text-align: right;">0.055</td>
+<td style="text-align: right;">12590.54</td>
+<td style="text-align: right;">767.459</td>
+<td style="text-align: right;">0.057</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">3</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-03-01</td>
 <td style="text-align: right;">16216</td>
-<td style="text-align: right;">15160.14</td>
-<td style="text-align: right;">1055.863</td>
-<td style="text-align: right;">0.065</td>
+<td style="text-align: right;">14525.07</td>
+<td style="text-align: right;">1690.935</td>
+<td style="text-align: right;">0.104</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">4</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-04-01</td>
 <td style="text-align: right;">15766</td>
-<td style="text-align: right;">13233.17</td>
-<td style="text-align: right;">2532.834</td>
-<td style="text-align: right;">0.161</td>
+<td style="text-align: right;">13953.26</td>
+<td style="text-align: right;">1812.742</td>
+<td style="text-align: right;">0.115</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">5</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-05-01</td>
 <td style="text-align: right;">16755</td>
-<td style="text-align: right;">15685.44</td>
-<td style="text-align: right;">1069.563</td>
-<td style="text-align: right;">0.064</td>
+<td style="text-align: right;">15716.99</td>
+<td style="text-align: right;">1038.006</td>
+<td style="text-align: right;">0.062</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">6</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-06-01</td>
 <td style="text-align: right;">17882</td>
-<td style="text-align: right;">16769.15</td>
-<td style="text-align: right;">1112.853</td>
-<td style="text-align: right;">0.062</td>
+<td style="text-align: right;">16500.34</td>
+<td style="text-align: right;">1381.662</td>
+<td style="text-align: right;">0.077</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">7</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-07-01</td>
 <td style="text-align: right;">15168</td>
-<td style="text-align: right;">14271.80</td>
-<td style="text-align: right;">896.203</td>
-<td style="text-align: right;">0.059</td>
+<td style="text-align: right;">15180.70</td>
+<td style="text-align: right;">-12.701</td>
+<td style="text-align: right;">-0.001</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">8</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-08-01</td>
 <td style="text-align: right;">16977</td>
-<td style="text-align: right;">16299.33</td>
-<td style="text-align: right;">677.674</td>
-<td style="text-align: right;">0.040</td>
+<td style="text-align: right;">16062.97</td>
+<td style="text-align: right;">914.028</td>
+<td style="text-align: right;">0.054</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">9</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-09-01</td>
 <td style="text-align: right;">16430</td>
-<td style="text-align: right;">15893.26</td>
-<td style="text-align: right;">536.738</td>
-<td style="text-align: right;">0.033</td>
+<td style="text-align: right;">15585.70</td>
+<td style="text-align: right;">844.297</td>
+<td style="text-align: right;">0.051</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">10</td>
 <td style="text-align: left;">S4248SM144NCEN</td>
 <td style="text-align: left;">2022-10-01</td>
 <td style="text-align: right;">15480</td>
-<td style="text-align: right;">15942.31</td>
-<td style="text-align: right;">-462.314</td>
-<td style="text-align: right;">-0.030</td>
+<td style="text-align: right;">15932.56</td>
+<td style="text-align: right;">-452.555</td>
+<td style="text-align: right;">-0.029</td>
 </tr>
 </tbody>
 </table>
@@ -2345,13 +2355,13 @@ Mean Residual Deviance :  1204017</code></pre>
 <div class="sourceCode cell-code" id="cb120"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb120-1"><a href="#cb120-1"></a><span class="fu">h2o.performance</span>(automl_leader_all, <span class="at">newdata =</span> test_h2o)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>H2ORegressionMetrics: deeplearning
+<pre><code>H2ORegressionMetrics: stackedensemble
 
-MSE:  1265180
-RMSE:  1124.802
-MAE:  973.8827
-RMSLE:  0.0758259
-Mean Residual Deviance :  1265180</code></pre>
+MSE:  1147521
+RMSE:  1071.224
+MAE:  894.9356
+RMSLE:  0.06912513
+Mean Residual Deviance :  1147521</code></pre>
 </div>
 </div>
 <p>In finance we care about the future and these techniques can be used as a tool to reduce the uncertainty about the future. Obviously, we cannot predict without errors, but the objective is to achieve the lowest forecasting errors possible.</p>
@@ -2417,20 +2427,20 @@ Mean Residual Deviance :  1265180</code></pre>
 <tr class="even">
 <td style="text-align: left;">Only Deep Learning</td>
 <td style="text-align: left;">deeplearning</td>
-<td style="text-align: right;">818.50</td>
-<td style="text-align: right;">1097.28</td>
-<td style="text-align: right;">918.67</td>
-<td style="text-align: right;">5.87</td>
-<td style="text-align: right;">5.23</td>
+<td style="text-align: right;">-69.18</td>
+<td style="text-align: right;">1028.50</td>
+<td style="text-align: right;">784.14</td>
+<td style="text-align: right;">4.99</td>
+<td style="text-align: right;">-0.40</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">All algorithms</td>
-<td style="text-align: left;">deeplearning</td>
-<td style="text-align: right;">881.42</td>
-<td style="text-align: right;">1124.80</td>
-<td style="text-align: right;">973.88</td>
-<td style="text-align: right;">6.24</td>
-<td style="text-align: right;">5.64</td>
+<td style="text-align: left;">stackedensemble</td>
+<td style="text-align: right;">801.88</td>
+<td style="text-align: right;">1071.22</td>
+<td style="text-align: right;">894.94</td>
+<td style="text-align: right;">5.54</td>
+<td style="text-align: right;">4.94</td>
 </tr>
 </tbody>
 </table>
@@ -2485,14 +2495,14 @@ Mean Residual Deviance :  1265180</code></pre>
 <tr class="even">
 <td style="text-align: left;">Only Deep Learning</td>
 <td style="text-align: left;">deeplearning</td>
-<td style="text-align: left;">2022-10-01</td>
-<td style="text-align: right;">-0.032353</td>
+<td style="text-align: left;">2022-05-01</td>
+<td style="text-align: right;">-0.010663</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">All algorithms</td>
-<td style="text-align: left;">deeplearning</td>
-<td style="text-align: left;">2022-10-01</td>
-<td style="text-align: right;">-0.029865</td>
+<td style="text-align: left;">stackedensemble</td>
+<td style="text-align: left;">2022-07-01</td>
+<td style="text-align: right;">-0.000837</td>
 </tr>
 </tbody>
 </table>
@@ -2524,10 +2534,10 @@ Mean Residual Deviance :  1265180</code></pre>
  1 fpp3: seasonal naïve                   3.82
  2 fpp3: ETS(M,A,M)                       3.95
  3 fpp3: ARIMA(4,1,1)(0,1,1)[12]          4.58
- 4 H2O no Deep Learning: stackedensemble  5.72
- 5 H2O Deep Learning: deeplearning        5.87
- 6 H2O all models: deeplearning           6.24
- 7 fpp3: NNAR(15,1,8)[12]                 7.46
+ 4 H2O Deep Learning: deeplearning        4.99
+ 5 H2O all models: stackedensemble        5.54
+ 6 H2O no Deep Learning: stackedensemble  5.72
+ 7 fpp3: NNAR(15,1,8)[12]                 6.46
  8 fpp3: naïve                           18.4 
  9 fpp3: drift                           21.2 
 10 fpp3: mean                            23.4 </code></pre>
@@ -3127,16 +3137,16 @@ $ mpe  &lt;dbl&gt; -3.433</code></pre>
 <pre><code># A tsibble: 10 x 5 [1M]
         date  av_fc sales  error error_pct
        &lt;mth&gt;  &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt;     &lt;dbl&gt;
- 1 2022 ene. 12153. 11862 -291.    -0.0245
- 2 2022 feb. 13438. 13358  -80.3   -0.006 
- 3 2022 mar. 15702. 16216  514.     0.0317
- 4 2022 abr. 14979. 15766  787.     0.0499
- 5 2022 may. 16346. 16755  409.     0.0244
- 6 2022 jun. 17721. 17882  161.     0.009 
- 7 2022 jul. 15569. 15168 -401.    -0.0265
- 8 2022 ago. 16733. 16977  244.     0.0144
- 9 2022 sep. 16132. 16430  298.     0.0181
-10 2022 oct. 16377. 15480 -897.    -0.0579</code></pre>
+ 1 2022 ene. 12338. 11862 -476.    -0.0401
+ 2 2022 feb. 13487. 13358 -129.    -0.0097
+ 3 2022 mar. 15595. 16216  621.     0.0383
+ 4 2022 abr. 15084. 15766  682.     0.0433
+ 5 2022 may. 16470. 16755  285.     0.017 
+ 6 2022 jun. 17666. 17882  216      0.0121
+ 7 2022 jul. 15761. 15168 -593.    -0.0391
+ 8 2022 ago. 16891. 16977   86.4    0.0051
+ 9 2022 sep. 16208. 16430  222.     0.0135
+10 2022 oct. 16473. 15480 -993.    -0.0642</code></pre>
 </div>
 </div>
 <p>Finally, the forecast.</p>
@@ -3186,16 +3196,16 @@ $ mpe  &lt;dbl&gt; -3.433</code></pre>
 <pre><code># A tibble: 13 × 2
    .model                                 MAPE
    &lt;chr&gt;                                 &lt;dbl&gt;
- 1 Average forecast                       2.62
+ 1 Average forecast                       2.82
  2 ARIMA(1,1,2)(2,1,1)[12]                3.72
  3 Linear model                           3.77
  4 fpp3: seasonal naïve                   3.82
  5 fpp3: ETS(M,A,M)                       3.95
  6 fpp3: ARIMA(4,1,1)(0,1,1)[12]          4.58
- 7 H2O no Deep Learning: stackedensemble  5.72
- 8 H2O Deep Learning: deeplearning        5.87
- 9 H2O all models: deeplearning           6.24
-10 fpp3: NNAR(15,1,8)[12]                 7.46
+ 7 H2O Deep Learning: deeplearning        4.99
+ 8 H2O all models: stackedensemble        5.54
+ 9 H2O no Deep Learning: stackedensemble  5.72
+10 fpp3: NNAR(15,1,8)[12]                 6.46
 11 fpp3: naïve                           18.4 
 12 fpp3: drift                           21.2 
 13 fpp3: mean                            23.4 </code></pre>
@@ -3220,7 +3230,696 @@ $ mpe  &lt;dbl&gt; -3.433</code></pre>
 <li><a href="https://www.business-science.io/code-tools/2017/10/25/demo_week_sweep.html">Tidy Forecasting with sweep</a></li>
 <li><a href="http://docs.h2o.ai/h2o-tutorials/latest-stable/index.html">H2O Tutorials</a></li>
 </ul>
-<p>This document took 24.39 minutes to compile in Quarto version 1.3.450, and R version 4.3.2 (2023-10-31 ucrt).</p>
+<p>rm(list=ls())</p>
+</section>
+</section>
+<section id="robotrader-in-fa-brands-python" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Robotrader in <i class="fa-brands fa-python" aria-label="python"></i></h1>
+<p>Stock price movements are influenced by a myriad of factors, including market trends, economic indicators, and company-specific news. While predicting precise movements remains a challenging task, statistical analysis, machine learning algorithms, and technical indicators enable traders to identify patterns and trends that offer insights into potential price changes. By leveraging historical data and employing sophisticated algorithms, trading bots can analyze vast amounts of information in real-time, identifying patterns and correlations that humans might overlook. While not foolproof, these algorithms can exploit market inefficiencies and capitalize on short-term trends, aiming to generate daily returns by executing timely and automated trades based on the anticipated movements in stock prices. However, it’s important to note that markets are inherently dynamic, and past performance does not guarantee future results, requiring continuous refinement and adaptation of trading strategies to changing market conditions.</p>
+<p>Here we introduce a Python code for a simple robo trader, this program utilizes moving averages as a fundamental tool to anticipate stock price movements. The algorithm involves calculating moving averages to generates a buy, sell or keep signal. This basic yet effective strategy aims to capitalize on trends and momentum in stock prices. The code is designed to fetch real-time stock data, compute moving averages, and trigger buy or sell orders accordingly. Traders can customize the parameters and incorporate additional indicators for a more sophisticated trading strategy. It serves as a practical example of how Python can be employed to implement algorithmic trading strategies for those looking to automate their trading decisions based on moving average signals.</p>
+<p>Install if necessary.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb170"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb170-1"><a href="#cb170-1"></a><span class="co"># !pip install yfinance</span></span>
+<span id="cb170-2"><a href="#cb170-2"></a><span class="co"># !pip install matplotlib</span></span>
+<span id="cb170-3"><a href="#cb170-3"></a><span class="co"># !pip install seaborn</span></span>
+<span id="cb170-4"><a href="#cb170-4"></a><span class="co"># !pip install c</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Set up the packages.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb171"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb171-1"><a href="#cb171-1"></a><span class="im">import</span> yfinance <span class="im">as</span> yf</span>
+<span id="cb171-2"><a href="#cb171-2"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb171-3"><a href="#cb171-3"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb171-4"><a href="#cb171-4"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb171-5"><a href="#cb171-5"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb171-6"><a href="#cb171-6"></a></span>
+<span id="cb171-7"><a href="#cb171-7"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> confusion_matrix</span>
+<span id="cb171-8"><a href="#cb171-8"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> train_test_split</span>
+<span id="cb171-9"><a href="#cb171-9"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> RandomForestClassifier</span>
+<span id="cb171-10"><a href="#cb171-10"></a><span class="im">from</span> sklearn.neighbors <span class="im">import</span> KNeighborsClassifier</span>
+<span id="cb171-11"><a href="#cb171-11"></a><span class="im">from</span> sklearn.tree <span class="im">import</span> DecisionTreeClassifier </span>
+<span id="cb171-12"><a href="#cb171-12"></a><span class="im">from</span> sklearn.neural_network <span class="im">import</span> MLPClassifier </span>
+<span id="cb171-13"><a href="#cb171-13"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> AdaBoostClassifier</span>
+<span id="cb171-14"><a href="#cb171-14"></a><span class="im">from</span> sklearn.impute <span class="im">import</span> SimpleImputer</span>
+<span id="cb171-15"><a href="#cb171-15"></a><span class="im">from</span> sklearn.pipeline <span class="im">import</span> Pipeline</span>
+<span id="cb171-16"><a href="#cb171-16"></a><span class="im">from</span> sklearn.svm <span class="im">import</span> SVC</span>
+<span id="cb171-17"><a href="#cb171-17"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> accuracy_score</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<section id="download-the-data." class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="download-the-data."><span class="header-section-number">6.1</span> Download the data.</h2>
+<p>This period includes training and test set.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb172"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb172-1"><a href="#cb172-1"></a>ticker <span class="op">=</span> <span class="st">'AAPL'</span></span>
+<span id="cb172-2"><a href="#cb172-2"></a>start_date <span class="op">=</span> <span class="st">"2021-01-01"</span></span>
+<span id="cb172-3"><a href="#cb172-3"></a>end_date <span class="op">=</span> <span class="st">"2023-01-06"</span></span>
+<span id="cb172-4"><a href="#cb172-4"></a>data <span class="op">=</span> yf.download(ticker, start <span class="op">=</span> start_date, </span>
+<span id="cb172-5"><a href="#cb172-5"></a>                   end <span class="op">=</span> end_date, progress <span class="op">=</span> <span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Take a look of the data.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb173"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb173-1"><a href="#cb173-1"></a>data</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                  Open        High  ...   Adj Close     Volume
+Date                                ...                       
+2021-01-04  133.520004  133.610001  ...  127.164185  143301900
+2021-01-05  128.889999  131.740005  ...  128.736374   97664900
+2021-01-06  127.720001  131.050003  ...  124.402916  155088000
+2021-01-07  128.360001  131.630005  ...  128.647964  109578200
+2021-01-08  132.429993  132.630005  ...  129.758331  105158200
+...                ...         ...  ...         ...        ...
+2022-12-29  127.989998  130.479996  ...  128.889572   75703700
+2022-12-30  128.410004  129.949997  ...  129.207794   77034200
+2023-01-03  130.279999  130.899994  ...  124.374802  112117500
+2023-01-04  126.889999  128.660004  ...  125.657639   89113600
+2023-01-05  127.129997  127.769997  ...  124.325081   80962700
+
+[506 rows x 6 columns]</code></pre>
+</div>
+</div>
+</section>
+<section id="visualize-the-data." class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="visualize-the-data."><span class="header-section-number">6.2</span> Visualize the data.</h2>
+<p>The red line splits the training and test data.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb175"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb175-1"><a href="#cb175-1"></a>plt.figure(figsize <span class="op">=</span> (<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb175-2"><a href="#cb175-2"></a>plt.plot(data.index, data[<span class="st">"Close"</span>])</span>
+<span id="cb175-3"><a href="#cb175-3"></a>plt.axvline(x <span class="op">=</span> pd.to_datetime(<span class="st">'2022-08-17'</span>), color <span class="op">=</span> <span class="st">'r'</span>, linestyle <span class="op">=</span> <span class="st">'--'</span>)</span>
+<span id="cb175-4"><a href="#cb175-4"></a>plt.text(pd.to_datetime(<span class="st">'2021-11-01'</span>), <span class="dv">120</span>, </span>
+<span id="cb175-5"><a href="#cb175-5"></a>         <span class="st">'Looks hard to make returns.'</span>, </span>
+<span id="cb175-6"><a href="#cb175-6"></a>         fontsize <span class="op">=</span> <span class="dv">12</span>, color <span class="op">=</span> <span class="st">'black'</span>)</span>
+<span id="cb175-7"><a href="#cb175-7"></a>plt.title(<span class="st">"Close Price"</span>)</span>
+<span id="cb175-8"><a href="#cb175-8"></a>plt.xlabel(<span class="st">"Date"</span>)</span>
+<span id="cb175-9"><a href="#cb175-9"></a>plt.ylabel(<span class="st">"Price"</span>)</span>
+<span id="cb175-10"><a href="#cb175-10"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-227-1.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>These are the correspondent daily returns.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb176"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb176-1"><a href="#cb176-1"></a>data[<span class="st">"Return"</span>] <span class="op">=</span> data[<span class="st">"Close"</span>].pct_change()  </span>
+<span id="cb176-2"><a href="#cb176-2"></a>data.dropna(inplace <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb176-3"><a href="#cb176-3"></a></span>
+<span id="cb176-4"><a href="#cb176-4"></a>data[<span class="st">"Return"</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Date
+2021-01-05    0.012364
+2021-01-06   -0.033662
+2021-01-07    0.034123
+2021-01-08    0.008631
+2021-01-11   -0.023249
+                ...   
+2022-12-29    0.028324
+2022-12-30    0.002469
+2023-01-03   -0.037405
+2023-01-04    0.010314
+2023-01-05   -0.010605
+Name: Return, Length: 505, dtype: float64</code></pre>
+</div>
+</div>
+<p>A density plot:</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb178"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb178-1"><a href="#cb178-1"></a>plt.figure(figsize <span class="op">=</span> (<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb178-2"><a href="#cb178-2"></a>sns.kdeplot(data[<span class="st">'Return'</span>], fill <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb178-3"><a href="#cb178-3"></a>plt.title(<span class="st">'Density Plot of Return'</span>)</span>
+<span id="cb178-4"><a href="#cb178-4"></a>plt.xlabel(<span class="st">'Return'</span>)</span>
+<span id="cb178-5"><a href="#cb178-5"></a>plt.ylabel(<span class="st">'Density'</span>)</span>
+<span id="cb178-6"><a href="#cb178-6"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-229-3.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Compared with a normal distribution:</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb179"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb179-1"><a href="#cb179-1"></a>mean_return <span class="op">=</span> np.mean(data[<span class="st">'Return'</span>])</span>
+<span id="cb179-2"><a href="#cb179-2"></a>var_return <span class="op">=</span> np.var(data[<span class="st">'Return'</span>])</span>
+<span id="cb179-3"><a href="#cb179-3"></a>samples <span class="op">=</span> np.random.normal(mean_return, np.sqrt(var_return), <span class="dv">100000</span>)</span>
+<span id="cb179-4"><a href="#cb179-4"></a></span>
+<span id="cb179-5"><a href="#cb179-5"></a>sns.kdeplot(data[<span class="st">'Return'</span>], fill <span class="op">=</span> <span class="va">True</span>, label <span class="op">=</span> <span class="st">'Return'</span>, color <span class="op">=</span> <span class="st">"r"</span>)</span>
+<span id="cb179-6"><a href="#cb179-6"></a>sns.kdeplot(samples, fill <span class="op">=</span> <span class="va">True</span>, label <span class="op">=</span> <span class="st">'Normal Distribution'</span>, </span>
+<span id="cb179-7"><a href="#cb179-7"></a>            color <span class="op">=</span> <span class="st">"g"</span>)</span>
+<span id="cb179-8"><a href="#cb179-8"></a>plt.title(<span class="st">'Density Plot of Return and Normal Distribution'</span>)</span>
+<span id="cb179-9"><a href="#cb179-9"></a>plt.xlabel(<span class="st">'Return'</span>)</span>
+<span id="cb179-10"><a href="#cb179-10"></a>plt.ylabel(<span class="st">'Density'</span>)</span>
+<span id="cb179-11"><a href="#cb179-11"></a>plt.legend()</span>
+<span id="cb179-12"><a href="#cb179-12"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-230-5.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Positive and negative daily returns in test and training set.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb180"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb180-1"><a href="#cb180-1"></a>plt.figure(figsize <span class="op">=</span> (<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb180-2"><a href="#cb180-2"></a>plt.bar(data.index, data[<span class="st">'Return'</span>], </span>
+<span id="cb180-3"><a href="#cb180-3"></a>        color<span class="op">=</span>[<span class="st">'blue'</span> <span class="cf">if</span> x <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="st">'red'</span> <span class="cf">for</span> x <span class="kw">in</span> data[<span class="st">'Return'</span>]])</span>
+<span id="cb180-4"><a href="#cb180-4"></a>plt.axvline(x<span class="op">=</span>pd.to_datetime(<span class="st">'2022-08-17'</span>), color <span class="op">=</span> <span class="st">'g'</span>, linestyle <span class="op">=</span> <span class="st">'--'</span>)</span>
+<span id="cb180-5"><a href="#cb180-5"></a>plt.title(<span class="st">'Daily Returns'</span>)</span>
+<span id="cb180-6"><a href="#cb180-6"></a>plt.xlabel(<span class="st">'Date'</span>)</span>
+<span id="cb180-7"><a href="#cb180-7"></a>plt.ylabel(<span class="st">'Return'</span>)</span>
+<span id="cb180-8"><a href="#cb180-8"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-231-7.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Isolate the test set daily returns.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb181"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb181-1"><a href="#cb181-1"></a>testReturns <span class="op">=</span> data[<span class="st">"Return"</span>].loc[pd.to_datetime(<span class="st">'2022-08-17'</span>):]</span>
+<span id="cb181-2"><a href="#cb181-2"></a>testReturns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Date
+2022-08-17    0.008785
+2022-08-18   -0.002292
+2022-08-19   -0.015102
+2022-08-22   -0.023029
+2022-08-23   -0.002029
+                ...   
+2022-12-29    0.028324
+2022-12-30    0.002469
+2023-01-03   -0.037405
+2023-01-04    0.010314
+2023-01-05   -0.010605
+Name: Return, Length: 98, dtype: float64</code></pre>
+</div>
+</div>
+<p>Let’s ignore any forecast attempt, take these daily returns as given and calculate cumulative returns assuming we reinvest $1 in the test set.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb183"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb183-1"><a href="#cb183-1"></a>cumulative_returns <span class="op">=</span> (<span class="dv">1</span><span class="op">+</span>testReturns).cumprod()</span>
+<span id="cb183-2"><a href="#cb183-2"></a>cumulative_returns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Date
+2022-08-17    1.008785
+2022-08-18    1.006473
+2022-08-19    0.991273
+2022-08-22    0.968445
+2022-08-23    0.966480
+                ...   
+2022-12-29    0.749061
+2022-12-30    0.750910
+2023-01-03    0.722823
+2023-01-04    0.730278
+2023-01-05    0.722534
+Name: Return, Length: 98, dtype: float64</code></pre>
+</div>
+</div>
+<p>Graphically:</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb185"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb185-1"><a href="#cb185-1"></a>cumulative_returns.plot(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb185-2"><a href="#cb185-2"></a>plt.title(<span class="st">'Cumulative Returns'</span>)</span>
+<span id="cb185-3"><a href="#cb185-3"></a>plt.xlabel(<span class="st">'Date'</span>)</span>
+<span id="cb185-4"><a href="#cb185-4"></a>plt.ylabel(<span class="st">'Cumulative Returns'</span>)</span>
+<span id="cb185-5"><a href="#cb185-5"></a>plt.text(pd.to_datetime(<span class="st">'2022-11-01'</span>), <span class="fl">0.74</span>, </span>
+<span id="cb185-6"><a href="#cb185-6"></a>         <span class="st">'It is hard to make returns.'</span>, </span>
+<span id="cb185-7"><a href="#cb185-7"></a>         fontsize <span class="op">=</span> <span class="dv">12</span>, color <span class="op">=</span> <span class="st">'black'</span>)</span>
+<span id="cb185-8"><a href="#cb185-8"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-234-9.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="simple-moving-averages." class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="simple-moving-averages."><span class="header-section-number">6.3</span> Simple moving averages.</h2>
+<p>As technical analysis suggests, simple moving averages can be used as a tool to anticipate stock prices movements.</p>
+<!-- ```{python} -->
+<!-- # Create a dataframe with Date, Close, and Return -->
+<!-- new_df = data[['Close', 'Return']] -->
+<!-- new_df -->
+<!-- ``` -->
+<!-- ```{python} -->
+<!-- positive_returns = new_df[new_df['Return'] > 0] -->
+<!-- negative_returns = new_df[new_df['Return'] < 0] -->
+<!-- plt.figure(figsize = (10, 6)) -->
+<!-- plt.scatter(positive_returns.index, positive_returns['Close'],  -->
+<!--             color = 'blue', label = 'Positive Return', alpha = 0.5) -->
+<!-- plt.scatter(negative_returns.index, negative_returns['Close'],  -->
+<!--             color = 'red', label = 'Negative Return', alpha = 0.5) -->
+<!-- plt.axvline(x = pd.to_datetime('2022-08-17'), color = 'g', linestyle = '--') -->
+<!-- plt.title('Close Price with Positive and Negative Returns') -->
+<!-- plt.xlabel('Date') -->
+<!-- plt.ylabel('Price') -->
+<!-- plt.legend() -->
+<!-- plt.show() -->
+<!-- ``` -->
+<!-- ```{python} -->
+<!-- # Filter data for positive and negative returns -->
+<!-- positive_returns_10 = positive_returns.head(10) -->
+<!-- negative_returns_10 = negative_returns.head(10) -->
+<!-- # Plotting the Close -->
+<!-- plt.figure(figsize = (10, 6)) -->
+<!-- plt.scatter(positive_returns_10.index, positive_returns_10['Close'],  -->
+<!--             color = 'blue', label = 'Positive Return', s = 150) -->
+<!-- plt.scatter(negative_returns_10.index, negative_returns_10['Close'],  -->
+<!--             color = 'red', label = 'Negative Return', s = 150) -->
+<!-- plt.title('Close Price with Positive and Negative Returns (First 20 Observations)') -->
+<!-- plt.xlabel('Date') -->
+<!-- plt.ylabel('Price') -->
+<!-- plt.legend() -->
+<!-- plt.show() -->
+<!-- ``` -->
+<p>Calculate 5, 10, 15 and 20 days moving averages.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb186"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb186-1"><a href="#cb186-1"></a>data[<span class="st">"SMA_5"</span>] <span class="op">=</span> data[<span class="st">"Close"</span>].rolling(window <span class="op">=</span> <span class="dv">5</span>).mean()</span>
+<span id="cb186-2"><a href="#cb186-2"></a>data[<span class="st">"SMA_10"</span>] <span class="op">=</span> data[<span class="st">"Close"</span>].rolling(window <span class="op">=</span> <span class="dv">10</span>).mean()</span>
+<span id="cb186-3"><a href="#cb186-3"></a>data[<span class="st">"SMA_15"</span>] <span class="op">=</span> data[<span class="st">"Close"</span>].rolling(window <span class="op">=</span> <span class="dv">15</span>).mean()</span>
+<span id="cb186-4"><a href="#cb186-4"></a>data[<span class="st">"SMA_20"</span>] <span class="op">=</span> data[<span class="st">"Close"</span>].rolling(window <span class="op">=</span> <span class="dv">20</span>).mean()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>The first four observations are lost when compunting a 5-day simple moving average.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb187"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb187-1"><a href="#cb187-1"></a>dataframe <span class="op">=</span> data[[<span class="st">'Close'</span>, <span class="st">'SMA_5'</span>]]</span>
+<span id="cb187-2"><a href="#cb187-2"></a>dataframe.head(<span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 Close       SMA_5
+Date                              
+2021-01-05  131.009995         NaN
+2021-01-06  126.599998         NaN
+2021-01-07  130.919998         NaN
+2021-01-08  132.050003         NaN
+2021-01-11  128.979996  129.911998
+2021-01-12  128.800003  129.470000
+2021-01-13  130.889999  130.328000
+2021-01-14  128.910004  129.926001
+2021-01-15  127.139999  128.944000
+2021-01-19  127.830002  128.714001</code></pre>
+</div>
+</div>
+<p>The 5 and 20-day simple moving averages and the closing daily stock prices.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb189"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb189-1"><a href="#cb189-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb189-2"><a href="#cb189-2"></a>plt.plot(data.index, data[<span class="st">"Close"</span>], label <span class="op">=</span> <span class="st">"Close"</span>)</span>
+<span id="cb189-3"><a href="#cb189-3"></a>plt.plot(data.index, data[<span class="st">"SMA_5"</span>], label <span class="op">=</span> <span class="st">"SMA_5"</span>, </span>
+<span id="cb189-4"><a href="#cb189-4"></a>         linewidth <span class="op">=</span> <span class="dv">2</span>, alpha <span class="op">=</span> <span class="fl">0.8</span>)</span>
+<span id="cb189-5"><a href="#cb189-5"></a>plt.plot(data.index, data[<span class="st">"SMA_20"</span>], label <span class="op">=</span> <span class="st">"SMA_20"</span>)</span>
+<span id="cb189-6"><a href="#cb189-6"></a>plt.axvline(x<span class="op">=</span>pd.to_datetime(<span class="st">'2022-08-17'</span>), color <span class="op">=</span> <span class="st">'g'</span>, linestyle <span class="op">=</span> <span class="st">'--'</span>)</span>
+<span id="cb189-7"><a href="#cb189-7"></a>plt.title(<span class="st">"Close Price with SMA_5 and SMA_20"</span>)</span>
+<span id="cb189-8"><a href="#cb189-8"></a>plt.xlabel(<span class="st">"Date"</span>)</span>
+<span id="cb189-9"><a href="#cb189-9"></a>plt.ylabel(<span class="st">"Price"</span>)</span>
+<span id="cb189-10"><a href="#cb189-10"></a>plt.legend()</span>
+<span id="cb189-11"><a href="#cb189-11"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-237-11.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>A zoom view.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb190"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb190-1"><a href="#cb190-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb190-2"><a href="#cb190-2"></a>plt.plot(data.index[<span class="op">-</span><span class="dv">30</span>:], data[<span class="st">"Close"</span>].tail(<span class="dv">30</span>), label <span class="op">=</span> <span class="st">"Close"</span>, </span>
+<span id="cb190-3"><a href="#cb190-3"></a>         color <span class="op">=</span> <span class="st">'black'</span>)</span>
+<span id="cb190-4"><a href="#cb190-4"></a>plt.plot(data.index[<span class="op">-</span><span class="dv">30</span>:], data[<span class="st">"SMA_5"</span>].tail(<span class="dv">30</span>), label <span class="op">=</span> <span class="st">"SMA_5"</span>, </span>
+<span id="cb190-5"><a href="#cb190-5"></a>         linewidth <span class="op">=</span> <span class="dv">7</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>)</span>
+<span id="cb190-6"><a href="#cb190-6"></a>plt.plot(data.index[<span class="op">-</span><span class="dv">30</span>:], data[<span class="st">"SMA_20"</span>].tail(<span class="dv">30</span>), label <span class="op">=</span> <span class="st">"SMA_20"</span>, </span>
+<span id="cb190-7"><a href="#cb190-7"></a>         linewidth <span class="op">=</span> <span class="dv">7</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>)</span>
+<span id="cb190-8"><a href="#cb190-8"></a>plt.title(<span class="st">"Close Price with SMA_5 and SMA_20 (Last 30 Observations)"</span>)</span>
+<span id="cb190-9"><a href="#cb190-9"></a>plt.xlabel(<span class="st">"Date"</span>)</span>
+<span id="cb190-10"><a href="#cb190-10"></a>plt.ylabel(<span class="st">"Price"</span>)</span>
+<span id="cb190-11"><a href="#cb190-11"></a>plt.legend()</span>
+<span id="cb190-12"><a href="#cb190-12"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-238-13.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This is the information <span class="math inline">\(X\)</span> used to predict daily stock prices movements <span class="math inline">\(y\)</span>.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb191"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb191-1"><a href="#cb191-1"></a>X <span class="op">=</span> data[[<span class="st">"SMA_5"</span>, <span class="st">"SMA_10"</span>, <span class="st">"SMA_15"</span>, <span class="st">"SMA_20"</span>]]</span>
+<span id="cb191-2"><a href="#cb191-2"></a>X.dropna(inplace <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb191-3"><a href="#cb191-3"></a></span>
+<span id="cb191-4"><a href="#cb191-4"></a><span class="bu">print</span>(X)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 SMA_5      SMA_10      SMA_15      SMA_20
+Date                                                      
+2021-02-02  136.048001  137.429001  134.524001  133.371000
+2021-02-03  134.424002  137.620001  134.866668  133.517501
+2021-02-04  134.484003  137.672002  135.300001  134.057001
+2021-02-05  135.444000  137.441000  135.823334  134.349001
+2021-02-08  135.998001  136.840001  136.474667  134.592001
+...                ...         ...         ...         ...
+2022-12-29  129.953999  132.089999  135.925333  138.274000
+2022-12-30  129.493999  131.432998  135.077333  137.355000
+2023-01-03  128.135999  130.488998  133.937999  136.218000
+2023-01-04  127.401999  129.887999  132.729332  135.204500
+2023-01-05  127.197998  129.159998  131.365999  134.309999
+
+[486 rows x 4 columns]</code></pre>
+</div>
+</div>
+</section>
+<section id="preliminaries-to-classify-returns." class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="preliminaries-to-classify-returns."><span class="header-section-number">6.4</span> Preliminaries to classify returns.</h2>
+<p>We are interested to anticipate positive and negative daily stock price movements <span class="math inline">\(y\)</span> or returns, so 1 stands for positive and 0 for negative realized daily returns.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb193"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb193-1"><a href="#cb193-1"></a>y <span class="op">=</span> (data.loc[<span class="st">'2021-02-02'</span>:][<span class="st">'Return'</span>] <span class="op">&gt;</span> <span class="dv">0</span>).astype(<span class="bu">int</span>)</span>
+<span id="cb193-2"><a href="#cb193-2"></a></span>
+<span id="cb193-3"><a href="#cb193-3"></a><span class="bu">print</span>(y)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Date
+2021-02-02    1
+2021-02-03    0
+2021-02-04    1
+2021-02-05    0
+2021-02-08    1
+             ..
+2022-12-29    1
+2022-12-30    1
+2023-01-03    0
+2023-01-04    1
+2023-01-05    0
+Name: Return, Length: 486, dtype: int32</code></pre>
+</div>
+</div>
+<!-- ```{python} -->
+<!-- new_dataframe = pd.concat([data.loc['2021-02-02':]['Close'].round(2), X.round(2), y], axis=1) -->
+<!-- new_dataframe.head(30) -->
+<!-- ``` -->
+<p>Both training and test sets sum 486 daily observations, 80% are used to train the model and 20% to test it.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb195"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb195-1"><a href="#cb195-1"></a>split <span class="op">=</span> <span class="bu">int</span>(<span class="bu">len</span>(X) <span class="op">*</span> <span class="fl">0.8</span>)</span>
+<span id="cb195-2"><a href="#cb195-2"></a>X_train, X_test, y_train, y_test <span class="op">=</span> X[:split], X[split:], y[:split], y[split:]</span>
+<span id="cb195-3"><a href="#cb195-3"></a></span>
+<span id="cb195-4"><a href="#cb195-4"></a><span class="bu">print</span>(X_train.shape, X_test.shape)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>(388, 4) (98, 4)</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb197"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb197-1"><a href="#cb197-1"></a><span class="bu">print</span>(y_train.shape, y_test.shape)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>(388,) (98,)</code></pre>
+</div>
+</div>
+<!-- ```{python} -->
+<!-- plt.figure(figsize = (10, 6)) -->
+<!-- plt.plot(data.index, data["Close"]) -->
+<!-- plt.axvline(x = pd.to_datetime('2022-08-17'), color = 'r', linestyle = '--') -->
+<!-- plt.text(pd.to_datetime('2021-12-01'), 120,  -->
+<!--          'Entrenamiento (388 días).', fontsize = 12, color = 'black') -->
+<!-- plt.text(pd.to_datetime('2022-09-01'), 120,  -->
+<!--          'Prueba (98 días).', fontsize = 12, color = 'black') -->
+<!-- plt.title("Close Price") -->
+<!-- plt.xlabel("Date") -->
+<!-- plt.ylabel("Price") -->
+<!-- plt.show() -->
+<!-- ``` -->
+<!-- ```{python} -->
+<!-- pipeline = Pipeline([ -->
+<!--     ('imputer', SimpleImputer(strategy = 'mean')), -->
+<!--     #('classifier', KNeighborsClassifier(7)), -->
+<!--     #('classifier', SVC(kernel = "linear", C = 0.025, random_state = 42)) -->
+<!--     #('classifier', SVC(gamma = 5, C = 4, random_state = 42))  -->
+<!--     #('classifier', DecisionTreeClassifier(max_depth = 10, random_state = 42)) -->
+<!--     #('classifier', MLPClassifier(alpha = 2, max_iter = 1000, random_state = 42)) -->
+<!--     #('classifier', AdaBoostClassifier(random_state = 42)) -->
+<!--     ('classifier', RandomForestClassifier(n_estimators = 100,  -->
+<!--                                           random_state = 9)) #9, 20 -->
+<!-- ]) -->
+<!-- pipeline.fit(X_train, y_train) -->
+<!-- ``` -->
+</section>
+<section id="set-up-the-model." class="level2" data-number="6.5">
+<h2 data-number="6.5" class="anchored" data-anchor-id="set-up-the-model."><span class="header-section-number">6.5</span> Set up the model.</h2>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb199"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb199-1"><a href="#cb199-1"></a>pipeline <span class="op">=</span> Pipeline([</span>
+<span id="cb199-2"><a href="#cb199-2"></a>    (<span class="st">'imputer'</span>, SimpleImputer(strategy <span class="op">=</span> <span class="st">'mean'</span>)),</span>
+<span id="cb199-3"><a href="#cb199-3"></a>    (<span class="st">'classifier'</span>, RandomForestClassifier(n_estimators <span class="op">=</span> <span class="dv">100</span>, </span>
+<span id="cb199-4"><a href="#cb199-4"></a>                                          random_state <span class="op">=</span> <span class="dv">9</span>)) <span class="co">#9, 20</span></span>
+<span id="cb199-5"><a href="#cb199-5"></a>])</span>
+<span id="cb199-6"><a href="#cb199-6"></a></span>
+<span id="cb199-7"><a href="#cb199-7"></a>pipeline.fit(X_train, y_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<style>#sk-container-id-1 {color: black;}#sk-container-id-1 pre{padding: 0;}#sk-container-id-1 div.sk-toggleable {background-color: white;}#sk-container-id-1 label.sk-toggleable__label {cursor: pointer;display: block;width: 100%;margin-bottom: 0;padding: 0.3em;box-sizing: border-box;text-align: center;}#sk-container-id-1 label.sk-toggleable__label-arrow:before {content: "▸";float: left;margin-right: 0.25em;color: #696969;}#sk-container-id-1 label.sk-toggleable__label-arrow:hover:before {color: black;}#sk-container-id-1 div.sk-estimator:hover label.sk-toggleable__label-arrow:before {color: black;}#sk-container-id-1 div.sk-toggleable__content {max-height: 0;max-width: 0;overflow: hidden;text-align: left;background-color: #f0f8ff;}#sk-container-id-1 div.sk-toggleable__content pre {margin: 0.2em;color: black;border-radius: 0.25em;background-color: #f0f8ff;}#sk-container-id-1 input.sk-toggleable__control:checked~div.sk-toggleable__content {max-height: 200px;max-width: 100%;overflow: auto;}#sk-container-id-1 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {content: "▾";}#sk-container-id-1 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 input.sk-hidden--visually {border: 0;clip: rect(1px 1px 1px 1px);clip: rect(1px, 1px, 1px, 1px);height: 1px;margin: -1px;overflow: hidden;padding: 0;position: absolute;width: 1px;}#sk-container-id-1 div.sk-estimator {font-family: monospace;background-color: #f0f8ff;border: 1px dotted black;border-radius: 0.25em;box-sizing: border-box;margin-bottom: 0.5em;}#sk-container-id-1 div.sk-estimator:hover {background-color: #d4ebff;}#sk-container-id-1 div.sk-parallel-item::after {content: "";width: 100%;border-bottom: 1px solid gray;flex-grow: 1;}#sk-container-id-1 div.sk-label:hover label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 div.sk-serial::before {content: "";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: 0;}#sk-container-id-1 div.sk-serial {display: flex;flex-direction: column;align-items: center;background-color: white;padding-right: 0.2em;padding-left: 0.2em;position: relative;}#sk-container-id-1 div.sk-item {position: relative;z-index: 1;}#sk-container-id-1 div.sk-parallel {display: flex;align-items: stretch;justify-content: center;background-color: white;position: relative;}#sk-container-id-1 div.sk-item::before, #sk-container-id-1 div.sk-parallel-item::before {content: "";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: -1;}#sk-container-id-1 div.sk-parallel-item {display: flex;flex-direction: column;z-index: 1;position: relative;background-color: white;}#sk-container-id-1 div.sk-parallel-item:first-child::after {align-self: flex-end;width: 50%;}#sk-container-id-1 div.sk-parallel-item:last-child::after {align-self: flex-start;width: 50%;}#sk-container-id-1 div.sk-parallel-item:only-child::after {width: 0;}#sk-container-id-1 div.sk-dashed-wrapped {border: 1px dashed gray;margin: 0 0.4em 0.5em 0.4em;box-sizing: border-box;padding-bottom: 0.4em;background-color: white;}#sk-container-id-1 div.sk-label label {font-family: monospace;font-weight: bold;display: inline-block;line-height: 1.2em;}#sk-container-id-1 div.sk-label-container {text-align: center;}#sk-container-id-1 div.sk-container {/* jupyter's `normalize.less` sets `[hidden] { display: none; }` but bootstrap.min.css set `[hidden] { display: none !important; }` so we also need the `!important` here to be able to override the default hidden behavior on the sphinx rendered scikit-learn.org. See: https://github.com/scikit-learn/scikit-learn/issues/21755 */display: inline-block !important;position: relative;}#sk-container-id-1 div.sk-text-repr-fallback {display: none;}</style><div id="sk-container-id-1" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>Pipeline(steps=[('imputer', SimpleImputer()),
+                ('classifier', RandomForestClassifier(random_state=9))])</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item sk-dashed-wrapped"><div class="sk-label-container"><div class="sk-label sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-1" type="checkbox"><label for="sk-estimator-id-1" class="sk-toggleable__label sk-toggleable__label-arrow">Pipeline</label><div class="sk-toggleable__content"><pre>Pipeline(steps=[('imputer', SimpleImputer()),
+                ('classifier', RandomForestClassifier(random_state=9))])</pre></div></div></div><div class="sk-serial"><div class="sk-item"><div class="sk-estimator sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-2" type="checkbox"><label for="sk-estimator-id-2" class="sk-toggleable__label sk-toggleable__label-arrow">SimpleImputer</label><div class="sk-toggleable__content"><pre>SimpleImputer()</pre></div></div></div><div class="sk-item"><div class="sk-estimator sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-3" type="checkbox"><label for="sk-estimator-id-3" class="sk-toggleable__label sk-toggleable__label-arrow">RandomForestClassifier</label><div class="sk-toggleable__content"><pre>RandomForestClassifier(random_state=9)</pre></div></div></div></div></div></div></div>
+</div>
+</div>
+</section>
+<section id="evalute-the-model." class="level2" data-number="6.6">
+<h2 data-number="6.6" class="anchored" data-anchor-id="evalute-the-model."><span class="header-section-number">6.6</span> Evalute the model.</h2>
+<p>The model perfectly predicts the 200 positive and 188 negative daily returns <span class="math inline">\(y\)</span> in the training set.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb200"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb200-1"><a href="#cb200-1"></a>y_pred_train <span class="op">=</span> pipeline.predict(X_train)</span>
+<span id="cb200-2"><a href="#cb200-2"></a>train_accuracy <span class="op">=</span> accuracy_score(y_train, y_pred_train)</span>
+<span id="cb200-3"><a href="#cb200-3"></a></span>
+<span id="cb200-4"><a href="#cb200-4"></a><span class="bu">print</span>(confusion_matrix(y_train, y_pred_train))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[188   0]
+ [  0 200]]</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb202"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb202-1"><a href="#cb202-1"></a><span class="bu">print</span>(<span class="st">"Train Accuracy:"</span>, train_accuracy)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Train Accuracy: 1.0</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb204"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb204-1"><a href="#cb204-1"></a>y_train.value_counts()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Return
+1    200
+0    188
+Name: count, dtype: int64</code></pre>
+</div>
+</div>
+<p>As expected, in the test set the story is different. We have 42 positive and 56 negative daily returns. The model correctly predicts 26 positive and 26 negative daily returns.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb206"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb206-1"><a href="#cb206-1"></a>y_pred_test <span class="op">=</span> pipeline.predict(X_test)</span>
+<span id="cb206-2"><a href="#cb206-2"></a>test_accuracy <span class="op">=</span> accuracy_score(y_test, y_pred_test)</span>
+<span id="cb206-3"><a href="#cb206-3"></a></span>
+<span id="cb206-4"><a href="#cb206-4"></a><span class="bu">print</span>(confusion_matrix(y_test, y_pred_test))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[26 30]
+ [16 26]]</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb208"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb208-1"><a href="#cb208-1"></a><span class="bu">print</span>(<span class="st">"Test Accuracy (26+26)/98:"</span>, test_accuracy)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Test Accuracy (26+26)/98: 0.5306122448979592</code></pre>
+</div>
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb210"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb210-1"><a href="#cb210-1"></a>y_test.value_counts()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Return
+0    56
+1    42
+Name: count, dtype: int64</code></pre>
+</div>
+</div>
+</section>
+<section id="visualize-the-results." class="level2" data-number="6.7">
+<h2 data-number="6.7" class="anchored" data-anchor-id="visualize-the-results."><span class="header-section-number">6.7</span> Visualize the results.</h2>
+<p>First, we show both training and test sets together.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb212"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb212-1"><a href="#cb212-1"></a>data.loc[<span class="st">'2021-02-02'</span>:, <span class="st">'Predicted_Return'</span>] <span class="op">=</span> pipeline.predict(X.loc[<span class="st">'2021-02-02'</span>:])</span>
+<span id="cb212-2"><a href="#cb212-2"></a>data[<span class="st">"Signal"</span>] <span class="op">=</span> data[<span class="st">"Predicted_Return"</span>].diff()</span>
+<span id="cb212-3"><a href="#cb212-3"></a>data.loc[data[<span class="st">"Signal"</span>] <span class="op">&gt;</span> <span class="dv">0</span>, <span class="st">"Position"</span>] <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb212-4"><a href="#cb212-4"></a>data.loc[data[<span class="st">"Signal"</span>] <span class="op">&lt;</span> <span class="dv">0</span>, <span class="st">"Position"</span>] <span class="op">=</span> <span class="op">-</span><span class="dv">1</span></span>
+<span id="cb212-5"><a href="#cb212-5"></a>data[<span class="st">"Position"</span>].fillna(<span class="dv">0</span>, inplace <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb212-6"><a href="#cb212-6"></a>data[<span class="st">"Strategy_Return"</span>] <span class="op">=</span> data[<span class="st">"Position"</span>] <span class="op">*</span> data[<span class="st">"Return"</span>]</span>
+<span id="cb212-7"><a href="#cb212-7"></a>data[<span class="st">"Cumulative_Returns"</span>] <span class="op">=</span> (data[<span class="st">"Strategy_Return"</span>] <span class="op">+</span> <span class="dv">1</span>).cumprod()</span>
+<span id="cb212-8"><a href="#cb212-8"></a></span>
+<span id="cb212-9"><a href="#cb212-9"></a>selected_data <span class="op">=</span> data.loc[<span class="st">'2021-02-01'</span>:, [<span class="st">'Return'</span>, <span class="st">'Predicted_Return'</span>, <span class="st">'Position'</span>, <span class="st">'Strategy_Return'</span>, <span class="st">'Cumulative_Returns'</span>]]</span>
+<span id="cb212-10"><a href="#cb212-10"></a></span>
+<span id="cb212-11"><a href="#cb212-11"></a>selected_data</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>              Return  Predicted_Return  ...  Strategy_Return  Cumulative_Returns
+Date                                    ...                                     
+2021-02-01  0.016520               NaN  ...         0.000000            1.000000
+2021-02-02  0.006337               1.0  ...         0.000000            1.000000
+2021-02-03 -0.007778               0.0  ...         0.007778            1.007778
+2021-02-04  0.025758               1.0  ...         0.025758            1.033737
+2021-02-05 -0.004586               0.0  ...         0.004586            1.038477
+...              ...               ...  ...              ...                 ...
+2022-12-29  0.028324               0.0  ...         0.000000           16.774413
+2022-12-30  0.002469               0.0  ...         0.000000           16.774413
+2023-01-03 -0.037405               0.0  ...        -0.000000           16.774413
+2023-01-04  0.010314               0.0  ...         0.000000           16.774413
+2023-01-05 -0.010605               0.0  ...        -0.000000           16.774413
+
+[487 rows x 5 columns]</code></pre>
+</div>
+</div>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb214"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb214-1"><a href="#cb214-1"></a><span class="co">#data["Strategy_Return"] = data["Position"] * data["Return"]</span></span>
+<span id="cb214-2"><a href="#cb214-2"></a></span>
+<span id="cb214-3"><a href="#cb214-3"></a>cumulative_returns <span class="op">=</span> (data[<span class="st">"Strategy_Return"</span>] <span class="op">+</span> <span class="dv">1</span>).cumprod()</span>
+<span id="cb214-4"><a href="#cb214-4"></a></span>
+<span id="cb214-5"><a href="#cb214-5"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb214-6"><a href="#cb214-6"></a>plt.plot(data.index[:<span class="bu">len</span>(cumulative_returns)], cumulative_returns)</span>
+<span id="cb214-7"><a href="#cb214-7"></a>plt.axvline(x<span class="op">=</span>pd.to_datetime(<span class="st">'2022-08-17'</span>), color <span class="op">=</span> <span class="st">'r'</span>, linestyle <span class="op">=</span> <span class="st">'--'</span>)  <span class="co"># Convert the date to datetime object</span></span>
+<span id="cb214-8"><a href="#cb214-8"></a>plt.xlabel(<span class="st">"Date"</span>)</span>
+<span id="cb214-9"><a href="#cb214-9"></a>plt.ylabel(<span class="st">"Cumulative Returns"</span>)</span>
+<span id="cb214-10"><a href="#cb214-10"></a>plt.title(<span class="st">"Trading Strategy Performance"</span>)</span>
+<span id="cb214-11"><a href="#cb214-11"></a>plt.grid(<span class="va">True</span>)</span>
+<span id="cb214-12"><a href="#cb214-12"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-246-15.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The figure above is problematic since we assume trading starts in the training set. We should start the evaluation in the test set.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb215"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb215-1"><a href="#cb215-1"></a>data.loc[<span class="st">'2022-08-17'</span>:, <span class="st">'Predicted_Return'</span>] <span class="op">=</span> pipeline.predict(X.loc[<span class="st">'2022-08-17'</span>:])</span>
+<span id="cb215-2"><a href="#cb215-2"></a>data[<span class="st">"Signal"</span>] <span class="op">=</span> data[<span class="st">"Predicted_Return"</span>].diff()</span>
+<span id="cb215-3"><a href="#cb215-3"></a>data.loc[data[<span class="st">"Signal"</span>] <span class="op">&gt;</span> <span class="dv">0</span>, <span class="st">"Position"</span>] <span class="op">=</span> <span class="dv">1</span>  </span>
+<span id="cb215-4"><a href="#cb215-4"></a>data.loc[data[<span class="st">"Signal"</span>] <span class="op">&lt;</span> <span class="dv">0</span>, <span class="st">"Position"</span>] <span class="op">=</span> <span class="op">-</span><span class="dv">1</span>  </span>
+<span id="cb215-5"><a href="#cb215-5"></a>data[<span class="st">"Position"</span>].fillna(<span class="dv">0</span>, inplace <span class="op">=</span> <span class="va">True</span>) </span>
+<span id="cb215-6"><a href="#cb215-6"></a><span class="co">#data["Strategy_Return"] = data["Position"] * data["Return"]</span></span>
+<span id="cb215-7"><a href="#cb215-7"></a>data.loc[<span class="st">'2022-08-17'</span>:, <span class="st">"Strategy_Return"</span>] <span class="op">=</span> data.loc[<span class="st">'2022-08-17'</span>:, <span class="st">"Position"</span>] <span class="op">*</span> data.loc[<span class="st">'2022-08-17'</span>:, <span class="st">"Return"</span>]</span>
+<span id="cb215-8"><a href="#cb215-8"></a>data[<span class="st">"Cumulative_Returns"</span>] <span class="op">=</span> (data.loc[<span class="st">'2022-08-17'</span>:,<span class="st">"Strategy_Return"</span>] <span class="op">+</span> <span class="dv">1</span>).cumprod()</span>
+<span id="cb215-9"><a href="#cb215-9"></a></span>
+<span id="cb215-10"><a href="#cb215-10"></a>selected_data <span class="op">=</span> data.loc[<span class="st">'2022-08-17'</span>:, [<span class="st">'Return'</span>, <span class="st">'Predicted_Return'</span>, <span class="st">'Position'</span>, <span class="st">'Strategy_Return'</span>, <span class="st">'Cumulative_Returns'</span>]]</span>
+<span id="cb215-11"><a href="#cb215-11"></a></span>
+<span id="cb215-12"><a href="#cb215-12"></a>selected_data</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>              Return  Predicted_Return  ...  Strategy_Return  Cumulative_Returns
+Date                                    ...                                     
+2022-08-17  0.008785               0.0  ...         0.000000            1.000000
+2022-08-18 -0.002292               0.0  ...        -0.000000            1.000000
+2022-08-19 -0.015102               0.0  ...        -0.000000            1.000000
+2022-08-22 -0.023029               1.0  ...        -0.023029            0.976971
+2022-08-23 -0.002029               0.0  ...         0.002029            0.978953
+...              ...               ...  ...              ...                 ...
+2022-12-29  0.028324               0.0  ...         0.000000            1.186438
+2022-12-30  0.002469               0.0  ...         0.000000            1.186438
+2023-01-03 -0.037405               0.0  ...        -0.000000            1.186438
+2023-01-04  0.010314               0.0  ...         0.000000            1.186438
+2023-01-05 -0.010605               0.0  ...        -0.000000            1.186438
+
+[98 rows x 5 columns]</code></pre>
+</div>
+</div>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb217"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb217-1"><a href="#cb217-1"></a>cumulative_returns <span class="op">=</span> data[<span class="st">"Cumulative_Returns"</span>] <span class="op">=</span> (data.loc[<span class="st">'2022-08-17'</span>:,<span class="st">"Strategy_Return"</span>] <span class="op">+</span> <span class="dv">1</span>).cumprod()</span>
+<span id="cb217-2"><a href="#cb217-2"></a></span>
+<span id="cb217-3"><a href="#cb217-3"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb217-4"><a href="#cb217-4"></a>plt.plot(cumulative_returns)</span>
+<span id="cb217-5"><a href="#cb217-5"></a>plt.title(<span class="st">"Cumulative Returns"</span>)</span>
+<span id="cb217-6"><a href="#cb217-6"></a>plt.xlabel(<span class="st">"Date"</span>)</span>
+<span id="cb217-7"><a href="#cb217-7"></a>plt.ylabel(<span class="st">"Cumulative Returns"</span>)</span>
+<span id="cb217-8"><a href="#cb217-8"></a>plt.grid(<span class="va">True</span>)</span>
+<span id="cb217-9"><a href="#cb217-9"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-248-17.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The robot can make profits, although the results are highly sensitive to the model and parameters.</p>
+<p>This document took 26.44 minutes to compile in Quarto version 1.3.450, and R version 4.3.2 (2023-10-31 ucrt).</p>
 </section>
 </section>
 <section id="references." class="level1 unnumbered">

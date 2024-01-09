@@ -1,0 +1,415 @@
+# Robotrader in {{< fa brands python >}}
+
+Stock price movements are influenced by a myriad of factors, including market trends, economic indicators, and company-specific news. While predicting precise movements remains a challenging task, statistical analysis, machine learning algorithms, and technical indicators enable traders to identify patterns and trends that offer insights into potential price changes. By leveraging historical data and employing sophisticated algorithms, trading bots can analyze vast amounts of information in real-time, identifying patterns and correlations that humans might overlook. While not foolproof, these algorithms can exploit market inefficiencies and capitalize on short-term trends, aiming to generate daily returns by executing timely and automated trades based on the anticipated movements in stock prices. However, it's important to note that markets are inherently dynamic, and past performance does not guarantee future results, requiring continuous refinement and adaptation of trading strategies to changing market conditions.
+
+Here we introduce a Python code for a simple robo trader, this program utilizes moving averages as a fundamental tool to anticipate stock price movements. The algorithm involves calculating moving averages to generates a buy, sell or keep signal. This basic yet effective strategy aims to capitalize on trends and momentum in stock prices. The code is designed to fetch real-time stock data, compute moving averages, and trigger buy or sell orders accordingly. Traders can customize the parameters and incorporate additional indicators for a more sophisticated trading strategy. It serves as a practical example of how Python can be employed to implement algorithmic trading strategies for those looking to automate their trading decisions based on moving average signals.
+
+Install if necessary.
+
+```{python}
+# !pip install yfinance
+# !pip install matplotlib
+# !pip install seaborn
+# !pip install c
+```
+
+Set up the packages.
+
+```{python}
+import yfinance as yf
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier 
+from sklearn.neural_network import MLPClassifier 
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+```
+
+## Download the data.
+
+This period includes training and test set.
+
+```{python}
+ticker = 'AAPL'
+start_date = "2021-01-01"
+end_date = "2023-01-06"
+data = yf.download(ticker, start = start_date, 
+                   end = end_date, progress = False)
+```
+
+Take a look of the data.
+
+```{python}
+data
+```
+
+## Visualize the data.
+
+The red line splits the training and test data.
+
+```{python}
+plt.figure(figsize = (10, 6))
+plt.plot(data.index, data["Close"])
+plt.axvline(x = pd.to_datetime('2022-08-17'), color = 'r', linestyle = '--')
+plt.text(pd.to_datetime('2021-11-01'), 120, 
+         'Looks hard to make returns.', 
+         fontsize = 12, color = 'black')
+plt.title("Close Price")
+plt.xlabel("Date")
+plt.ylabel("Price")
+plt.show()
+```
+
+These are the correspondent daily returns.
+
+```{python}
+data["Return"] = data["Close"].pct_change()  
+data.dropna(inplace = True)
+
+data["Return"]
+```
+
+A density plot:
+
+```{python}
+plt.figure(figsize = (10, 6))
+sns.kdeplot(data['Return'], fill = True)
+plt.title('Density Plot of Return')
+plt.xlabel('Return')
+plt.ylabel('Density')
+plt.show()
+```
+
+Compared with a normal distribution:
+
+```{python}
+mean_return = np.mean(data['Return'])
+var_return = np.var(data['Return'])
+samples = np.random.normal(mean_return, np.sqrt(var_return), 100000)
+
+sns.kdeplot(data['Return'], fill = True, label = 'Return', color = "r")
+sns.kdeplot(samples, fill = True, label = 'Normal Distribution', 
+            color = "g")
+plt.title('Density Plot of Return and Normal Distribution')
+plt.xlabel('Return')
+plt.ylabel('Density')
+plt.legend()
+plt.show()
+```
+
+Positive and negative daily returns in test and training set.
+
+```{python}
+plt.figure(figsize = (10, 6))
+plt.bar(data.index, data['Return'], 
+        color=['blue' if x > 0 else 'red' for x in data['Return']])
+plt.axvline(x=pd.to_datetime('2022-08-17'), color = 'g', linestyle = '--')
+plt.title('Daily Returns')
+plt.xlabel('Date')
+plt.ylabel('Return')
+plt.show()
+```
+
+Isolate the test set daily returns.
+
+```{python}
+testReturns = data["Return"].loc[pd.to_datetime('2022-08-17'):]
+testReturns
+```
+
+Let's ignore any forecast attempt, take these daily returns as given and calculate cumulative returns assuming we reinvest $1 in the test set.
+
+```{python}
+cumulative_returns = (1+testReturns).cumprod()
+cumulative_returns
+```
+
+Graphically:
+
+```{python}
+cumulative_returns.plot(figsize=(10, 6))
+plt.title('Cumulative Returns')
+plt.xlabel('Date')
+plt.ylabel('Cumulative Returns')
+plt.text(pd.to_datetime('2022-11-01'), 0.74, 
+         'It is hard to make returns.', 
+         fontsize = 12, color = 'black')
+plt.show()
+```
+
+
+## Simple moving averages.
+
+As technical analysis suggests, simple moving averages can be used as a tool to anticipate stock prices movements.
+
+
+<!-- ```{python} -->
+<!-- # Create a dataframe with Date, Close, and Return -->
+<!-- new_df = data[['Close', 'Return']] -->
+<!-- new_df -->
+<!-- ``` -->
+
+<!-- ```{python} -->
+<!-- positive_returns = new_df[new_df['Return'] > 0] -->
+<!-- negative_returns = new_df[new_df['Return'] < 0] -->
+
+<!-- plt.figure(figsize = (10, 6)) -->
+<!-- plt.scatter(positive_returns.index, positive_returns['Close'],  -->
+<!--             color = 'blue', label = 'Positive Return', alpha = 0.5) -->
+<!-- plt.scatter(negative_returns.index, negative_returns['Close'],  -->
+<!--             color = 'red', label = 'Negative Return', alpha = 0.5) -->
+<!-- plt.axvline(x = pd.to_datetime('2022-08-17'), color = 'g', linestyle = '--') -->
+<!-- plt.title('Close Price with Positive and Negative Returns') -->
+<!-- plt.xlabel('Date') -->
+<!-- plt.ylabel('Price') -->
+<!-- plt.legend() -->
+<!-- plt.show() -->
+<!-- ``` -->
+
+<!-- ```{python} -->
+<!-- # Filter data for positive and negative returns -->
+<!-- positive_returns_10 = positive_returns.head(10) -->
+<!-- negative_returns_10 = negative_returns.head(10) -->
+
+<!-- # Plotting the Close -->
+<!-- plt.figure(figsize = (10, 6)) -->
+<!-- plt.scatter(positive_returns_10.index, positive_returns_10['Close'],  -->
+<!--             color = 'blue', label = 'Positive Return', s = 150) -->
+<!-- plt.scatter(negative_returns_10.index, negative_returns_10['Close'],  -->
+<!--             color = 'red', label = 'Negative Return', s = 150) -->
+<!-- plt.title('Close Price with Positive and Negative Returns (First 20 Observations)') -->
+<!-- plt.xlabel('Date') -->
+<!-- plt.ylabel('Price') -->
+<!-- plt.legend() -->
+<!-- plt.show() -->
+<!-- ``` -->
+
+Calculate 5, 10, 15 and 20 days moving averages.
+
+```{python}
+data["SMA_5"] = data["Close"].rolling(window = 5).mean()
+data["SMA_10"] = data["Close"].rolling(window = 10).mean()
+data["SMA_15"] = data["Close"].rolling(window = 15).mean()
+data["SMA_20"] = data["Close"].rolling(window = 20).mean()
+```
+
+
+The first four observations are lost when compunting a 5-day simple moving average.
+
+```{python}
+dataframe = data[['Close', 'SMA_5']]
+dataframe.head(10)
+```
+
+The 5 and 20-day simple moving averages and the closing daily stock prices.
+
+```{python}
+plt.figure(figsize=(10, 6))
+plt.plot(data.index, data["Close"], label = "Close")
+plt.plot(data.index, data["SMA_5"], label = "SMA_5", 
+         linewidth = 2, alpha = 0.8)
+plt.plot(data.index, data["SMA_20"], label = "SMA_20")
+plt.axvline(x=pd.to_datetime('2022-08-17'), color = 'g', linestyle = '--')
+plt.title("Close Price with SMA_5 and SMA_20")
+plt.xlabel("Date")
+plt.ylabel("Price")
+plt.legend()
+plt.show()
+```
+
+A zoom view.
+
+```{python}
+plt.figure(figsize=(10, 6))
+plt.plot(data.index[-30:], data["Close"].tail(30), label = "Close", 
+         color = 'black')
+plt.plot(data.index[-30:], data["SMA_5"].tail(30), label = "SMA_5", 
+         linewidth = 7, alpha = 0.6)
+plt.plot(data.index[-30:], data["SMA_20"].tail(30), label = "SMA_20", 
+         linewidth = 7, alpha = 0.6)
+plt.title("Close Price with SMA_5 and SMA_20 (Last 30 Observations)")
+plt.xlabel("Date")
+plt.ylabel("Price")
+plt.legend()
+plt.show()
+```
+
+This is the information $X$ used to predict daily stock prices movements $y$.
+
+```{python}
+X = data[["SMA_5", "SMA_10", "SMA_15", "SMA_20"]]
+X.dropna(inplace = True)
+
+print(X)
+```
+
+## Preliminaries to classify returns.
+
+We are interested to anticipate positive and negative daily stock price movements $y$ or returns, so 1 stands for positive and 0 for negative realized daily returns.
+
+```{python}
+y = (data.loc['2021-02-02':]['Return'] > 0).astype(int)
+
+print(y)
+```
+
+<!-- ```{python} -->
+<!-- new_dataframe = pd.concat([data.loc['2021-02-02':]['Close'].round(2), X.round(2), y], axis=1) -->
+<!-- new_dataframe.head(30) -->
+<!-- ``` -->
+
+Both training and test sets sum 486 daily observations, 80% are used to train the model and 20% to test it.
+
+```{python}
+split = int(len(X) * 0.8)
+X_train, X_test, y_train, y_test = X[:split], X[split:], y[:split], y[split:]
+
+print(X_train.shape, X_test.shape)
+print(y_train.shape, y_test.shape)
+```
+
+<!-- ```{python} -->
+<!-- plt.figure(figsize = (10, 6)) -->
+<!-- plt.plot(data.index, data["Close"]) -->
+<!-- plt.axvline(x = pd.to_datetime('2022-08-17'), color = 'r', linestyle = '--') -->
+<!-- plt.text(pd.to_datetime('2021-12-01'), 120,  -->
+<!--          'Entrenamiento (388 días).', fontsize = 12, color = 'black') -->
+<!-- plt.text(pd.to_datetime('2022-09-01'), 120,  -->
+<!--          'Prueba (98 días).', fontsize = 12, color = 'black') -->
+<!-- plt.title("Close Price") -->
+<!-- plt.xlabel("Date") -->
+<!-- plt.ylabel("Price") -->
+<!-- plt.show() -->
+<!-- ``` -->
+
+
+<!-- ```{python} -->
+<!-- pipeline = Pipeline([ -->
+<!--     ('imputer', SimpleImputer(strategy = 'mean')), -->
+<!--     #('classifier', KNeighborsClassifier(7)), -->
+<!--     #('classifier', SVC(kernel = "linear", C = 0.025, random_state = 42)) -->
+<!--     #('classifier', SVC(gamma = 5, C = 4, random_state = 42))  -->
+<!--     #('classifier', DecisionTreeClassifier(max_depth = 10, random_state = 42)) -->
+<!--     #('classifier', MLPClassifier(alpha = 2, max_iter = 1000, random_state = 42)) -->
+<!--     #('classifier', AdaBoostClassifier(random_state = 42)) -->
+<!--     ('classifier', RandomForestClassifier(n_estimators = 100,  -->
+<!--                                           random_state = 9)) #9, 20 -->
+<!-- ]) -->
+
+<!-- pipeline.fit(X_train, y_train) -->
+<!-- ``` -->
+
+## Set up the model.
+
+```{python}
+pipeline = Pipeline([
+    ('imputer', SimpleImputer(strategy = 'mean')),
+    ('classifier', RandomForestClassifier(n_estimators = 100, 
+                                          random_state = 9)) #9, 20
+])
+
+pipeline.fit(X_train, y_train)
+```
+
+
+## Evalute the model.
+
+The model perfectly predicts the 200 positive and 188 negative daily returns $y$ in the training set.
+
+```{python}
+y_pred_train = pipeline.predict(X_train)
+train_accuracy = accuracy_score(y_train, y_pred_train)
+
+print(confusion_matrix(y_train, y_pred_train))
+
+print("Train Accuracy:", train_accuracy)
+
+y_train.value_counts()
+```
+
+As expected, in the test set the story is different. We have 42 positive and 56 negative daily returns. The model correctly predicts 26 positive and 26 negative daily returns.
+
+```{python}
+y_pred_test = pipeline.predict(X_test)
+test_accuracy = accuracy_score(y_test, y_pred_test)
+
+print(confusion_matrix(y_test, y_pred_test))
+
+print("Test Accuracy (26+26)/98:", test_accuracy)
+
+y_test.value_counts()
+```
+## Visualize the results.
+
+First, we show both training and test sets together.
+
+```{python}
+data.loc['2021-02-02':, 'Predicted_Return'] = pipeline.predict(X.loc['2021-02-02':])
+data["Signal"] = data["Predicted_Return"].diff()
+data.loc[data["Signal"] > 0, "Position"] = 1
+data.loc[data["Signal"] < 0, "Position"] = -1
+data["Position"].fillna(0, inplace = True)
+data["Strategy_Return"] = data["Position"] * data["Return"]
+data["Cumulative_Returns"] = (data["Strategy_Return"] + 1).cumprod()
+
+selected_data = data.loc['2021-02-01':, ['Return', 'Predicted_Return', 'Position', 'Strategy_Return', 'Cumulative_Returns']]
+
+selected_data
+```
+
+
+```{python}
+#data["Strategy_Return"] = data["Position"] * data["Return"]
+
+cumulative_returns = (data["Strategy_Return"] + 1).cumprod()
+
+plt.figure(figsize=(10, 6))
+plt.plot(data.index[:len(cumulative_returns)], cumulative_returns)
+plt.axvline(x=pd.to_datetime('2022-08-17'), color = 'r', linestyle = '--')  # Convert the date to datetime object
+plt.xlabel("Date")
+plt.ylabel("Cumulative Returns")
+plt.title("Trading Strategy Performance")
+plt.grid(True)
+plt.show()
+```
+
+The figure above is problematic since we assume trading starts in the training set. We should start the evaluation in the test set.
+
+```{python}
+data.loc['2022-08-17':, 'Predicted_Return'] = pipeline.predict(X.loc['2022-08-17':])
+data["Signal"] = data["Predicted_Return"].diff()
+data.loc[data["Signal"] > 0, "Position"] = 1  
+data.loc[data["Signal"] < 0, "Position"] = -1  
+data["Position"].fillna(0, inplace = True) 
+#data["Strategy_Return"] = data["Position"] * data["Return"]
+data.loc['2022-08-17':, "Strategy_Return"] = data.loc['2022-08-17':, "Position"] * data.loc['2022-08-17':, "Return"]
+data["Cumulative_Returns"] = (data.loc['2022-08-17':,"Strategy_Return"] + 1).cumprod()
+
+selected_data = data.loc['2022-08-17':, ['Return', 'Predicted_Return', 'Position', 'Strategy_Return', 'Cumulative_Returns']]
+
+selected_data
+```
+
+```{python}
+cumulative_returns = data["Cumulative_Returns"] = (data.loc['2022-08-17':,"Strategy_Return"] + 1).cumprod()
+
+plt.figure(figsize=(10, 6))
+plt.plot(cumulative_returns)
+plt.title("Cumulative Returns")
+plt.xlabel("Date")
+plt.ylabel("Cumulative Returns")
+plt.grid(True)
+plt.show()
+```
+
+The robot can make profits, although the results are highly sensitive to the model and parameters.
