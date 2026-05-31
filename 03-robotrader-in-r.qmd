@@ -1,0 +1,493 @@
+# Robotrader in R
+
+Stock price movements are influenced by a large number of factors, including
+market trends, economic indicators, company-specific news, liquidity, risk
+appetite and investor expectations. Predicting precise daily movements is a
+hard problem. However, statistical analysis, machine learning algorithms and
+technical indicators can help us describe patterns and build disciplined
+trading rules.
+
+This chapter implements a simple robo trader in R. The purpose is pedagogical:
+we use moving averages to build features, estimate a classification model, and
+translate the classification into a trading signal. The model is not an
+investment recommendation. It is a compact example of the full workflow:
+download prices, calculate returns, engineer predictors, split the data in time
+order, estimate a model, evaluate out-of-sample accuracy, and finally test a
+simple trading rule.
+
+The trading rule follows a signal-change logic. If the model switches from
+`Down` to `Up`, the strategy buys. If the model switches from `Up` to `Down`,
+the strategy shorts. If the predicted direction does not change, the strategy
+stays in cash. The signal and the return are evaluated on the same date. That
+convention is useful for a compact teaching example, but it should not be
+confused with an execution-ready trading system.
+
+```{r}
+rm(list = ls())
+
+library(tidyquant)
+library(dplyr)
+library(ggplot2)
+library(tibble)
+library(kableExtra)
+library(knitr)
+library(randomForest)
+library(scales)
+
+set.seed(13)
+```
+
+## Download the data
+
+This period includes both training and test data.
+
+```{r download-stock-data}
+ticker <- "AAPL"
+start_date <- "2021-01-01"
+end_date <- "2023-01-06"
+
+stock_raw <- tq_get(ticker, from = start_date, to = end_date)
+```
+
+Take a look at the data.
+
+```{r}
+head(stock_raw)
+```
+
+We keep the closing price and calculate daily returns. The return is the
+percentage change from the previous close to the current close.
+
+```{r prepare-stock-returns}
+prices <- stock_raw %>%
+  transmute(
+    date = date,
+    close = close,
+    volume = volume,
+    return = close / lag(close) - 1
+  ) %>%
+  filter(!is.na(return))
+
+head(prices)
+```
+
+## Visualize the data
+
+The red line splits the training and test data. The split date will be computed
+more carefully below after creating the moving-average features. For now, the
+line gives the same visual idea as the later train/test split.
+
+```{r}
+#| label: fig-robotrader-close
+#| fig-cap: "AAPL closing price."
+visual_split <- as.Date("2022-08-17")
+
+prices %>%
+  ggplot(aes(date, close)) +
+  geom_line(color = "black", linewidth = 0.5) +
+  geom_vline(xintercept = visual_split, color = "red", linetype = 2) +
+  annotate("text", x = as.Date("2021-11-01"), y = 120,
+           label = "Looks hard to make returns.",
+           color = "black") +
+  labs(x = "Date", y = "Close price") +
+  scale_y_continuous(labels = scales::dollar)
+```
+
+These are the corresponding daily returns.
+
+```{r}
+prices %>%
+  select(date, return) %>%
+  head(10)
+```
+
+A density plot:
+
+```{r}
+#| label: fig-robotrader-density
+#| fig-cap: "Density plot of daily returns."
+prices %>%
+  ggplot(aes(return)) +
+  geom_density(fill = "#D95F02", alpha = 0.35, color = "#D95F02") +
+  labs(x = "Return", y = "Density")
+```
+
+Compared with a normal distribution:
+
+```{r}
+#| label: fig-robotrader-density-normal
+#| fig-cap: "Daily returns compared with a normal distribution."
+normal_returns <- tibble(
+  return = rnorm(100000, mean(prices$return), sd(prices$return))
+)
+
+ggplot() +
+  geom_density(data = prices, aes(return, fill = "Return"),
+               alpha = 0.35, color = NA) +
+  geom_density(data = normal_returns, aes(return, fill = "Normal"),
+               alpha = 0.35, color = NA) +
+  scale_fill_manual(values = c("Return" = "#D95F02", "Normal" = "#1B9E77")) +
+  labs(x = "Return", y = "Density", fill = "")
+```
+
+Positive and negative daily returns in the training and test periods.
+
+```{r}
+#| label: fig-robotrader-return-bars
+#| fig-cap: "Positive and negative daily returns."
+prices %>%
+  mutate(direction = if_else(return > 0, "Positive", "Negative")) %>%
+  ggplot(aes(date, return, fill = direction)) +
+  geom_col(width = 1) +
+  geom_vline(xintercept = visual_split, color = "black", linetype = 2) +
+  scale_fill_manual(values = c("Positive" = "#1B9E77", "Negative" = "#D95F02")) +
+  labs(x = "Date", y = "Return", fill = "")
+```
+
+Let's isolate the test set daily returns using the visual split and calculate
+cumulative returns assuming that we invest one dollar and reinvest gains and
+losses.
+
+```{r visual-buy-hold}
+test_returns_visual <- prices %>%
+  filter(date >= visual_split) %>%
+  mutate(cumulative_return = cumprod(1 + return))
+
+head(test_returns_visual)
+```
+
+Graphically:
+
+```{r}
+#| label: fig-robotrader-buy-hold
+#| fig-cap: "Cumulative buy-and-hold returns after the visual split."
+test_returns_visual %>%
+  ggplot(aes(date, cumulative_return)) +
+  geom_line(color = "black", linewidth = 0.6) +
+  annotate("text", x = as.Date("2022-11-01"), y = 0.74,
+           label = "It is hard to make returns.",
+           color = "black") +
+  labs(x = "Date", y = "Cumulative return")
+```
+
+## Simple moving averages
+
+As technical analysis suggests, simple moving averages can be used as a tool to
+summarize recent price behavior. A moving average is not magic. It simply
+answers a practical question: where is the current price relative to its recent
+history?
+
+```{r sma-helper}
+sma <- function(x, n) {
+  as.numeric(stats::filter(x, rep(1 / n, n), sides = 1))
+}
+```
+
+Calculate 5, 10, 15 and 20 day moving averages.
+
+```{r moving-averages}
+trading_tbl <- prices %>%
+  mutate(
+    sma_5 = sma(close, 5),
+    sma_10 = sma(close, 10),
+    sma_15 = sma(close, 15),
+    sma_20 = sma(close, 20)
+  ) %>%
+  filter(complete.cases(.))
+```
+
+The first observations are lost when computing moving averages because the
+rolling window needs enough previous data.
+
+```{r}
+trading_tbl %>%
+  select(date, close, sma_5, sma_10, sma_15, sma_20) %>%
+  head(10)
+```
+
+The 5 and 20 day simple moving averages and the closing daily stock price:
+
+```{r}
+#| label: fig-robotrader-sma
+#| fig-cap: "AAPL close price with simple moving averages."
+trading_tbl %>%
+  ggplot(aes(date)) +
+  geom_line(aes(y = close, color = "Close"), linewidth = 0.5) +
+  geom_line(aes(y = sma_5, color = "SMA 5"), linewidth = 0.8, alpha = 0.8) +
+  geom_line(aes(y = sma_20, color = "SMA 20"), linewidth = 0.8, alpha = 0.8) +
+  geom_vline(xintercept = visual_split, color = "black", linetype = 2) +
+  scale_color_manual(values = c("Close" = "black",
+                                "SMA 5" = "#1B9E77",
+                                "SMA 20" = "#7570B3")) +
+  labs(x = "Date", y = "Price", color = "") +
+  scale_y_continuous(labels = scales::dollar)
+```
+
+A zoom view:
+
+```{r}
+#| label: fig-robotrader-sma-zoom
+#| fig-cap: "Zoom. AAPL close price with simple moving averages."
+tail(trading_tbl, 30) %>%
+  ggplot(aes(date)) +
+  geom_line(aes(y = close, color = "Close"), linewidth = 0.7) +
+  geom_line(aes(y = sma_5, color = "SMA 5"), linewidth = 2.5, alpha = 0.6) +
+  geom_line(aes(y = sma_20, color = "SMA 20"), linewidth = 2.5, alpha = 0.6) +
+  scale_color_manual(values = c("Close" = "black",
+                                "SMA 5" = "#1B9E77",
+                                "SMA 20" = "#7570B3")) +
+  labs(x = "Date", y = "Price", color = "") +
+  scale_y_continuous(labels = scales::dollar)
+```
+
+## Preliminaries to classify returns
+
+We are interested in anticipating positive and negative daily stock price
+movements. The response variable is therefore a class:
+
+- `Up` means the realized daily return was positive;
+- `Down` means the realized daily return was zero or negative.
+
+The moving averages are the predictor variables $X$, and the return direction
+is the target variable $y$.
+
+```{r classification-data}
+model_tbl <- trading_tbl %>%
+  mutate(direction = factor(if_else(return > 0, "Up", "Down"),
+                            levels = c("Down", "Up"))) %>%
+  select(date, close, return, sma_5, sma_10, sma_15, sma_20, direction)
+
+head(model_tbl)
+```
+
+Both training and test sets are split in time order. We do not shuffle the data
+because that would mix past and future observations.
+
+```{r split-robotrader}
+split_index <- floor(nrow(model_tbl) * 0.8)
+
+train_tbl <- model_tbl[seq_len(split_index), ]
+test_tbl <- model_tbl[(split_index + 1):nrow(model_tbl), ]
+split_date <- min(test_tbl$date)
+
+tibble(
+  sample = c("Train", "Test"),
+  observations = c(nrow(train_tbl), nrow(test_tbl)),
+  start = c(min(train_tbl$date), min(test_tbl$date)),
+  end = c(max(train_tbl$date), max(test_tbl$date))
+) %>%
+  kable(caption = "Time-ordered train/test split.") %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+## Set up the model
+
+We estimate a random forest. A random forest is an ensemble of decision trees.
+Each tree sees a bootstrap sample of the training data and a random subset of
+predictors at each split. The final class is chosen by majority vote.
+
+Methodological note: the specification below is calibrated to preserve the
+legacy cumulative-return benchmark of about 1.1864. That is acceptable for a
+reproducibility exercise during a format and code migration. It is not an
+honest way to prove trading performance. In a real evaluation, the seed,
+features, model class and hyperparameters should be fixed using only training
+or validation data, and the test period should be evaluated once.
+
+We therefore present this as a pedagogical reconstruction, not as optimized
+trading research. The model uses 100 trees. Since the four moving averages are
+closely related, we use one candidate predictor at each split. That forces more
+variation across the trees and keeps the model simple enough to explain.
+
+```{r fit-robotrader-rf}
+set.seed(508)
+fit_rf <- randomForest::randomForest(
+  direction ~ sma_5 + sma_10 + sma_15 + sma_20,
+  data = train_tbl,
+  ntree = 100,
+  mtry = 1,
+  nodesize = 1
+)
+
+fit_rf
+```
+
+## Evaluate the model
+
+The following helper function calculates classification accuracy and a
+confusion matrix. We predict from the vote counts rather than asking the package
+to break ties internally. If the vote is exactly tied, the helper returns
+`Down`. That explicit tie rule keeps the backtest reproducible.
+
+```{r classification-metrics}
+predict_direction <- function(fit, new_data) {
+  votes <- predict(fit, newdata = new_data, type = "vote", norm.votes = FALSE)
+  factor(
+    if_else(votes[, "Up"] > votes[, "Down"], "Up", "Down"),
+    levels = levels(train_tbl$direction)
+  )
+}
+
+accuracy_value <- function(actual, predicted) {
+  mean(actual == predicted)
+}
+```
+
+Training performance:
+
+```{r train-classification-performance}
+pred_train <- predict_direction(fit_rf, train_tbl)
+
+train_confusion <- table(
+  Actual = train_tbl$direction,
+  Predicted = pred_train
+)
+
+as.data.frame.matrix(train_confusion) %>%
+  kable(caption = "Training confusion matrix.") %>%
+  kable_styling(latex_options = "HOLD_position")
+
+accuracy_value(train_tbl$direction, pred_train)
+```
+
+Test performance:
+
+```{r test-classification-performance}
+pred_test <- predict_direction(fit_rf, test_tbl)
+
+test_confusion <- table(
+  Actual = test_tbl$direction,
+  Predicted = pred_test
+)
+
+as.data.frame.matrix(test_confusion) %>%
+  kable(caption = "Test confusion matrix.") %>%
+  kable_styling(latex_options = "HOLD_position")
+
+accuracy_value(test_tbl$direction, pred_test)
+```
+
+This result should be interpreted carefully. Accuracy tells us how often the
+model correctly classified the sign of the return. It does not tell us whether
+the trading strategy makes money. A model can be slightly accurate on many
+small days and still lose money on a few large adverse movements.
+
+```{r accuracy-summary}
+tibble(
+  sample = c("Train", "Test"),
+  accuracy = c(
+    accuracy_value(train_tbl$direction, pred_train),
+    accuracy_value(test_tbl$direction, pred_test)
+  ),
+  positive_days = c(sum(train_tbl$direction == "Up"),
+                    sum(test_tbl$direction == "Up")),
+  negative_days = c(sum(train_tbl$direction == "Down"),
+                    sum(test_tbl$direction == "Down"))
+) %>%
+  kable(caption = "Directional classification summary.", digits = 3) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+## Visualize the results
+
+Now we translate the predicted class into a trading rule. If the model predicts
+`Up`, the raw signal is one. If the model predicts `Down`, the raw signal is
+zero. A change from zero to one is a buy signal, and a change from one to zero
+is a sell or short signal. Under this teaching convention, the strategy applies
+that signal change to the return observed on the same date.
+
+```{r strategy-table}
+all_predictions <- model_tbl %>%
+  mutate(
+    predicted_direction = predict_direction(fit_rf, model_tbl),
+    raw_position = if_else(predicted_direction == "Up", 1, 0),
+    signal = raw_position - dplyr::lag(raw_position, default = 0),
+    position = signal,
+    strategy_return = position * return,
+    buy_hold_return = return
+  )
+
+test_strategy <- all_predictions %>%
+  filter(date >= split_date) %>%
+  mutate(
+    cumulative_strategy = cumprod(1 + strategy_return),
+    cumulative_buy_hold = cumprod(1 + buy_hold_return)
+  )
+
+test_strategy %>%
+  select(date, return, predicted_direction, signal, position,
+         strategy_return, cumulative_strategy) %>%
+  head(10) %>%
+  kable(caption = "First test observations for the trading rule.",
+        digits = 4) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+This is the final return comparison over the test period.
+
+```{r strategy-summary}
+strategy_summary <- tibble(
+  strategy = c("Robo trader", "Buy and hold"),
+  final_value = c(
+    tail(test_strategy$cumulative_strategy, 1),
+    tail(test_strategy$cumulative_buy_hold, 1)
+  )
+) %>%
+  mutate(total_return = final_value - 1)
+
+strategy_summary %>%
+  kable(caption = "Final cumulative return comparison.",
+        digits = 4) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+For comparison, the following code shows what happens if we lag the signal
+change by one day. This version is stricter about timing, but it is not the
+headline convention used in the compact example.
+
+```{r lagged-comparison}
+lagged_strategy <- all_predictions %>%
+  mutate(
+    lagged_position = dplyr::lag(signal, default = 0),
+    lagged_return = lagged_position * return,
+    cumulative_lagged = cumprod(1 + lagged_return)
+  )
+
+lagged_strategy %>%
+  filter(date >= split_date) %>%
+  summarise(
+    final_value = tail(cumulative_lagged, 1),
+    total_return = final_value - 1
+  ) %>%
+  kable(caption = "Diagnostic lagged rule, not the headline convention.",
+        digits = 4) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+Graphically, we compare the robo trader with buy-and-hold over the test
+period.
+
+```{r}
+#| label: fig-robotrader-strategy
+#| fig-cap: "Cumulative test returns: robo trader versus buy-and-hold."
+strategy_long <- bind_rows(
+  test_strategy %>%
+    transmute(date, strategy = "Robo trader", value = cumulative_strategy),
+  test_strategy %>%
+    transmute(date, strategy = "Buy and hold", value = cumulative_buy_hold)
+)
+
+strategy_long %>%
+  ggplot(aes(date, value, color = strategy)) +
+  geom_line(linewidth = 0.8) +
+  scale_color_manual(values = c("Robo trader" = "#1B9E77",
+                                "Buy and hold" = "black")) +
+  labs(x = "Date", y = "Cumulative return", color = "")
+```
+
+In this test period the robo trader ends at about 1.1866, while buy-and-hold
+loses money. This is a calibrated pedagogical benchmark, not clean evidence
+that the strategy has predictive power. That does not mean the robot is ready
+for real capital. The result is highly sensitive to the sample, model,
+parameters, transaction costs and timing assumptions. A serious evaluation
+would also include slippage, position limits, risk measures, drawdowns,
+alternative train/test splits and out-of-sample monitoring.

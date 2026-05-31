@@ -1,0 +1,36 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  fig.pos = "H",
+  out.extra = ""
+)
+```
+
+```{r book-edition, echo=FALSE, results='asis'}
+source("R/book-edition.R")
+write_book_edition_script()
+```
+
+```{r contact-links, echo=FALSE, results='asis'}
+xfun::file_string("contact.html")
+```
+
+```{r publication-dates, echo=FALSE, results='asis'}
+write_book_dates()
+```
+
+## Preface {.unnumbered}
+
+::: {.home-panel}
+This book is written for readers who want to connect forecasting models, data
+workflows, graphical interpretation, and reproducible R code. Replace this
+paragraph with the EMF-specific preface. Keep it short, reader-facing, and
+focused on what the book helps the reader do.
+:::
+
+## What's new in this edition {.unnumbered}
+
+- **Quarto book format:** Replace this bullet with a reader-facing change.
+- **Updated workflow:** Replace this bullet with a substantive EMF change.
+- **Cleaner navigation:** Replace this bullet with a substantive EMF change.

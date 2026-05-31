@@ -1,0 +1,1074 @@
+GUIA DE MIGRACION DE FORMATO: tutorial_arf -> tutorial_emf
+===========================================================
+
+Objetivo del documento
+----------------------
+
+Este documento describe como llevar el formato actual de:
+
+  C:\Users\DELL\Desktop\MartinGit\tutorial_arf
+
+hacia:
+
+  C:\Users\DELL\Desktop\MartinGit\tutorial_emf
+
+sin copiar el contenido sustantivo del libro. La migracion debe copiar la
+arquitectura, la navegacion, el estilo visual, los parciales HTML, el flujo de
+publicacion y la organizacion Quarto. El contenido financiero, los ejemplos,
+las figuras, los datos y los textos de EMF deben seguir siendo de EMF.
+
+Principio rector:
+
+  Todo debe moverse a Quarto. El resultado final debe ser un Quarto book,
+  renderizado a _book, publicado por GitHub Actions / GitHub Pages, sin depender
+  de HTML generado en la raiz del repositorio.
+
+Paquete portable:
+
+  Este documento debe viajar junto con la carpeta:
+
+    quarto_format_template/
+
+  Si el nuevo proyecto tiene este .txt y esa carpeta, Codex no necesita buscar
+  tutorial_arf. Las instrucciones y los archivos base estan contenidos aqui.
+  tutorial_arf solo fue la fuente original del formato.
+
+Instruccion obligatoria de trabajo:
+
+  - Trabajar directamente en main.
+  - No crear una rama nueva para esta migracion.
+  - No crear una rama _book.
+  - No usar _book como rama ni como carpeta versionada.
+  - _book es output generado por quarto render.
+  - La publicacion debe hacerse con GitHub Actions / GitHub Pages.
+  - Si Codex esta en tutorial_emf, debe usar este documento y
+    quarto_format_template/ como fuente del formato.
+
+
+1. Diagnostico actual
+---------------------
+
+tutorial_arf ya esta organizado como libro Quarto moderno:
+
+  - Tiene project: type: book en _quarto.yml.
+  - Renderiza todo dentro de _book.
+  - _book es output generado y esta ignorado por git.
+  - La publicacion se hace desde main mediante GitHub Actions.
+  - GitHub Pages debe usar "GitHub Actions" como fuente de Pages.
+  - No se usa una segunda rama _book.
+  - La navegacion lateral es de book, no un TOC simple de documento.
+  - La pagina inicial es index.qmd con Preface y What's new.
+  - El sitio tiene CSS propio en styles.css.
+  - El boton de subir, la barra de progreso, el menu lateral, la navegacion
+    local y el menu "On this page" se inyectan con parciales HTML.
+
+tutorial_emf todavia esta en un formato mas antiguo:
+
+  - No tiene project: type: book en _quarto.yml.
+  - Tiene index.html generado en la raiz.
+  - Tiene carpetas generadas como index_files y robotrader_files.
+  - Sus fuentes principales siguen siendo .rmd:
+      ffpp3.rmd
+      fh2o.rmd
+      robotrader.rmd
+      robotrader - copia.rmd
+  - Solo tiene index.qmd como archivo Quarto principal.
+  - Usa toc-location: left como documento largo, no como book.
+  - No tiene styles.css.
+  - back-to-top.html y progressbar.html son versiones viejas.
+  - include-in-header incluye parciales que deberian ir como fragmentos limpios,
+    no como documentos HTML completos.
+
+La migracion de EMF debe convertir el proyecto a book Quarto, copiar el molde
+de ARF y eliminar la dependencia de artefactos HTML generados en la raiz.
+
+
+2. Arquitectura objetivo
+------------------------
+
+La arquitectura final de tutorial_emf debe parecerse a esta:
+
+  tutorial_emf/
+    .github/
+      workflows/
+        publish.yml
+    _extensions/
+      quarto-ext/
+        fontawesome/
+    R/
+      book-edition.R
+      [otros helpers si EMF los necesita]
+    _quarto.yml
+    index.qmd
+    01-[capitulo].qmd
+    02-[capitulo].qmd
+    03-[capitulo].qmd
+    ...
+    references.qmd
+    references.bib
+    styles.css
+    contact.html
+    back-to-top.html
+    progressbar.html
+    sidebar-toggle.html
+    local-navigation.html
+    page-sections.html
+    sidebar-accordion.html
+    sidebar-chapter-sections.html
+    .gitignore
+    .nojekyll
+    README.md
+
+Los archivos .rmd de EMF deben convertirse a .qmd o ser absorbidos como
+fragmentos .qmd. La meta es no depender de child chunks en .rmd para el libro
+final. Si se quiere trabajar por fragmentos, se recomienda usar:
+
+  {{< include nombre-del-fragmento.qmd >}}
+
+dentro de un capitulo .qmd, como se hace en tutorial_arf.
+
+
+3. Regla de publicacion y ramas
+-------------------------------
+
+No crear una rama adicional para _book.
+
+Flujo correcto:
+
+  1. Editar fuentes en main.
+  2. Renderizar localmente cuando convenga.
+  3. Commit en main.
+  4. Push a origin/main.
+  5. GitHub Actions ejecuta quarto render.
+  6. GitHub Actions sube _book como artefacto de Pages.
+  7. GitHub Pages publica ese artefacto.
+
+_book no debe versionarse. Es output generado.
+
+En GitHub, la configuracion de Pages debe quedar como:
+
+  Source: GitHub Actions
+
+No usar:
+
+  - gh-pages
+  - una rama _book
+  - root /docs como output manual
+  - index.html generado en la raiz
+
+
+4. Archivos que deben copiarse desde tutorial_arf
+-------------------------------------------------
+
+Si se esta trabajando desde este paquete portable, no buscar tutorial_arf.
+Copiar estos archivos desde quarto_format_template/ a la raiz de tutorial_emf,
+adaptando solo lo que se indica:
+
+  styles.css
+    Copiar. Es el estilo global del book.
+
+  back-to-top.html
+    Copiar. Es la flecha circular para subir.
+
+  progressbar.html
+    Copiar. Es la barra fina superior de progreso de lectura.
+
+  sidebar-toggle.html
+    Copiar. Agrega el boton para ocultar/mostrar la navegacion lateral.
+
+  local-navigation.html
+    Copiar. Corrige links locales a index.html.
+
+  page-sections.html
+    Copiar. Crea la barra local superior con breadcrumbs y menu "On this page".
+
+  sidebar-accordion.html
+    Copiar. Hace que la navegacion lateral se comporte como acordeon.
+
+  sidebar-chapter-sections.html
+    Copiar, pero editar por completo la lista de capitulos y secciones para EMF.
+    Este archivo esta necesariamente ligado a los nombres de paginas y anchors.
+
+  contact.html
+    Copiar como base, pero actualizar texto y links si EMF requiere algo distinto.
+    La version ARF usa Bootstrap Icons via clases bi, no iconos externos desde CDN.
+
+  R/book-edition.R
+    Copiar. Genera el subtitulo "Book edition: <hash>", el numero de publicacion
+    y la primera fecha de publicacion.
+
+  references.qmd
+    Copiar si EMF no tiene uno equivalente. Debe ser:
+
+      # References {.unnumbered}
+
+      ::: {#refs}
+      :::
+
+  .github/workflows/publish.yml
+    Copiar como base, pero adaptar la lista de paquetes R a las dependencias de
+    EMF. La version incluida en quarto_format_template ya trae una lista inicial
+    orientada a EMF y comentarios para agregar paquetes si el codigo los exige.
+
+  .gitignore
+    Usar quarto_format_template/.gitignore.additions para agregar las reglas
+    relevantes que ignoran .quarto, _book y artefactos legacy generados.
+
+  .nojekyll
+    Copiar desde quarto_format_template/.nojekyll si no existe. Su presencia
+    desactiva el procesamiento Jekyll en GitHub Pages.
+
+  analytics_emf.html
+    No se incluye en la plantilla porque debe ser el archivo propio de EMF. Si
+    tutorial_emf ya lo tiene, conservarlo. No copiar analytics_arf.html.
+
+  _extensions/quarto-ext/fontawesome/
+    EMF ya lo tiene. Mantenerlo. No es necesario recargarlo.
+
+
+5. _quarto.yml objetivo
+-----------------------
+
+El _quarto.yml de EMF debe transformarse de documento HTML largo a book.
+Usar quarto_format_template/_quarto.yml.template como punto de partida y adaptar
+titulo, footer, analytics y capitulos:
+
+project:
+  type: book
+  output-dir: _book
+
+book:
+  title: "Forecasting with R"
+  subtitle: "Book"
+  author: "Dr. Martin Lozano"
+  page-navigation: true
+  search: true
+  date: today
+  date-format: "MMMM D, YYYY"
+  sidebar:
+    style: docked
+    collapse-level: 1
+  page-footer:
+    left: "Forecasting with R"
+    right: 'Dr. Martin Lozano &middot; <a href="mailto:mlozanoqf@gmail.com">mlozanoqf@gmail.com</a> &middot; <a href="https://mlozanoqf.github.io/">mlozanoqf.github.io</a>'
+  chapters:
+    - text: "Forecasting with R"
+      href: index.qmd
+    - 01-[primer-capitulo].qmd
+    - 02-[segundo-capitulo].qmd
+    - 03-[tercer-capitulo].qmd
+    - references.qmd
+
+bibliography: references.bib
+link-citations: true
+
+crossref:
+  chapters: true
+
+execute:
+  warning: false
+  message: false
+
+format:
+  html:
+    theme:
+      light: flatly
+      dark: darkly
+    toc: false
+    toc-title: "On this page"
+    toc-location: right
+    toc-depth: 2
+    smooth-scroll: true
+    code-fold: true
+    code-copy: true
+    code-tools:
+      toggle: true
+      source: false
+    code-block-bg: true
+    code-block-border-left: "#31BAE9"
+    code-line-numbers: true
+    number-sections: true
+    number-depth: 3
+    page-layout: full
+    include-after-body:
+      - analytics_emf.html
+      - back-to-top.html
+      - progressbar.html
+      - sidebar-toggle.html
+      - local-navigation.html
+      - page-sections.html
+      - sidebar-accordion.html
+      - sidebar-chapter-sections.html
+    css: styles.css
+
+Notas:
+
+  - Cambiar analytics_emf.html por el nombre correcto del parcial de EMF.
+  - No usar include-in-header para back-to-top ni progressbar.
+  - No poner HTML completo con <html>, <head> o <body> en los parciales.
+  - No usar toc-location: left como navegacion principal. La navegacion principal
+    debe ser la sidebar del book.
+  - toc: false es intencional. El menu "On this page" lo crea page-sections.html.
+
+
+6. index.qmd objetivo
+---------------------
+
+El index.qmd debe ser una pagina inicial de libro, no un documento contenedor
+que llama a todos los capitulos con child chunks.
+
+Usar quarto_format_template/index.qmd.template como punto de partida.
+Molde recomendado:
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  fig.pos = "H",
+  out.extra = ""
+)
+```
+
+```{r book-edition, echo=FALSE, results='asis'}
+source("R/book-edition.R")
+write_book_edition_script()
+```
+
+```{r contact-links, echo=FALSE, results='asis'}
+xfun::file_string("contact.html")
+```
+
+```{r publication-dates, echo=FALSE, results='asis'}
+write_book_dates()
+```
+
+## Preface {.unnumbered}
+
+::: {.home-panel}
+Texto breve de prefacio para EMF. Debe explicar para quien es el libro, que
+problema resuelve y como conecta intuicion, modelos, datos, graficas y codigo.
+No debe repetir el titulo del libro, porque Quarto ya muestra el titulo.
+:::
+
+## What's new in this edition {.unnumbered}
+
+- **Cambio sustantivo 1:** descripcion corta, orientada al lector.
+- **Cambio sustantivo 2:** descripcion corta, orientada al lector.
+- **Cambio sustantivo 3:** descripcion corta, orientada al lector.
+
+Reglas de la pagina inicial:
+
+  - No repetir el titulo del libro encima de Preface.
+  - Preface debe aparecer justo despues del bloque de titulo generado por Quarto.
+  - What's new debe ser lista bullet sintetica, no tarjetas.
+  - Las bullets deben hablar de cambios relevantes para el lector, no de detalles
+    internos como "se arreglo un CSS".
+  - El bloque de contacto aparece arriba mediante contact.html.
+  - La fecha, Book edition y Publication se calculan automaticamente.
+
+
+7. Organizacion de capitulos
+----------------------------
+
+Cada capitulo debe ser un archivo .qmd listado en _quarto.yml.
+
+Patron:
+
+  01-[tema].qmd
+  02-[tema].qmd
+  03-[tema].qmd
+
+Dentro de cada capitulo:
+
+  # Titulo del capitulo
+
+  Introduccion narrativa del capitulo.
+
+  {{< include 01-fragmento-a.qmd >}}
+
+  {{< include 01-fragmento-b.qmd >}}
+
+  {{< include 01-fragmento-c.qmd >}}
+
+Los fragmentos tambien deben ser .qmd.
+
+Reglas:
+
+  - Evitar que index.qmd sea el archivo que carga todo el contenido.
+  - Evitar child chunks antiguos de R Markdown si se esta migrando a Quarto.
+  - Evitar archivos .rmd en el flujo final.
+  - Mantener los nombres de archivo con prefijos numericos para que el orden sea
+    claro.
+  - Usar un solo # para el titulo del capitulo.
+  - Usar ## para las secciones principales del capitulo.
+  - Evitar ### si no se quiere un tercer nivel visible o confuso.
+  - Para subtitulos internos que no deben entrar como secciones numeradas, usar
+    un bloque visual tipo:
+
+      ::: {.book-subhead}
+      Texto del subtitulo interno
+      :::
+
+    En ARF existe .merton-subhead para ese uso. Para EMF conviene crear una
+    clase generica .book-subhead en styles.css o renombrar .merton-subhead.
+
+
+8. Navegacion lateral
+---------------------
+
+La navegacion lateral viene de Quarto book y se mejora con tres parciales:
+
+  sidebar-toggle.html
+  sidebar-accordion.html
+  sidebar-chapter-sections.html
+
+Comportamiento objetivo:
+
+  - Sidebar docked a la izquierda.
+  - El link de la pagina inicial no debe aparecer duplicado dentro de la lista.
+  - Cada capitulo puede desplegar sus secciones principales.
+  - Solo un bloque de sidebar debe quedar abierto a la vez.
+  - El capitulo activo debe resaltarse.
+  - La seccion activa dentro del capitulo debe resaltarse.
+  - El boton de sidebar permite ocultar/mostrar la navegacion.
+  - Si la sidebar se oculta, el contenido debe usar mas ancho disponible.
+
+El archivo que mas requiere adaptacion manual es:
+
+  sidebar-chapter-sections.html
+
+En ese archivo hay un arreglo chapters. Para EMF debe quedar con las paginas y
+secciones reales de EMF. Ejemplo de estructura:
+
+  var chapters = [
+    {
+      page: "01-introduction.html",
+      sections: [
+        { id: "forecasting-problem", text: "1.1 The forecasting problem" },
+        { id: "data-and-baseline-models", text: "1.2 Data and baseline models" }
+      ]
+    },
+    {
+      page: "02-machine-learning.html",
+      sections: [
+        { id: "model-workflow", text: "2.1 Model workflow" },
+        { id: "accuracy-and-loss-functions", text: "2.2 Accuracy and loss functions" }
+      ]
+    }
+  ];
+
+Como obtener los ids:
+
+  1. Renderizar el capitulo.
+  2. Abrir el HTML generado en _book.
+  3. Buscar los section id generados por Quarto.
+  4. Copiar esos ids en sidebar-chapter-sections.html.
+  5. Volver a renderizar y verificar que los links bajan exactamente a la
+     seccion correcta.
+
+No dejar nombres de secciones de ARF dentro de EMF.
+
+
+9. Navegacion local "On this page"
+----------------------------------
+
+ARF ya no depende del TOC lateral nativo de Quarto para cada pagina. El archivo
+page-sections.html crea una barra local superior con:
+
+  - breadcrumbs,
+  - un boton "On this page",
+  - dropdown con las secciones de la pagina actual.
+
+Comportamiento objetivo:
+
+  - No aparece en la pagina inicial.
+  - Aparece en paginas de capitulos.
+  - Se mantiene sticky arriba.
+  - Lee h2 y h3, pero conviene que el libro use principalmente h2.
+  - Al hacer click, hace smooth scroll y corrige el offset para que el titulo no
+    quede tapado.
+  - En movil no debe salirse del ancho de la pantalla.
+
+CSS relevante:
+
+  .page-local-nav
+  .page-section-menu
+  .page-section-toggle
+  .page-section-list
+  .page-section-link
+  .page-section-link-h3
+
+
+10. Flecha para subir
+---------------------
+
+La flecha para subir es un detalle importante que debe migrarse.
+
+Archivo:
+
+  back-to-top.html
+
+Comportamiento ARF:
+
+  - Boton fijo en esquina inferior derecha.
+  - Boton circular.
+  - Fondo semitransparente.
+  - Icono SVG de flecha hacia arriba.
+  - Aparece solo despues de hacer scroll mayor a 480 px.
+  - Hace smooth scroll al inicio.
+  - Si la pagina tenia hash, limpia el hash al volver arriba.
+  - Tiene aria-label y title "Back to top".
+
+CSS relevante:
+
+  #btn-back-to-top
+  #btn-back-to-top svg
+  #btn-back-to-top.is-visible
+  #btn-back-to-top:hover
+  #btn-back-to-top:focus
+  #btn-back-to-top:focus-visible
+
+No usar la version vieja de EMF. La version vieja:
+
+  - usa un boton muy pequeno,
+  - depende de clases bi,
+  - incluye <html>, <head> y <body>,
+  - no tiene aparicion progresiva,
+  - no usa smooth scroll robusto,
+  - no esta integrada al CSS global.
+
+
+11. Barra de progreso
+---------------------
+
+Archivo:
+
+  progressbar.html
+
+Comportamiento ARF:
+
+  - Barra horizontal fija en la parte superior.
+  - Altura visual fina de 1 px.
+  - Color rgb(89 127 235).
+  - Calcula progreso sobre #quarto-content.
+  - Se actualiza al hacer scroll y al cambiar el tamano de la ventana.
+  - Si no existe #quarto-content, no rompe la pagina.
+
+No usar la version vieja de EMF porque calcula la altura solo una vez y no
+reacciona bien a cambios de layout.
+
+
+12. Contacto y enlaces sociales
+-------------------------------
+
+Archivo:
+
+  contact.html
+
+La version ARF usa estructura limpia:
+
+  <div class="homepage-contact">
+    <a class="homepage-back-link" href="https://mlozanoqf.github.io/">Back to my webpage</a>
+    <nav class="social-links" aria-label="Contact and profile links">
+      ...
+    </nav>
+  </div>
+
+Ventajas:
+
+  - No usa tablas.
+  - No usa <p align="right">.
+  - No depende de imagenes remotas de simple-icons.
+  - Usa Bootstrap Icons con clases bi.
+  - Tiene aria-labels.
+  - Se adapta en movil.
+
+CSS relevante:
+
+  .homepage-contact
+  .homepage-back-link
+  .social-links
+  .social-links a
+  .social-links .social-icon
+  .social-icon-github
+  .social-icon-ssrn
+  .social-icon-email
+  .social-icon-linkedin
+  .social-icon-youtube
+  .social-icon-google-scholar
+  .social-icon-substack
+  .social-icon-zoom
+
+Para EMF, revisar si se quieren mantener los mismos links o actualizar:
+
+  - GitHub
+  - SSRN
+  - Email
+  - LinkedIn
+  - YouTube
+  - Google Scholar
+  - Personal website
+  - Substack
+  - Zoom
+
+
+13. CSS global
+--------------
+
+Copiar styles.css de ARF.
+
+El CSS define variables para tema claro y oscuro:
+
+  body.quarto-light:
+    --book-link
+    --book-link-hover
+    --book-active-link
+    --book-backtop-bg
+    --book-backtop-hover
+    --book-rule
+    --book-surface
+    --book-soft-surface
+    --book-card-border
+    --book-muted
+    --book-accent
+    --book-accent-soft
+
+  body.quarto-dark:
+    mismas variables adaptadas a dark mode
+
+Aspecto general:
+
+  - Links azules.
+  - Link activo en tono naranja/cobre.
+  - Superficies blancas o suaves en light mode.
+  - Superficies oscuras en dark mode.
+  - Bordes discretos.
+  - No usar paleta monotona.
+  - No usar tarjetas decorativas para todo.
+  - Radio de bordes moderado.
+
+Reglas de layout importantes:
+
+  - html scroll-padding-top: 4.5rem.
+  - main [id] scroll-margin-top: 4.5rem.
+  - tablas al 100% de ancho.
+  - .cell-output-display con overflow-x auto.
+  - ecuaciones MathJax display con overflow-x auto.
+  - breadcrumbs con ellipsis para no romper el ancho.
+  - footer en una linea cuando hay espacio y responsive en movil.
+
+Clases especificas de contenido:
+
+  styles.css de ARF incluye clases como .merton-state-table y .merton-subhead.
+  Para EMF hay dos opciones:
+
+  - Copiar styles.css completo y dejar esas clases aunque no se usen.
+  - Limpiar o renombrar clases especificas si se quiere que el CSS sea mas
+    generico.
+
+Recomendacion para EMF:
+
+  - Mantener las clases globales.
+  - Crear .book-subhead como clase generica si EMF necesita subtitulos internos
+    no numerados.
+  - Evitar nombres como .merton-subhead en EMF salvo que no moleste que queden
+    como clase tecnica invisible.
+
+Ejemplo de clase generica:
+
+  .book-subhead {
+    color: inherit;
+    font-size: 1.08rem;
+    font-weight: 700;
+    margin: 1.35rem 0 0.45rem;
+  }
+
+  .book-subhead > p {
+    margin: 0;
+  }
+
+
+14. Footer
+----------
+
+El footer debe configurarse desde _quarto.yml:
+
+  page-footer:
+    left: "Forecasting with R"
+    right: 'Dr. Martin Lozano &middot; <a href="mailto:mlozanoqf@gmail.com">mlozanoqf@gmail.com</a> &middot; <a href="https://mlozanoqf.github.io/">mlozanoqf.github.io</a>'
+
+CSS relevante:
+
+  .footer .nav-footer
+  .footer .nav-footer-left
+  .footer .nav-footer-right
+  .footer .nav-footer-center
+
+Objetivo:
+
+  - Footer discreto.
+  - Sin repetir informacion excesiva.
+  - Links visibles.
+  - Responsive en movil.
+
+
+15. Referencias y bibliografia
+------------------------------
+
+Mantener:
+
+  bibliography: references.bib
+  link-citations: true
+
+Crear o conservar:
+
+  references.qmd
+
+con:
+
+  # References {.unnumbered}
+
+  ::: {#refs}
+  :::
+
+No mezclar referencias de ARF con EMF salvo que de verdad sean fuentes usadas
+por EMF.
+
+
+16. Codigo y chunks
+-------------------
+
+Configuracion global de chunks en index.qmd:
+
+  knitr::opts_chunk$set(
+    warning = FALSE,
+    message = FALSE,
+    fig.pos = "H",
+    out.extra = ""
+  )
+
+Configuracion global en _quarto.yml:
+
+  execute:
+    warning: false
+    message: false
+
+Reglas de estilo:
+
+  - code-fold: true
+  - code-copy: true
+  - code-tools toggle: true
+  - code-tools source: false
+  - code-line-numbers: true
+  - code-block-bg: true
+  - code-block-border-left: "#31BAE9"
+
+El lector debe poder abrir/cerrar codigo y copiarlo, pero el codigo no debe
+dominar visualmente la pagina.
+
+
+17. Figuras, tablas y ancho de pantalla
+---------------------------------------
+
+Reglas de formato heredadas de ARF:
+
+  - Evitar elementos que ensanchen la pantalla.
+  - Tablas al 100% con overflow horizontal si hace falta.
+  - Si una tabla es muy ancha, abreviar nombres de columnas antes de aceptar
+    overflow excesivo.
+  - Ecuaciones display deben poder hacer scroll horizontal.
+  - Captions deben ser claros y no demasiado largos.
+  - Usar subindices con math, por ejemplo $V_T$, no texto plano V_T en captions.
+  - En figuras ggplot, preferir etiquetas parseables o expresiones cuando se
+    necesiten subindices.
+  - No dejar leyendas que tapen datos importantes.
+  - Revisar figuras en HTML despues de renderizar, no solo en el codigo.
+
+Aunque estas reglas nacieron en ARF, son parte del formato editorial que conviene
+llevar a EMF.
+
+
+18. GitHub Actions para publicar
+--------------------------------
+
+Copiar quarto_format_template/.github/workflows/publish.yml como base.
+
+Mantener:
+
+  name: Publish Quarto book
+
+  on:
+    push:
+      branches:
+        - main
+    workflow_dispatch:
+
+  permissions:
+    contents: read
+    pages: write
+    id-token: write
+
+  jobs:
+    build:
+      runs-on: windows-2022
+
+Puntos importantes:
+
+  - Usar actions/checkout con fetch-depth: 0.
+  - Instalar Quarto con Chocolatey.
+  - Instalar R con Chocolatey.
+  - Pinnear R a 4.5.2 si se quiere replicar el flujo estable de ARF.
+  - Ejecutar quarto render.
+  - Subir _book con actions/upload-pages-artifact.
+  - Desplegar con actions/deploy-pages.
+
+La lista de paquetes R debe adaptarse a EMF. Revisar el codigo EMF y listar
+solo los paquetes necesarios para renderizar. La plantilla portable incluye una
+lista inicial con paquetes comunes para EMF, como fontawesome, tictoc, fpp3 y
+h2o, pero esa lista debe verificarse contra el contenido real.
+
+Ejemplo de bloque que debe adaptarse:
+
+  install.packages(c(
+    "dplyr",
+    "ggplot2",
+    "knitr",
+    "rmarkdown"
+    # agregar aqui paquetes especificos de EMF
+  ))
+
+Si EMF usa paquetes pesados como h2o, fpp3, modeltime, tidymodels, forecast,
+tsibble, fable, lubridate, timetk, etc., agregarlos aqui segun el codigo real.
+
+
+19. .gitignore objetivo
+-----------------------
+
+Agregar estas reglas a .gitignore de EMF:
+
+  /.quarto/
+  /_book/
+
+Agregar tambien artefactos legacy generados si actualmente estan versionados o
+pueden regenerarse en raiz:
+
+  /index.html
+  /index_files/
+  /robotrader.html
+  /robotrader_files/
+  /libs/
+
+Antes de borrar artefactos legacy versionados, confirmar que:
+
+  1. Las fuentes .qmd renderizan correctamente.
+  2. _book/index.html se ve bien localmente.
+  3. GitHub Pages esta configurado para GitHub Actions.
+
+No borrar datos, PDFs o imagenes que EMF necesite para su contenido.
+
+
+20. Que NO se debe migrar desde ARF
+----------------------------------
+
+No copiar:
+
+  - Capitulos de credit risk.
+  - Textos de logistic, trees, Merton o copulas.
+  - Datos .rds de credit risk.
+  - Hull 11th.pdf.
+  - R/gaussian-common.R.
+  - R/merton-common.R.
+  - R/format-helpers.R salvo que EMF quiera adoptar helpers de formato.
+  - references.bib completo de ARF.
+  - sidebar-chapter-sections.html sin editar.
+  - analytics_arf.html como nombre final.
+  - _book generado.
+  - .quarto generado.
+
+No conservar:
+
+  - index.html generado en la raiz como pagina publicada.
+  - carpetas *_files generadas por renders antiguos.
+  - navegacion vieja basada en toc-location: left.
+  - parciales HTML que contienen documento completo con <html>, <head>, <body>.
+
+
+21. Orden recomendado de migracion EMF
+--------------------------------------
+
+Etapa 1. Preparar arquitectura Quarto book.
+
+  1. Copiar este documento y la carpeta quarto_format_template/ al proyecto
+     tutorial_emf si aun no estan alli.
+  2. Confirmar que se trabajara directamente en main, sin ramas nuevas.
+  3. Crear/copiar .nojekyll desde quarto_format_template/.
+  4. Crear carpeta R si no existe.
+  5. Copiar R/book-edition.R desde quarto_format_template/R/.
+  6. Copiar styles.css desde quarto_format_template/.
+  7. Copiar los parciales HTML modernos desde quarto_format_template/:
+       contact.html
+       back-to-top.html
+       progressbar.html
+       sidebar-toggle.html
+       local-navigation.html
+       page-sections.html
+       sidebar-accordion.html
+       sidebar-chapter-sections.html
+  8. Copiar references.qmd desde quarto_format_template/.
+  9. Usar _quarto.yml.template para reescribir _quarto.yml como book.
+  10. Usar index.qmd.template para reescribir la pagina inicial.
+
+Etapa 2. Convertir fuentes.
+
+  1. Convertir ffpp3.rmd a .qmd o dividirlo en fragmentos .qmd.
+  2. Convertir fh2o.rmd a .qmd o dividirlo en fragmentos .qmd.
+  3. Convertir robotrader.rmd a .qmd o dividirlo en fragmentos .qmd.
+  4. Ignorar o eliminar "robotrader - copia.rmd" si es duplicado y no debe estar
+     en el libro.
+  5. Crear capitulos principales .qmd con # titulo y includes.
+  6. Listar esos capitulos en _quarto.yml.
+
+Etapa 3. Adaptar navegacion.
+
+  1. Renderizar.
+  2. Revisar _book/*.html.
+  3. Extraer ids de secciones principales.
+  4. Editar sidebar-chapter-sections.html.
+  5. Renderizar otra vez.
+  6. Probar sidebar, secciones activas y "On this page".
+
+Etapa 4. Limpiar legacy.
+
+  1. Confirmar que _book/index.html funciona.
+  2. Agregar artefactos legacy a .gitignore.
+  3. Eliminar del control de versiones index.html, index_files, robotrader_files
+     y otros HTML generados en raiz, si estaban versionados.
+  4. No eliminar datos ni fuentes que el contenido use.
+
+Etapa 5. Publicar.
+
+  1. Adaptar .github/workflows/publish.yml.
+  2. Hacer quarto render local completo.
+  3. Commit en main.
+  4. Push a origin/main.
+  5. Verificar GitHub Actions.
+  6. Verificar GitHub Pages.
+
+
+22. Checklist de aceptacion visual
+----------------------------------
+
+Despues de renderizar EMF, verificar:
+
+  - _book/index.html abre correctamente.
+  - La pagina inicial no se ve rota.
+  - El titulo no se repite encima de Preface.
+  - Preface se ve como bloque sobrio.
+  - What's new es una lista bullet sintetica.
+  - El contacto aparece arriba y es responsive.
+  - El footer aparece abajo y no invade el contenido.
+  - La sidebar aparece a la izquierda.
+  - El boton de ocultar/mostrar sidebar funciona.
+  - Al ocultar sidebar, el contenido se expande correctamente.
+  - Los capitulos se abren como acordeon.
+  - Las secciones de cada capitulo aparecen bajo el capitulo correcto.
+  - La seccion activa se resalta.
+  - El menu "On this page" aparece en capitulos.
+  - El menu "On this page" no aparece en index.
+  - El dropdown de "On this page" no se corta ni se sale del ancho.
+  - La flecha para subir aparece despues de hacer scroll.
+  - La flecha sube suavemente al inicio.
+  - La barra de progreso se mueve al hacer scroll.
+  - Las tablas no ensanchan la pantalla.
+  - Las ecuaciones largas no rompen el ancho.
+  - Las figuras no tienen captions con subindices mal escritos.
+  - El dark mode sigue siendo legible.
+  - La busqueda de Quarto funciona.
+  - Las referencias aparecen al final.
+  - Los links de citas funcionan.
+
+
+23. Checklist tecnico antes de commit/push
+------------------------------------------
+
+  - git status no muestra _book.
+  - git status no muestra .quarto.
+  - git status no muestra index.html generado en raiz.
+  - quarto render termina sin error.
+  - No hay archivos .rmd activos en _quarto.yml.
+  - _quarto.yml lista solo .qmd de capitulos.
+  - sidebar-chapter-sections.html corresponde a los nombres reales de capitulos.
+  - analytics_emf.html existe si esta listado en include-after-body.
+  - styles.css existe.
+  - back-to-top.html existe.
+  - progressbar.html existe.
+  - references.qmd existe.
+  - references.bib existe.
+  - .github/workflows/publish.yml instala paquetes suficientes para EMF.
+
+
+24. Decisiones editoriales que deben conservarse
+------------------------------------------------
+
+Estas decisiones forman parte del formato, aunque no son puramente tecnicas:
+
+  - Llamarlo "book", no "tutorial", en el texto visible.
+  - Evitar una landing page tipo marketing. La pagina inicial debe orientar al
+    lector y llevarlo al contenido.
+  - Mantener prosa explicativa, no solo codigo.
+  - Conectar ecuaciones, codigo, tablas, figuras e interpretacion.
+  - Evitar abstracciones que no se demuestran.
+  - Evitar conclusiones demasiado breves debajo de figuras importantes.
+  - Preferir bullets sinteticas para cambios de edicion.
+  - Evitar tarjetas decorativas para listas de cambios.
+  - Evitar exceso de dos puntos en titulos y prosa.
+  - Evitar el estilo repetido de negar una interpretacion y luego corregirla.
+    Mejor afirmar directamente la logica correcta.
+  - Usar valores calculados por codigo cuando sean resultados, no numeros
+    escritos a mano en parrafos.
+  - Revisar el HTML renderizado, no solo el qmd.
+
+
+25. Nota sobre Book edition y Publication
+-----------------------------------------
+
+ARF usa R/book-edition.R para mostrar:
+
+  - Book edition: hash corto
+  - Publication: N
+  - First publication: fecha
+
+Publication se calcula con:
+
+  git rev-list --count HEAD
+
+Por eso el workflow necesita:
+
+  fetch-depth: 0
+
+El hash corto se muestra en el subtitulo. En el ARF actual se calcula a partir
+de los .qmd detectados en _quarto.yml. Si EMF usa muchos fragmentos incluidos
+desde capitulos, conviene revisar despues si el hash debe incluir tambien esos
+fragmentos. Para publicacion practica, el numero Publication ya cambia con cada
+commit.
+
+
+26. Resultado esperado
+----------------------
+
+Al terminar, tutorial_emf debe sentirse como tutorial_arf en todo lo que no es
+contenido:
+
+  - mismo tipo de book Quarto,
+  - misma navegacion,
+  - mismo comportamiento de sidebar,
+  - misma flecha para subir,
+  - misma barra de progreso,
+  - misma pagina inicial,
+  - mismo footer,
+  - mismo sistema de publicacion,
+  - mismo criterio de limpieza de artefactos generados,
+  - misma experiencia de lectura.
+
+Pero EMF debe conservar su propio contenido, sus referencias, sus datos, sus
+figuras, sus modelos y su enfoque de forecasting.

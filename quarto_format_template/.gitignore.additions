@@ -1,0 +1,14 @@
+
+/.quarto/
+/_book/
+
+# Legacy/generated HTML artifacts from the old root-level render.
+/index.html
+/index_files/
+/robotrader.html
+/robotrader_files/
+/libs/
+
+# Temporary files created by R markdown / Quarto.
+*.utf8.md
+*.knit.md

@@ -5,7 +5,7 @@ project:
 book:
   title: "Forecasting with R"
   subtitle: "Book"
-  author: "Dr. Martín Lozano"
+  author: "Dr. Martin Lozano"
   page-navigation: true
   search: true
   date: today
@@ -15,16 +15,13 @@ book:
     collapse-level: 1
   page-footer:
     left: "Forecasting with R"
-    right: 'Dr. Martín Lozano &middot; <a href="mailto:mlozanoqf@gmail.com">mlozanoqf@gmail.com</a> &middot; <a href="https://mlozanoqf.github.io/">mlozanoqf.github.io</a>'
+    right: 'Dr. Martin Lozano &middot; <a href="mailto:mlozanoqf@gmail.com">mlozanoqf@gmail.com</a> &middot; <a href="https://mlozanoqf.github.io/">mlozanoqf.github.io</a>'
   chapters:
     - text: "Forecasting with R"
       href: index.qmd
-    - text: "Forecasting with fpp3"
-      href: 01-forecasting-with-fpp3.qmd
-    - text: "Forecasting with machine learning"
-      href: 02-forecasting-with-machine-learning.qmd
-    - text: "Robotrader in R"
-      href: 03-robotrader-in-r.qmd
+    - 01-first-chapter.qmd
+    - 02-second-chapter.qmd
+    - 03-third-chapter.qmd
     - references.qmd
 
 bibliography: references.bib
@@ -36,7 +33,6 @@ crossref:
 execute:
   warning: false
   message: false
-  freeze: auto
 
 format:
   html:

@@ -1,0 +1,843 @@
+# Forecasting with machine learning in R
+
+```{r echo=FALSE}
+# This removes all items in environment.
+rm(list = ls())
+```
+
+As in the previous section, the problem is to forecast a time series. In
+particular, the time series is the *Beer, Wine, and Distilled Alcoholic
+Beverages Sales* as in the original Matt Dancho example. The data is taken
+from FRED (Federal Reserve Economic Data). The data belongs to the
+non-durable goods category; it includes U.S. merchant wholesalers, except
+manufacturers' sales branches and offices sales. The monthly time series goes
+from 2010-01-01 to 2022-10-31. The goal is to use 2022 data, 10 months, as a
+test data set for the forecast.
+
+For the full database details see:
+https://fred.stlouisfed.org/series/S4248SM144NCEN
+
+Let's load the R packages.
+
+```{r}
+# Load libraries.
+library(fpp3)
+library(timetk)     # Toolkit for working with time series in R.
+library(tidyquant)  # Loads tidyverse, financial packages, and data tools.
+library(dplyr)      # Database manipulation.
+library(ggplot2)    # Plots.
+library(tibble)     # Tables.
+library(kableExtra) # Tables.
+library(knitr)
+library(sweep)      # Broom-style tidiers for the forecast package.
+library(forecast)   # Forecasting models and predictions package.
+library(seasonal)
+library(lubridate)
+library(rpart)      # Lightweight regression trees.
+library(nnet)       # Lightweight neural networks.
+```
+
+```{r}
+# This comes from 01-forecasting-with-fpp3.qmd.
+mape_updated <- readRDS("mape_updated.rds")
+```
+
+We can conveniently download the data directly from the FRED API in one line
+of code.
+
+```{r get-data-ml}
+# Beer, Wine, Distilled Alcoholic Beverages, in Millions USD.
+beer <- tq_get("S4248SM144NCEN", get = "economic.data",
+               from = "2010-01-01", to = "2022-10-31")
+```
+
+Let's have a look at the data set. By default it says *price*, but these are
+sales figures in monetary terms. According to the main FRED reference, these
+are in millions of dollars, not seasonally adjusted.
+
+```{r see-data-ml}
+head(beer)
+```
+
+We can change the name of the price column.
+
+```{r rename-sales-ml}
+beer <- beer %>%
+  rename(sales = price)
+
+tail(beer)
+```
+
+Better now.
+
+## Supervised learning workflow
+
+Machine learning is the study of algorithms that improve their predictions
+from data. In time series forecasting, the basic idea is to transform a
+sequence into a supervised learning problem: build a table of predictors
+called $X$, keep the variable we want to forecast as $y$, estimate a model on
+the training data, tune it with validation data, and evaluate it only once on
+the test data.
+
+This chapter uses the same forecasting problem as before with an explicit
+supervised learning workflow. The trade-off is intentional. Instead of asking a
+black-box system to search internally, we write the model comparison ourselves.
+The models are smaller, faster to render in Quarto, easier to explain, and
+easier to debug. The workflow is also closer to what we want students to
+understand:
+
+1. create time-based features;
+2. split the data without shuffling the time order;
+3. fit several explicit models;
+4. choose hyperparameters with the validation set;
+5. evaluate the chosen models on a test set that was not used for fitting or
+   tuning.
+
+We will compare three transparent machine learning alternatives:
+
+- a multivariate linear regression;
+- a regression tree;
+- a small neural network.
+
+The first model is highly interpretable. The tree is nonlinear and can capture
+simple threshold behavior. The neural network is also nonlinear, but we keep it
+small so the model remains pedagogical and reproducible.
+
+## The data
+
+We need an additional data set. The *validation* data set is the sample used to
+provide an unbiased evaluation of a model while tuning hyperparameters. The new
+data sets are the following.
+
+```{r}
+#| label: fig-bstvats
+#| fig-cap: "Beer sales: train, validation and test sets."
+beer %>%
+  ggplot(aes(date, sales)) +
+  annotate("text", x = ymd("2013-01-01"), y = 14000,
+           color = "black", label = "Train region") +
+  geom_rect(xmin = as.numeric(ymd("2021-01-01")),
+            xmax = as.numeric(ymd("2021-12-31")), ymin = 0, ymax = 20000,
+            alpha = 0.01, fill = "purple") +
+  annotate("text", x = ymd("2021-04-01"), y = 7000,
+           color = "black", label = "Validation\nregion") +
+  geom_rect(xmin = as.numeric(ymd("2022-01-01")),
+            xmax = as.numeric(ymd("2022-09-30")), ymin = 0, ymax = 20000,
+            alpha = 0.02, fill = "pink") +
+  annotate("text", x = ymd("2022-06-01"), y = 9000,
+           color = "black", label = "Test\nregion") +
+  geom_line(col = "black") +
+  geom_point(col = "black", alpha = 0.5, size = 2) +
+  theme_tq() +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  labs(subtitle =
+  "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
+  x = "Date", y = "Sales",
+       caption = "The models do not know the test region; this is for us
+       to see how well the models do the 10-month ahead forecast.") +
+  scale_y_continuous(labels = scales::dollar)
+```
+
+And the corresponding zoom version.
+
+```{r}
+#| label: fig-zbstvats
+#| fig-cap: "Zoom. Beer sales: train, validation and test sets."
+beer %>%
+  filter(date > as.Date("2020-01-01")) %>%
+  ggplot(aes(date, sales)) +
+  annotate("text", x = ymd("2020-08-01"), y = 14000,
+           color = "black", label = "Train region") +
+  geom_rect(xmin = as.numeric(ymd("2021-01-01")),
+            xmax = as.numeric(ymd("2021-12-31")), ymin = 0, ymax = 20000,
+            alpha = 0.01, fill = "purple") +
+  annotate("text", x = ymd("2021-07-01"), y = 14000,
+           color = "black", label = "Validation region") +
+  geom_rect(xmin = as.numeric(ymd("2022-01-01")),
+            xmax = as.numeric(ymd("2022-09-30")), ymin = 0, ymax = 20000,
+            alpha = 0.02, fill = "pink") +
+  annotate("text", x = ymd("2022-05-01"), y = 14000,
+           color = "black", label = "Test region") +
+  geom_line(col = "black") +
+  geom_point(col = "black", alpha = 0.5, size = 5) +
+  theme_tq() +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  labs(subtitle =
+  "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
+  x = "Date", y = "Sales",
+       caption = "The models do not know the test region; this is for us
+       to see how well the models do the 10-month ahead forecast.") +
+  scale_y_continuous(labels = scales::dollar)
+```
+
+The `tk_augment_timeseries_signature()` function expands the timestamp
+information column-wise into a machine learning feature set. The original data
+set has a date, a symbol, and the sales variable. The augmented data includes
+calendar information such as year, month, quarter, semester and other time
+features. Not all of them will be important for the final models, but they
+make the forecasting problem readable as a supervised learning problem.
+
+```{r data-in-a-machine-learning-format}
+beer_aug <- beer %>%
+  tk_augment_timeseries_signature()
+
+tail(beer_aug)
+```
+
+The variable names in `beer_aug` are:
+
+```{r}
+colnames(beer_aug)
+```
+
+The full signature is useful for inspection, but it is too broad for this
+monthly data set. Many columns describe hours, seconds, weekdays, or day-of-
+month details. Those are meaningful for hourly or daily data, but here they
+mostly encode calendar artifacts. We keep a smaller set:
+
+- `sales`, the target variable;
+- `index.num`, a numeric time index for the trend;
+- `year`, a coarse trend variable that also makes the split readable;
+- `month.lbl`, a factor for monthly seasonality.
+
+This is a modeling decision, not a transformation of the target. The goal is to
+make the supervised learning matrix easier to explain and less dependent on
+irrelevant timestamp fragments.
+
+```{r feature-selection-rationale}
+selected_ml_columns <- c("sales", "index.num", "year", "month.lbl")
+
+feature_decisions <- tibble(variable = colnames(beer_aug)) %>%
+  mutate(
+    decision = case_when(
+      variable == "sales" ~ "Target",
+      variable %in% selected_ml_columns ~ "Keep",
+      TRUE ~ "Drop"
+    ),
+    reason = case_when(
+      variable == "sales" ~ "Value we want to forecast.",
+      variable == "index.num" ~ "Numeric trend over time.",
+      variable == "year" ~ "Coarse trend and readable split variable.",
+      variable == "month.lbl" ~ "Monthly seasonal factor.",
+      variable == "date" ~ "Raw Date object; useful for plots, not as a direct predictor here.",
+      variable == "symbol" ~ "Constant because there is only one series.",
+      variable %in% c("hour", "minute", "second", "hour12", "am.pm") ~
+        "Intraday information; not meaningful for monthly observations.",
+      variable %in% c("day", "wday", "wday.xts", "wday.lbl", "mday",
+                      "qday", "yday", "mweek", "week", "week.iso",
+                      "week2", "week3", "week4", "mday7") ~
+        "Daily or weekly calendar artifact for monthly data.",
+      TRUE ~ "Redundant with the retained trend or monthly seasonality variables."
+    )
+  )
+
+kable(feature_decisions,
+      caption = "Feature-selection decision for the time-series signature.",
+      row.names = FALSE) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+We now build the actual modeling table from the selected variables and convert
+ordered factors into plain factors. The important point is not to change
+`sales`; we are only preparing the predictor matrix.
+
+```{r data-cleaning}
+beer_clean <- beer_aug %>%
+  select(all_of(selected_ml_columns)) %>%
+  mutate_if(is.ordered, ~ as.character(.) %>% as.factor)
+
+head(beer_clean)
+```
+
+Let's split the database into training, validation and test sets following the
+time ranges in the visualization above. The test set is the most recent data.
+It must remain unknown during model fitting and tuning.
+
+```{r split-ml-data}
+train_tbl <- beer_clean %>% filter(year < 2021)
+valid_tbl <- beer_clean %>% filter(year == 2021)
+test_tbl  <- beer_clean %>% filter(year == 2022)
+
+test_tbl$sales
+```
+
+Our goal is to forecast the first 10 months of 2022.
+
+## Validation workflow
+
+The following helper functions keep the comparison compact. They calculate the
+same error measures for every model: mean error, root mean squared error, mean
+absolute error, mean absolute percentage error, and mean percentage error.
+
+```{r metric-functions}
+metric_tbl <- function(actual, pred) {
+  residuals <- actual - pred
+  pct_error <- residuals / actual
+
+  tibble(
+    me = mean(residuals, na.rm = TRUE),
+    rmse = sqrt(mean(residuals^2, na.rm = TRUE)),
+    mae = mean(abs(residuals), na.rm = TRUE),
+    mape = 100 * mean(abs(pct_error), na.rm = TRUE),
+    mpe = 100 * mean(pct_error, na.rm = TRUE)
+  )
+}
+
+validation_row <- function(model, family, setting, actual, pred) {
+  bind_cols(
+    tibble(model = model, family = family, setting = setting),
+    metric_tbl(actual, pred)
+  )
+}
+
+forecast_error_tbl <- function(model, pred) {
+  beer %>%
+    filter(lubridate::year(date) == 2022) %>%
+    transmute(
+      model = model,
+      date = date,
+      actual = sales,
+      pred = as.numeric(pred),
+      error = actual - pred,
+      error_pct = error / actual
+    )
+}
+```
+
+The linear regression has no hyperparameters. It is our transparent baseline.
+If this model works well, that is useful information: sometimes a simple model
+is enough when trend and seasonality are strong.
+
+```{r validate-lm}
+ml_formula <- sales ~ .
+
+fit_lm_valid <- lm(ml_formula, data = train_tbl)
+pred_lm_valid <- as.numeric(predict(fit_lm_valid, newdata = valid_tbl))
+
+lm_validation <- validation_row(
+  model = "Linear regression",
+  family = "Linear regression",
+  setting = "selected calendar features",
+  actual = valid_tbl$sales,
+  pred = pred_lm_valid
+)
+```
+
+The regression tree has a complexity parameter, `cp`. A smaller value allows a
+larger tree; a larger value prunes the tree more aggressively. We estimate a
+small grid and choose the value that minimizes validation RMSE.
+
+```{r validate-tree}
+tree_grid <- tibble(cp = c(0.001, 0.005, 0.01, 0.02, 0.05))
+
+tree_validation <- bind_rows(lapply(seq_len(nrow(tree_grid)), function(i) {
+  fit_tree <- rpart::rpart(
+    ml_formula,
+    data = train_tbl,
+    method = "anova",
+    control = rpart::rpart.control(
+      cp = tree_grid$cp[i],
+      minsplit = 8,
+      xval = 0
+    )
+  )
+
+  pred_tree <- as.numeric(predict(fit_tree, newdata = valid_tbl))
+
+  validation_row(
+    model = "Regression tree",
+    family = "Regression tree",
+    setting = paste0("cp = ", tree_grid$cp[i]),
+    actual = valid_tbl$sales,
+    pred = pred_tree
+  )
+}))
+
+best_tree <- tree_validation %>%
+  arrange(rmse) %>%
+  slice(1)
+```
+
+The neural network also receives a small manual search. We tune two
+hyperparameters: `size`, the number of hidden units, and `decay`, a penalty
+that discourages overly large weights. Because the variables have different
+scales, we standardize the model matrix before fitting.
+
+```{r nnet-functions}
+fit_nnet_regression <- function(train_data, size, decay, seed = 13) {
+  x <- model.matrix(ml_formula, data = train_data)[, -1, drop = FALSE]
+
+  center <- apply(x, 2, mean)
+  scale <- apply(x, 2, sd)
+  scale[is.na(scale) | scale == 0] <- 1
+
+  x_scaled <- sweep(sweep(x, 2, center, "-"), 2, scale, "/")
+
+  y_center <- mean(train_data$sales)
+  y_scale <- sd(train_data$sales)
+  if (is.na(y_scale) || y_scale == 0) y_scale <- 1
+
+  set.seed(seed)
+  fit <- nnet::nnet(
+    x = x_scaled,
+    y = (train_data$sales - y_center) / y_scale,
+    size = size,
+    decay = decay,
+    linout = TRUE,
+    trace = FALSE,
+    maxit = 1000
+  )
+
+  list(
+    fit = fit,
+    columns = colnames(x),
+    center = center,
+    scale = scale,
+    y_center = y_center,
+    y_scale = y_scale
+  )
+}
+
+predict_nnet_regression <- function(object, new_data) {
+  x <- model.matrix(ml_formula, data = new_data)[, -1, drop = FALSE]
+
+  missing_cols <- setdiff(object$columns, colnames(x))
+  if (length(missing_cols) > 0) {
+    missing_matrix <- matrix(0, nrow = nrow(x), ncol = length(missing_cols))
+    colnames(missing_matrix) <- missing_cols
+    x <- cbind(x, missing_matrix)
+  }
+
+  x <- x[, object$columns, drop = FALSE]
+  x_scaled <- sweep(sweep(x, 2, object$center, "-"), 2, object$scale, "/")
+
+  as.numeric(predict(object$fit, x_scaled)) * object$y_scale + object$y_center
+}
+```
+
+```{r validate-nnet}
+nnet_grid <- expand.grid(
+  size = c(1, 3, 5),
+  decay = c(0, 0.001, 0.01)
+)
+
+nnet_validation <- bind_rows(lapply(seq_len(nrow(nnet_grid)), function(i) {
+  fit_nnet <- fit_nnet_regression(
+    train_data = train_tbl,
+    size = nnet_grid$size[i],
+    decay = nnet_grid$decay[i],
+    seed = 13 + i
+  )
+
+  pred_nnet <- predict_nnet_regression(fit_nnet, valid_tbl)
+
+  validation_row(
+    model = "Neural network",
+    family = "Neural network",
+    setting = paste0("size = ", nnet_grid$size[i],
+                     ", decay = ", nnet_grid$decay[i]),
+    actual = valid_tbl$sales,
+    pred = pred_nnet
+  )
+}))
+
+best_nnet <- nnet_validation %>%
+  arrange(rmse) %>%
+  slice(1)
+```
+
+This is the validation leaderboard. Notice that this table is not the final
+forecasting performance; it is the model selection step. The test set remains
+untouched.
+
+```{r validation-leaderboard}
+validation_leaderboard <- bind_rows(
+  lm_validation,
+  tree_validation,
+  nnet_validation
+) %>%
+  arrange(rmse)
+
+kable(validation_leaderboard,
+      caption = "Validation leaderboard for transparent machine learning models.",
+      digits = 2) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+## Test forecasts
+
+Now we refit the chosen model specifications using the training and validation
+data together, from 2010 through 2021. Then we forecast the 2022 test set. This
+is a standard practice: validation is used to make modeling decisions, and
+after that decision is made we can use all pre-test information to estimate
+the final model.
+
+```{r fit-final-ml-models}
+train_valid_tbl <- beer_clean %>%
+  filter(year < 2022)
+
+fit_lm_final <- lm(ml_formula, data = train_valid_tbl)
+pred_lm_test <- as.numeric(predict(fit_lm_final, newdata = test_tbl))
+
+fit_tree_final <- rpart::rpart(
+  ml_formula,
+  data = train_valid_tbl,
+  method = "anova",
+  control = rpart::rpart.control(
+    cp = best_tree$setting %>%
+      sub("cp = ", "", .) %>%
+      as.numeric(),
+    minsplit = 8,
+    xval = 0
+  )
+)
+pred_tree_test <- as.numeric(predict(fit_tree_final, newdata = test_tbl))
+
+best_nnet_size <- sub("size = ([0-9]+),.*", "\\1", best_nnet$setting) %>%
+  as.numeric()
+best_nnet_decay <- sub(".*decay = ([0-9.]+)", "\\1", best_nnet$setting) %>%
+  as.numeric()
+
+fit_nnet_final <- fit_nnet_regression(
+  train_data = train_valid_tbl,
+  size = best_nnet_size,
+  decay = best_nnet_decay,
+  seed = 100
+)
+pred_nnet_test <- predict_nnet_regression(fit_nnet_final, test_tbl)
+```
+
+Let's show the 10-month forecast errors in a table.
+
+```{r ml-error-table}
+ml_errors <- bind_rows(
+  forecast_error_tbl("ML linear regression", pred_lm_test),
+  forecast_error_tbl("ML regression tree", pred_tree_test),
+  forecast_error_tbl("ML neural network", pred_nnet_test)
+)
+
+kable(ml_errors,
+      caption = "Detailed test performance for transparent machine learning models.",
+      digits = 3,
+      row.names = FALSE) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The same information is clearer in a plot. The black line is the actual series.
+The colored lines are the machine learning forecasts for the 2022 test period.
+
+```{r}
+#| label: fig-transparent-ml-forecasts
+#| fig-cap: "Forecasts from transparent machine learning models."
+beer %>%
+  filter(date > as.Date("2021-01-01")) %>%
+  ggplot(aes(x = yearmonth(date), y = sales)) +
+  geom_line(color = "black", linewidth = 0.5) +
+  geom_point(color = "black", size = 4, alpha = 0.5) +
+  geom_line(aes(y = pred, color = model), linewidth = 0.7,
+            data = ml_errors) +
+  geom_point(aes(y = pred, color = model), size = 3, alpha = 0.8,
+             data = ml_errors) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
+  theme_tq() +
+  labs(x = "Date", y = "Sales", color = "Model") +
+  scale_y_continuous(labels = scales::dollar)
+```
+
+The overall test summary is:
+
+```{r ml-summary}
+ml_summary <- ml_errors %>%
+  group_by(model) %>%
+  summarise(
+    me = mean(error),
+    rmse = sqrt(mean(error^2)),
+    mae = mean(abs(error)),
+    mape = 100 * mean(abs(error_pct)),
+    mpe = 100 * mean(error_pct),
+    .groups = "drop"
+  ) %>%
+  arrange(mape)
+
+kable(ml_summary,
+      caption = "Test summary for transparent machine learning models.",
+      digits = 2) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The best model by MAPE is not necessarily the best model by every metric. This
+is why it is useful to inspect multiple errors. RMSE penalizes large mistakes
+more heavily, while MAPE is easy to read as an average percentage error.
+
+We can also show the best individual point forecast for each model.
+
+```{r point-forecast-ml}
+point_forecast_ml <- ml_errors %>%
+  group_by(model) %>%
+  slice_min(abs(error_pct), n = 1, with_ties = FALSE) %>%
+  ungroup() %>%
+  select(model, date, actual, pred, error, error_pct)
+
+kable(point_forecast_ml,
+      caption = "Best point forecast for each transparent machine learning model.",
+      digits = 4,
+      row.names = FALSE) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+We normally do not choose a model according to one specific point forecast.
+However, it is useful to see where each model was most accurate.
+
+```{r update-mape-ml}
+mape_updated_ml <- mape_updated %>%
+  add_row(.model = "ML linear regression",
+          MAPE = ml_summary$mape[ml_summary$model == "ML linear regression"]) %>%
+  add_row(.model = "ML regression tree",
+          MAPE = ml_summary$mape[ml_summary$model == "ML regression tree"]) %>%
+  add_row(.model = "ML neural network",
+          MAPE = ml_summary$mape[ml_summary$model == "ML neural network"]) %>%
+  arrange(MAPE)
+
+mape_updated_ml
+```
+
+## ARIMA comparison
+
+As in the original Matt Dancho example, we include a different ARIMA workflow
+using the `forecast` package and the `auto.arima()` function. This is not a
+machine learning model in the same sense as the models above. It is a classical
+time series model, and that makes it a useful benchmark.
+
+### Prepare the data
+
+The `tk_ts()` function coerces time series objects and tibbles with date or
+date-time columns to `ts`.
+
+```{r}
+beer_sales_ts <- tk_ts(
+  beer %>% filter(date < as.Date("2022-01-01")),
+  start = 2010,
+  freq = 12
+)
+beer_sales_ts
+```
+
+Just verify that the `tk_ts()` function worked.
+
+```{r}
+has_timetk_idx(beer_sales_ts)
+```
+
+### Estimation
+
+We can use the `auto.arima()` function from the `forecast` package to model the
+time series. By doing that, we do not have to impose a specific ARIMA model;
+the function can test a set of specifications for us.
+
+```{r}
+set.seed(13)
+fit_arima <- auto.arima(beer_sales_ts)
+fit_arima
+```
+
+The `sw_tidy()` function returns the model coefficients in a tibble.
+
+```{r}
+sw_tidy(fit_arima)
+```
+
+The `sw_glance()` function returns training-set accuracy measures.
+
+```{r}
+sw_glance(fit_arima) %>%
+  glimpse()
+```
+
+### Forecast
+
+The `sw_augment()` function helps with model evaluation. We get the `.actual`,
+`.fitted` and `.resid` columns, which are useful in evaluating the model
+against the training data.
+
+```{r}
+sw_augment(fit_arima, timetk_idx = TRUE)
+```
+
+We can visualize the residual diagnostics for the training data.
+
+```{r}
+#| label: fig-fard
+#| fig-cap: "forecast::auto.arima residual diagnosis."
+sw_augment(fit_arima, timetk_idx = TRUE) %>%
+  ggplot(aes(x = index, y = .resid)) +
+  geom_hline(yintercept = 0, color = "red", linewidth = 1) +
+  geom_point(size = 4, alpha = 0.5) +
+  labs(x = "Date", y = "Residuals") +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  theme_tq() +
+  scale_y_continuous(labels = scales::dollar)
+```
+
+Make a forecast using the `forecast()` function.
+
+```{r}
+fcast_arima <- forecast(fit_arima, h = 10)
+fcast_arima
+```
+
+We use `sw_sweep()` to tidy the forecast output.
+
+```{r}
+fcast_tbl <- sw_sweep(fcast_arima, timetk_idx = TRUE)
+tail(fcast_tbl, 10)
+```
+
+We can investigate the error on our test set.
+
+```{r}
+actuals_tbl <- beer %>%
+  filter(lubridate::year(date) == 2022) %>%
+  select(date, sales)
+
+error_tbl_arima <- left_join(actuals_tbl, fcast_tbl,
+                             by = c("date" = "index")) %>%
+  rename(actual = sales.x, pred = sales.y) %>%
+  select(date, actual, pred) %>%
+  mutate(error = round((actual - pred), 2),
+         error_pct = round((error / actual), 4))
+
+error_tbl_arima
+```
+
+And we can calculate the same error metrics.
+
+```{r}
+metric_tbl(error_tbl_arima$actual, error_tbl_arima$pred) %>%
+  glimpse()
+```
+
+Notice that we have the entire forecast in a tibble. We can now more easily
+visualize the forecast.
+
+```{r}
+#| label: fig-fa
+#| fig-cap: "Forecast. forecast::auto.arima."
+fcast_tbl %>%
+  filter(index > as.Date("2021-01-01")) %>%
+  ggplot(aes(x = index, y = sales, color = key)) +
+  geom_ribbon(aes(ymin = lo.95, ymax = hi.95),
+              fill = "#D5DBFF", color = NA, linewidth = 0) +
+  geom_ribbon(aes(ymin = lo.80, ymax = hi.80, fill = key),
+              fill = "#596DD5", color = NA, linewidth = 0, alpha = 0.8) +
+  geom_line() +
+  geom_point(size = 4, alpha = 0.5) +
+  geom_line(aes(x = date, y = sales), color = "black",
+            data = actuals_tbl) +
+  geom_point(aes(x = date, y = sales), color = "black", size = 4,
+             alpha = 0.5, data = actuals_tbl) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-12-01")),
+             linetype = 2) +
+  labs(x = "Date", y = "Sales",
+       caption = paste("MAPE =",
+                       round(100 * mean(abs(error_tbl_arima$error_pct)), 5))) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  scale_color_tq() +
+  scale_fill_tq() +
+  theme_tq() +
+  scale_y_continuous(labels = scales::dollar)
+```
+
+This is a useful benchmark forecast.
+
+## Summary of all results
+
+An interesting question is: *What happens to the accuracy when you average the
+predictions of different methods?* This question makes sense because the
+decision of using one technique or another is not trivial. Taking the average
+can reduce extreme results, although it can also be harder to interpret
+because the final forecast comes from several techniques.
+
+In order to calculate the average forecast we need to load the forecasts from
+the previous section. In particular, we include the seasonal naive,
+NNAR(15,1,8)[12], ETS(M,A,M), and ARIMA(4,1,1)(0,1,1)[12]. We did not include
+the naive, drift and mean forecasts.
+
+```{r}
+fpp3_fc <- readRDS("fpp3_fc.rds")
+```
+
+We add the transparent machine learning forecasts and the `forecast::auto.arima`
+forecast into the `fpp3` forecast table.
+
+```{r}
+ml_fc <- ml_errors %>%
+  transmute(.model = model, date = yearmonth(date), .mean = pred) %>%
+  as_tsibble(key = .model, index = date)
+
+pred_arima_fc <- error_tbl_arima %>%
+  transmute(.model = "forecast::auto.arima",
+            date = yearmonth(date),
+            .mean = pred) %>%
+  as_tsibble(key = .model, index = date)
+
+all_fc <- as_tsibble(fpp3_fc) %>%
+  select(.model, date, .mean) %>%
+  bind_rows(ml_fc, pred_arima_fc)
+
+average <- all_fc %>%
+  index_by(date) %>%
+  summarise(av_fc = mean(.mean, na.rm = TRUE)) %>%
+  bind_cols(sales = actuals_tbl$sales) %>%
+  mutate(error = round((sales - av_fc), 2),
+         error_pct = round((error / sales), 4))
+
+average
+```
+
+Finally, the average forecast.
+
+```{r}
+#| label: fig-fav
+#| fig-cap: "Forecast. Average."
+beer %>%
+  filter(date > as.Date("2021-01-01")) %>%
+  ggplot(aes(x = yearmonth(date), y = sales)) +
+  geom_line(color = "black", linewidth = 0.5) +
+  geom_point(color = "black", size = 4, alpha = 0.5) +
+  geom_line(aes(y = av_fc), linewidth = 0.5,
+            color = "red", data = average) +
+  geom_point(aes(y = av_fc), size = 4, alpha = 0.5,
+             color = "red", data = average) +
+  geom_vline(xintercept = as.numeric(as.Date("2021-12-01")), linetype = 2) +
+  theme_tq() +
+  labs(x = "Date", y = "Sales",
+       caption = paste("MAPE =",
+                       round(100 * mean(abs(average$error_pct)), 5))) +
+  scale_y_continuous(labels = scales::dollar)
+```
+
+Let's update our MAPE summary table.
+
+```{r}
+mape_updated_all <- mape_updated_ml %>%
+  add_row(.model = "forecast::auto.arima",
+          MAPE = 100 * mean(abs(error_tbl_arima$error_pct))) %>%
+  add_row(.model = "Average forecast",
+          MAPE = 100 * mean(abs(average$error_pct))) %>%
+  arrange(MAPE)
+
+mape_updated_all
+```
+
+Nice. The important lesson is not that one model family is always best. The
+important lesson is that a transparent workflow lets us see where the forecast
+comes from, how the model was selected, how long it takes to render, and how it
+performs when confronted with truly unseen data.
+
+## References
+
+The main web references of this document are:
+
+- [Time Series Machine Learning with timetk.](https://www.business-science.io/code-tools/2017/10/24/demo_week_timetk.html)
+- [Tidy Forecasting with sweep.](https://www.business-science.io/code-tools/2017/10/25/demo_week_sweep.html)
+- [Forecasting: Principles and Practice.](https://otexts.com/fpp3/)
