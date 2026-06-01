@@ -10,24 +10,89 @@ library(vembedr)
 
 ## Introduction. {.unnumbered}
 
-Forecast methods are essential in business and finance for strategic decision-making, efficient resource allocation, and financial planning. Accurate forecasts enable organizations to identify and manage risks, attract investor confidence, stay competitive in the market, optimize supply chains, and evaluate performance against benchmarks. By anticipating changes in the business environment, businesses can adapt proactively and comply with regulatory requirements. Overall, forecasting provides a structured approach to planning, allowing businesses to navigate uncertainties and achieve long-term success.
+Forecasting is a structured way to reason about future values using observed data. In business and finance, forecasts support planning, inventory decisions, risk management, budgeting, and performance evaluation. This chapter uses one monthly sales series to connect the main pieces of a forecasting workflow: the data split, the mathematical notation, the model, the code, the forecast, and the out-of-sample error.
 
 ## The forecast problem.
 
-The problem is to forecast a time series. In particular, the time series is the *Beer, Wine, and Distilled Alcoholic Beverages Sales* as in the original Matt Dancho's example. The data is taken from FRED (Federal Reserve Economic Data). The data belongs to the non-durable goods category, it includes U.S. merchant wholesalers, except manufacturers' sales branches and offices sales. The monthly time series goes from 2010-01-01 to 2022-10-31. And the goal is to use 2022 data (10 months) as a test data to conduct the forecast.
+The empirical problem is to forecast one monthly time series: *Beer, Wine, and Distilled Alcoholic Beverages Sales*, following the original Matt Dancho example. The data comes from FRED, the Federal Reserve Economic Data database. The series belongs to the non-durable goods category and measures sales by U.S. merchant wholesalers, excluding manufacturers' sales branches and offices. The observations run from 2010-01-01 to 2022-10-31. The goal is to estimate models with information through December 2021 and evaluate their forecasts over the 10 available months of 2022.
 
 For the full database details see: 
 https://fred.stlouisfed.org/series/S4248SM144NCEN
 
-Before start, see: What is forecasting?
+Before starting, see: What is forecasting?
 
 ```{r}
 embed_url("https://youtu.be/zvd9oboayEc?si=DfK9JkSqapE8JHiw")
 ```
 
-### The data.
+## Mathematical notation for the chapter.
 
-Let's load the R packages.
+Before using R, it is useful to define the forecasting problem as a mathematical object. Let
+
+$$
+y_t = \text{beer, wine, and distilled alcoholic beverages sales in month } t.
+$$
+
+The observed series is
+
+$$
+\{y_1, y_2, \ldots, y_T\},
+$$
+
+where the training sample ends in December 2021. The test sample contains the next ten observations, January 2022 through October 2022. The task is to produce ten forecasts:
+
+$$
+\hat{y}_{T+h\mid T}, \qquad h = 1,2,\ldots,10.
+$$
+
+The notation $\hat{y}_{T+h\mid T}$ means: the forecast for month $T+h$ using only the information available up to month $T$. This point matters. When we evaluate the forecast, the realized value $y_{T+h}$ is known to us after the fact. At the forecast origin, that future value was unavailable to the model.
+
+The out-of-sample forecast error at horizon $h$ is
+
+$$
+e_{T+h} = y_{T+h} - \hat{y}_{T+h\mid T}.
+$$
+
+Because this chapter compares several methods, we summarize the ten forecast errors with the mean absolute percentage error:
+
+$$
+\text{MAPE}
+= \frac{100}{10}\sum_{h=1}^{10}
+\left|
+\frac{y_{T+h} - \hat{y}_{T+h\mid T}}{y_{T+h}}
+\right|.
+$$
+
+This formula has a simple interpretation. For each forecasted month, we compute the absolute error as a percentage of the observed value. Then we average those ten percentage errors. A MAPE of 5 means that, over the test period, the typical absolute error is about 5 percent of the realized monthly sales value.
+
+The notation used throughout the chapter is:
+
+| Symbol | Meaning in this chapter |
+|---|---|
+| $t$ | Time index for monthly observations. |
+| $T$ | Last month in the training sample, December 2021. |
+| $h$ | Forecast horizon. Here $h=1,\ldots,10$. |
+| $m$ | Seasonal period. For monthly data, $m=12$. |
+| $y_t$ | Observed sales in month $t$. |
+| $\hat{y}_{T+h\mid T}$ | Forecast for month $T+h$ using information through month $T$. |
+| $e_{T+h}$ | Forecast error in month $T+h$. |
+
+This chapter therefore has a simple audit trail:
+
+| R object or function | Mathematical role |
+|---|---|
+| `beer_tbls` | The ordered time series $\{y_t\}$ with a monthly index. |
+| `beer_train` | The information set available at forecast origin $T$, written as $\{y_1,\ldots,y_T\}$. |
+| `beer_2022` | The holdout sample $\{y_{T+1},\ldots,y_{T+10}\}$ used only for evaluation. |
+| `model()` | Estimates the unknown parameters of a forecasting rule from `beer_train`. |
+| `forecast(h = 10)` | Computes $\hat{y}_{T+h\mid T}$ for $h=1,\ldots,10$. |
+| `accuracy(..., beer_2022)` | Compares $\hat{y}_{T+h\mid T}$ with $y_{T+h}$ and calculates error measures such as MAPE. |
+
+This notation is the bridge between the formulas, the code, and the reported results.
+
+## The data.
+
+First load the R packages.
 
 ```{r}
 # Load libraries
@@ -54,13 +119,13 @@ beer <- tq_get("S4248SM144NCEN", get = "economic.data",
                from = "2010-01-01", to = "2022-10-31")
 ```
 
-Let's have a look of the data set. By default it says *price*, but these are sales figures in monetary terms. According to the main FRED reference, these are in millions of dollars, not seasonally adjusted.
+The first rows show the structure of the data set. By default the value column is named *price*, although these are sales figures in monetary terms. According to the main FRED reference, these are in millions of dollars and are reported before seasonal adjustment.
 
 ```{r see-the-data}
 head(beer)
 ```
 
-We can change the name of the price column.
+We rename the value column so that the code matches the economic meaning of the variable.
 
 ```{r ren}
 beer <- beer %>%
@@ -68,9 +133,9 @@ beer <- beer %>%
 
 tail(beer)
 ```
-Better now. 
+The column name now identifies the variable as sales.
 
-Visualization is particularly important for time series analysis and forecasting. It’s a good idea to identify spots where we will split the data into training and test. This kind of split is consistent with most machine learning algorithms. The *training* dataset is the sample of data used to fit and train the model by learning from the data. The *test* dataset is the sample of data used to provide an unbiased evaluation of a final model fit on the training dataset. The test dataset provides the gold standard used to evaluate the model. It is only used once a model is completely trained. The test set is generally what is used to evaluate competing models.
+Visualization is particularly important for time series analysis and forecasting. The first plot identifies the point where the data are split into training and test samples. The *training* data set is the sample used to estimate the model. The *test* data set is the holdout sample used to evaluate the final forecasts. In this chapter, the test set is used after the forecasts have already been produced.
 
 It is also important to see the time series because normally the models will perform better if we can identify basic characteristics such as trend and seasonality. This data set clearly has a trend and a seasonality as people drink more alcohol in December. 
 
@@ -96,12 +161,12 @@ beer %>%
   labs(subtitle = 
   "Train (2010 - 2021), and test set (Jan 2022 to Oct 2022)",
   x = "Date", y = "Sales",
-       caption = "The models do not know the test region, this is for us 
-       to see how well the models do the 10-month ahead forecast.") +
+       caption = "The test region is hidden from the models during fitting;
+       it is shown here to evaluate the 10-month ahead forecast.") +
   scale_y_continuous(labels = scales::dollar)
 ```
 
-Then, the problem is to forecast the 10 months of the test region. This is, from January to October 2022. 
+The forecasting task is to predict the 10 months in the test region, from January to October 2022.
 
 Here is a zoom version of the plot above.
 
@@ -125,14 +190,30 @@ beer %>%
   labs(subtitle = 
   "Train (2010 - 2021) and test set (Jan 2022 to Oct 2022)",
   x = "Date", y = "Sales",
-       caption = "The models do not know the test region, this is for us 
-       to see how well the models do the 10-month ahead forecast.") +
+       caption = "The test region is hidden from the models during fitting;
+       it is shown here to evaluate the 10-month ahead forecast.") +
   scale_y_continuous(labels = scales::dollar)
 ```
 
-### Time series properties.
+## Time series properties.
 
-The forecasting techniques are expected to exploit the time-series components like trend and seasonal component. Here we use the @hyndman2021forecasting <tt>`fpp3`</tt> package to learn about the time series properties before conducting the forecast techniques. In order to use the <tt>`fpp3`</tt> package, we have to transform <tt>`beer`</tt> from a <tt>`tibble`</tt> to a <tt>`tsibble`</tt> object.
+The forecasting techniques should capture the main time-series components, especially trend and seasonality. Here we use the @hyndman2021forecasting <tt>`fpp3`</tt> package to study those properties before estimating the forecasting models. To use <tt>`fpp3`</tt>, we transform <tt>`beer`</tt> from a <tt>`tibble`</tt> to a <tt>`tsibble`</tt> object.
+
+A time series is an ordered process, so the position of each observation matters. For many business series, the observed value can be understood as the combination of three latent components:
+
+$$
+y_t = T_t + S_t + R_t
+$$
+
+in an additive decomposition, or
+
+$$
+y_t = T_t \times S_t \times R_t
+$$
+
+in a multiplicative decomposition. Here, $T_t$ is the trend-cycle component, $S_t$ is the seasonal component, and $R_t$ is the remaining irregular component. The multiplicative version is natural when seasonal movements grow or shrink with the level of the series. In business sales, December seasonality may be larger in dollar terms when the whole series is at a higher level.
+
+The decomposition works as a diagnostic step before forecasting. It tells us what kind of structure a forecast model must explain: long-run movement, repeated monthly seasonality, and unusual shocks.
 
 ```{r from tibble to tsibble}
 beer_tbls <- beer
@@ -141,6 +222,18 @@ beer_tbls <- as_tsibble(beer_tbls)
 ```
 
 According to @hyndman2021forecasting, the X-11 method was originated in the US Census Bureau and further developed by Statistics Canada. The decomposition process tends to be highly robust to outliers and level shifts in the time series. The details of the X-11 method are described in @dagum2016seasonal.
+
+The code below asks X-11 to estimate the unobserved components $T_t$, $S_t$, and $R_t$ from the observed series $y_t$. The word *estimate* is important: we observe sales directly. The trend and irregular component are inferred from the observed series using moving averages and seasonal filters.
+
+The decomposition can be read as follows:
+
+| Element | Role |
+|---|---|
+| Input | The observed monthly sales series $y_t$. |
+| Estimated trend-cycle | The slowly moving component $T_t$. |
+| Estimated seasonality | The recurring monthly pattern $S_t$. |
+| Estimated irregular component | The remaining short-run movement $R_t$. |
+| Use in this chapter | Diagnose what later forecast models need to capture. |
 
 
 ```{r}
@@ -153,7 +246,7 @@ beer_tbls %>%
   labs(y = "Sales", x = "Date") +
   scale_y_continuous(labels = scales::dollar)
 ```
-The trend shows a clear change in the first half of 2020. Let's take a look of it.
+The trend shows a clear change in the first half of 2020. The next table inspects that period directly.
 
 ```{r}
 beer_tbls %>%
@@ -212,7 +305,9 @@ beer_tbls %>%
   scale_y_continuous(labels = scales::dollar)
 ```
 
-Apparently, these trend and irregular events are consistent independently of the decomposition technique. We implement the SEATS decomposition below. SEATS stands for *Seasonal Extraction in ARIMA Time Series*. According to @hyndman2021forecasting, this procedure was developed at the Bank of Spain, and is now widely used by government agencies around the world. See @dagum2016seasonal for further details.
+The trend and irregular events are consistent across decomposition techniques. We implement the SEATS decomposition below. SEATS stands for *Seasonal Extraction in ARIMA Time Series*. According to @hyndman2021forecasting, this procedure was developed at the Bank of Spain, and is now widely used by government agencies around the world. See @dagum2016seasonal for further details.
+
+SEATS reaches the same conceptual destination as X-11 through an ARIMA-based route. It starts from an ARIMA representation of the series and decomposes that model into trend-cycle, seasonal, and irregular pieces. In practical terms, this is a useful robustness check. If X-11 and SEATS point to the same relevant events, the conclusion is less likely to be an artifact of one specific decomposition algorithm.
 
 ```{r}
 #| label: fig-adobsous
@@ -262,6 +357,14 @@ December is the month of the year with the highest average sales, followed by Ju
 
 Following @hyndman2021forecasting, just as correlation measures the extent of a linear relationship between two variables, autocorrelation measures the linear relationship between lagged values of a time series. When data have a trend, the autocorrelations for small lags tend to be large and positive because observations nearby in time are also nearby in value. So the ACF of a trended time series tends to have positive values that slowly decrease as the lags increase. When data are seasonal, the autocorrelations will be larger for the seasonal lags (at multiples of the seasonal period, in this case 12) than for other lags.
 
+For lag $k$, the autocorrelation is the correlation between the series and its own lagged version:
+
+$$
+\rho_k = \operatorname{Corr}(y_t, y_{t-k}).
+$$
+
+The ACF plot estimates $\rho_k$ for several values of $k$. If $\rho_{12}$, $\rho_{24}$, and $\rho_{36}$ are relatively large, the plot is telling us that observations twelve, twenty-four, and thirty-six months apart tend to move together. That is the mathematical signature of annual seasonality in monthly data.
+
 ```{r}
 #| label: fig-aombs
 #| fig-cap: "ACF of monthly beer sales."
@@ -275,6 +378,20 @@ Beer sales is both trended and seasonal. The slow decrease in the ACF as the lag
 
 Here we implement some selected forecast techniques using the @hyndman2021forecasting <tt>`fpp3`</tt> package. First define the training and test set (2022).
 
+All forecasting methods in this section follow the same logic:
+
+$$
+\text{training data}
+\longrightarrow
+\text{estimated model}
+\longrightarrow
+\text{ten forecasts}
+\longrightarrow
+\text{out-of-sample error}.
+$$
+
+In R, this becomes `beer_train %>% model(...) %>% forecast(h = 10)`, followed by `accuracy(..., beer_2022)`. The syntax is compact, and each step has a clear statistical meaning. The model is fitted using only observations up to December 2021. The forecast is then compared against the ten months in 2022.
+
 ```{r}
 beer_train <- beer_tbls %>%
   select(date, sales) %>%
@@ -285,9 +402,53 @@ beer_2022 <- beer_tbls %>%
   filter_index("2022-01" ~ .)
 ```
 
-### Four simple techniques.
+## Four simple techniques.
 
-Let's estimate four simple forecast techniques. *Mean*, where the forecasts of all future values are equal to the average of the historical data. *Naïve*, we set all forecasts to be the value of the last observation. *Seasonal naïve*, we set each forecast to be equal to the last observed value from the same season. And *drift*, to allow the forecasts to increase or decrease over time.
+We estimate four simple forecast techniques. The *mean* method sets every forecast equal to the historical average. The *naïve* method repeats the last observed value. The *seasonal naïve* method repeats the last observed value from the same season. The *drift* method allows the forecasts to increase or decrease along a straight-line trend.
+
+These simple methods are useful because their equations are transparent. Let $m=12$ be the seasonal period for monthly data.
+
+Mean method:
+
+$$
+\hat{y}_{T+h\mid T} = \bar{y}
+= \frac{1}{T}\sum_{t=1}^{T} y_t.
+$$
+
+Naïve method:
+
+$$
+\hat{y}_{T+h\mid T} = y_T.
+$$
+
+Seasonal naïve method:
+
+$$
+\hat{y}_{T+h\mid T} = y_{T+h-m},
+\qquad h=1,\ldots,m.
+$$
+
+For this chapter, $h=1,\ldots,10$, so every forecast is copied from the same month in the previous year. The January 2022 forecast is the January 2021 value, the February 2022 forecast is the February 2021 value, and so on.
+
+Drift method:
+
+$$
+\hat{y}_{T+h\mid T}
+= y_T + h\left(\frac{y_T-y_1}{T-1}\right).
+$$
+
+The drift method is a naïve extension that adds a straight-line slope estimated from the first and last observations in the training sample.
+
+The four formulas can be compared directly:
+
+| Method | Forecast rule | Main idea |
+|---|---|---|
+| Mean | $\hat{y}_{T+h\mid T}=\bar{y}$ | Use the historical average for every future month. |
+| Naïve | $\hat{y}_{T+h\mid T}=y_T$ | Repeat the last observed value. |
+| Seasonal naïve | $\hat{y}_{T+h\mid T}=y_{T+h-m}$ | Copy the same month from the previous year. |
+| Drift | $\hat{y}_{T+h\mid T}=y_T+h(y_T-y_1)/(T-1)$ | Extend a straight-line historical slope. |
+ 
+This table matters pedagogically because the code below estimates four named models, while the equations show exactly what each model does.
 
 Estimate the four models.
 
@@ -306,7 +467,7 @@ beer_fc <- beer_fit %>%
   fabletools::forecast(h = "10 months")
 ```
 
-Let's compute the MAPE of all forecasts.
+We compute the MAPE for each forecast rule.
 
 ```{r}
 mape_table <- fabletools::accuracy(beer_fc, beer_2022) %>%
@@ -314,6 +475,8 @@ mape_table <- fabletools::accuracy(beer_fc, beer_2022) %>%
   arrange(desc(-MAPE))
 mape_table
 ```
+
+The object `beer_fc` contains the ten values $\hat{y}_{T+h\mid T}$ for each model. The object `beer_2022` contains the ten realized values $y_{T+h}$. Therefore, `accuracy(beer_fc, beer_2022)` performs evaluation only: it compares already-produced forecasts against the holdout sample.
 
 ```{r}
 sn_mape <- fabletools::accuracy(beer_fc, beer_2022) %>%
@@ -323,7 +486,7 @@ sn_mape <- fabletools::accuracy(beer_fc, beer_2022) %>%
 sn_mape
 ```
 
-Let's plot the forecast results.
+The forecast results can be inspected visually.
 
 ```{r}
 #| label: fig-ffsf
@@ -336,7 +499,7 @@ beer_fc %>%
   theme(legend.position = "bottom") +
   scale_y_continuous(labels = scales::dollar)
 ```
-The plot above is not very clear. Here is a zoom version.
+The full-range plot compresses the 2022 comparison. The zoom version focuses on the evaluation window.
 
 ```{r}
 #| label: fig-zffsf
@@ -352,7 +515,7 @@ beer_fc %>%
   guides(colour = guide_legend(title = "Forecast:")) +
   theme(legend.position = "bottom")
 ```
-This is the seasonal naïve forecasts.
+The seasonal naïve forecasts can be inspected separately.
 
 ```{r}
 #| label: fig-zfsnf
@@ -379,11 +542,20 @@ beer_sn_fc <- beer_fc %>%
   theme(legend.position = "bottom") +
     scale_y_continuous(labels = scales::dollar)
 ```
-The simple techniques are not necessarily bad techniques. 
+Simple techniques can be strong baselines. A more complex model earns its place only when it improves on these transparent rules.
 
-### Exponential smoothing.
+## Exponential smoothing.
 
 According to @hyndman2021forecasting, forecasts produced using exponential smoothing methods are weighted averages of past observations, with the weights decaying exponentially as the observations get older. In other words, the more recent the observation the higher the associated weight. This framework generates reliable forecasts quickly and for a wide range of time series, which is a great advantage and of major importance to applications in industry.
+
+The simplest exponential smoothing idea can be written as
+
+$$
+\ell_t = \alpha y_t + (1-\alpha)\ell_{t-1},
+\qquad 0 < \alpha < 1.
+$$
+
+Here, $\ell_t$ is the current estimate of the level of the series. A large $\alpha$ gives more weight to the newest observation; a small $\alpha$ makes the estimated level move more slowly. ETS extends this idea by estimating a level component, a trend component, a seasonal component, and an error structure.
 
 In this subsection, we let the <tt>`ETS()`</tt> function select the model by minimising the AICc.
 
@@ -393,7 +565,31 @@ beer_ets <- beer_train %>%
 report(beer_ets)
 ```
 
-The <tt>`ETS(M,A,M)`</tt> corresponds to a Holt-Winters multiplicative method with multiplicative errors for when seasonal variations are changing proportional to the level of the series.
+The <tt>`ETS(M,A,M)`</tt> corresponds to a Holt-Winters multiplicative method with multiplicative errors for when seasonal variations are changing proportional to the level of the series. The notation `ETS(M,A,M)` means:
+
+| Letter | Meaning in this model |
+|---|---|
+| First `M` | Multiplicative error: forecast uncertainty is proportional to the level. |
+| `A` | Additive trend: the trend adds or subtracts a roughly constant amount. |
+| Second `M` | Multiplicative seasonality: seasonal effects scale with the level. |
+
+A compact way to read the selected model is
+
+$$
+y_t =
+(\ell_{t-1}+b_{t-1})s_{t-m}(1+\varepsilon_t),
+$$
+
+where $\ell_t$ is level, $b_t$ is trend, $s_t$ is seasonality, $m=12$, and $\varepsilon_t$ is a one-step-ahead innovation. The corresponding point forecast is approximately
+
+$$
+\hat{y}_{T+h\mid T}
+=
+(\ell_T + h b_T)s_{T+h-m},
+\qquad h=1,\ldots,12.
+$$
+
+The model is transparent once we name its estimated parts: `ETS()` estimates the level, trend, seasonal states, and smoothing parameters; `forecast()` advances those states into the ten future months.
 
 ```{r}
 #| label: fig-fec
@@ -420,7 +616,7 @@ ets_mape <- fabletools::accuracy(beer_ets_fc, beer_2022) %>%
   unlist()
 ets_mape
 ```
-Let's see the <tt>`ETS(M,A,M)`</tt> forecast.
+The <tt>`ETS(M,A,M)`</tt> forecast can be plotted against the observed series.
 
 ```{r}
 #| label: fig-fef
@@ -433,7 +629,7 @@ beer_ets %>%
   theme(legend.position = "bottom") +
   scale_y_continuous(labels = scales::dollar)
 ```
-This is not very clear, here is the zoom version.
+The full-range plot compresses the forecast comparison, so the zoom view is easier to read.
 
 ```{r}
 #| label: fig-zfef
@@ -453,7 +649,7 @@ This is not very clear, here is the zoom version.
   theme(legend.position = "bottom") +
   scale_y_continuous(labels = scales::dollar)
 ```
-Update the MAPE table.
+The MAPE table is extended with the ETS result.
 
 ```{r}
 mape_updated <- mape_table %>%
@@ -462,15 +658,66 @@ mape_updated <- mape_table %>%
 mape_updated
 ```
 
-### ARIMA.
+## ARIMA.
 
-According to @hyndman2021forecasting, while exponential smoothing models are based on a description of the trend and seasonality in the data, ARIMA models aim to describe the autocorrelations in the data. The <tt>`ARIMA()`</tt> function combines unit root tests, minimisation of the AICc and MLE to obtain an ARIMA model. By setting <tt>`stepwise = FALSE`</tt> and <tt>`approximation = FALSE`</tt>, we are making R work extra hard to find a good model. 
+According to @hyndman2021forecasting, exponential smoothing models describe trend and seasonality, while ARIMA models describe autocorrelation. The <tt>`ARIMA()`</tt> function combines unit root tests, AICc minimisation, and maximum likelihood estimation to select an ARIMA model. Setting <tt>`stepwise = FALSE`</tt> and <tt>`approximation = FALSE`</tt> asks R to run a more exhaustive search.
+
+The general seasonal ARIMA structure is
+
+$$
+\Phi(B^m)\phi(B)(1-B)^d(1-B^m)^D y_t
+=
+c + \Theta(B^m)\theta(B)\varepsilon_t.
+$$
+
+The symbols have the following meaning:
+
+| Symbol | Meaning |
+|---|---|
+| $B$ | Backshift operator: $B y_t = y_{t-1}$. |
+| $m$ | Seasonal period. Here $m=12$. |
+| $d$ | Number of ordinary differences used to remove non-stationary trend. |
+| $D$ | Number of seasonal differences used to remove seasonal persistence. |
+| $\phi(B)$ | Non-seasonal autoregressive polynomial. |
+| $\theta(B)$ | Non-seasonal moving-average polynomial. |
+| $\Phi(B^m)$ | Seasonal autoregressive polynomial. |
+| $\Theta(B^m)$ | Seasonal moving-average polynomial. |
+| $\varepsilon_t$ | Innovation or shock left after using the past. |
+
+Three short examples make the backshift notation readable:
+
+$$
+B y_t = y_{t-1},
+$$
+
+$$
+(1-B)y_t = y_t-y_{t-1},
+$$
+
+$$
+(1-B^{12})y_t = y_t-y_{t-12}.
+$$
+
+The first line says that $B$ moves the series one month backward. The second line computes a monthly change. The third line compares the current month with the same month one year earlier.
+
+In words, ARIMA first transforms the series so that trend and seasonal persistence are reduced. Then it models the remaining dependence using lagged values and lagged shocks. The `ARIMA()` function performs an organized model search: it tries candidate values for the ARIMA orders, estimates parameters by maximum likelihood, and chooses a specification using AICc. Setting `stepwise = FALSE` and `approx = FALSE` makes that search more exhaustive and less approximate.
 
 ```{r}
 beer_arima <- beer_train %>%
   model(arima_auto = ARIMA(sales, stepwise = FALSE, approx = FALSE))
 report(beer_arima)
 ```
+
+The selected model is reported by R. Once we know the selected specification, the model can be read as an equation. For example, if the selected model is ARIMA(4,1,1)(0,1,1)[12], then the differenced series is modeled as
+
+$$
+\phi(B)(1-B)(1-B^{12})y_t
+=
+\theta(B)\Theta(B^{12})\varepsilon_t.
+$$
+
+The ordinary difference $(1-B)y_t = y_t-y_{t-1}$ removes local trend. The seasonal difference $(1-B^{12})y_t = y_t-y_{t-12}$ removes annual persistence. The AR and MA terms then model the remaining dependence.
+
 The residuals for the best ARIMA model.
 
 ```{r}
@@ -481,6 +728,17 @@ beer_arima %>%
   gg_tsresiduals()
 ```
 
+The residual diagnostic is the model audit. For a well-specified ARIMA model, the residuals should behave approximately like white noise:
+
+$$
+E(\hat{\varepsilon}_t) \approx 0,
+\qquad
+\operatorname{Corr}(\hat{\varepsilon}_t,\hat{\varepsilon}_{t-k}) \approx 0
+\quad \text{for } k>0.
+$$
+
+If the residual ACF still shows strong structure, the model has left predictable information unused. If the residuals look mostly uncorrelated, the model has captured the main time dependence available in the training data.
+
 The forecast for the best ARIMA model.
 
 ```{r}
@@ -489,7 +747,7 @@ beer_arima_fc <- beer_arima %>%
 beer_arima_fc
 ```
 
-The best ARIMA MAPE.
+The ARIMA MAPE.
 
 ```{r}
 arima_mape <- fabletools::accuracy(beer_arima_fc, beer_2022) %>%
@@ -498,7 +756,7 @@ arima_mape <- fabletools::accuracy(beer_arima_fc, beer_2022) %>%
 arima_mape
 ```
 
-Let's plot the forecast results.
+The ARIMA forecast results can be inspected visually.
 
 ```{r}
 #| label: fig-faf
@@ -510,7 +768,7 @@ beer_arima_fc %>%
   scale_y_continuous(labels = scales::dollar)
 ```
 
-The plot above is not very clear. Here is a zoom version.
+The full-range plot compresses the 2022 comparison. The zoom version focuses on the forecast months.
 
 ```{r}
 #| label: fig-zfaf
@@ -531,7 +789,7 @@ The plot above is not very clear. Here is a zoom version.
   scale_y_continuous(labels = scales::dollar)
 ```
 
-Update the MAPE table.
+The MAPE table is extended with the ARIMA result.
 
 ```{r}
 mape_updated <- mape_updated %>%
@@ -539,16 +797,42 @@ mape_updated <- mape_updated %>%
   arrange(desc(-MAPE))
 mape_updated
 ```
-### Neural network.
+## Neural network.
 
-Artificial neural networks are forecasting methods that are based on simple mathematical models of the brain. They allow complex nonlinear relationships between the response variable and its predictors. With time series data, lagged values of the time series can be used as inputs to a neural network, just as we used lagged values in a linear autoregression model. We call this a neural network autoregression or NNAR model.
+Neural networks are flexible nonlinear forecasting models. With time series data, lagged values of the series can be used as inputs, just as lagged values appear in a linear autoregression. When a neural network uses autoregressive inputs, we call it a neural network autoregression or NNAR model.
+
+A neural network autoregression can be understood as a nonlinear version of an autoregressive model. It replaces a fixed linear relation with a flexible function of past values:
+
+$$
+y_t = f(y_{t-1}, y_{t-2}, \ldots, y_{t-p}, y_{t-m}, y_{t-2m}, \ldots) + \varepsilon_t.
+$$
+
+With one hidden layer, the function $f$ can be written as
+
+$$
+f(x_t)
+=
+w_0 + \sum_{j=1}^{k} w_j \sigma(a_j + v_j^\top x_t),
+$$
+
+where $x_t$ is the vector of lagged inputs, $k$ is the number of hidden neurons, $\sigma(\cdot)$ is a nonlinear activation function, and the weights $w_j$, $a_j$, and $v_j$ are estimated from the training data. This flexibility increases the need for an audit of the inputs. In this chapter, the NNAR model receives lagged sales values only.
 
 ```{r}
 beer_nnet <- beer_train %>%
   model(NNETAR(sales))
 report(beer_nnet)
 ```
-The NNAR(15,1,8)[12] model has inputs $y_{t−1}, y_{t−2},..., y_{t−15}$ and 8 neurons in the hidden layer. 
+
+The NNAR(15,1,8)[12] model has inputs $y_{t-1}, y_{t-2},\ldots,y_{t-15}$ plus one seasonal lag structure for monthly data, and 8 neurons in the hidden layer. In plain language, `NNETAR()` learns a nonlinear forecasting rule from recent monthly history and annual seasonal history.
+
+The calculation can be read in four steps:
+
+| Step | Interpretation |
+|---|---|
+| Build inputs | Collect recent lags and seasonal lags of sales. |
+| Hidden layer | Combine those lags into $k=8$ nonlinear summaries. |
+| Output layer | Combine the nonlinear summaries into one forecast. |
+| Evaluation | Compare the ten forecasted values with the ten 2022 observations. |
 
 The forecast for the best NNAR model.
 
@@ -558,7 +842,7 @@ beer_nnet_fc <- beer_nnet %>%
 beer_nnet_fc
 ```
 
-The best NNET MAPE.
+The NNAR MAPE.
 
 ```{r}
 nnet_mape <- fabletools::accuracy(beer_nnet_fc, beer_2022) %>%
@@ -566,7 +850,7 @@ nnet_mape <- fabletools::accuracy(beer_nnet_fc, beer_2022) %>%
   unlist()
 nnet_mape
 ```
-Let's plot the forecast results.
+The NNAR forecast results can be inspected visually.
 
 ```{r}
 #| label: fig-fnf
@@ -578,7 +862,7 @@ beer_nnet_fc %>%
   scale_y_continuous(labels = scales::dollar)
 ```
 
-The plot above is not very clear. Here is a zoom version.
+The full-range plot compresses the 2022 comparison. The zoom version focuses on the forecast months.
 
 ```{r}
 #| label: fig-zfnf
@@ -599,7 +883,7 @@ The plot above is not very clear. Here is a zoom version.
   scale_y_continuous(labels = scales::dollar)
 ```
 
-Update the MAPE table.
+The MAPE table is extended with the NNAR result.
 
 ```{r}
 mape_updated <- mape_updated %>%
@@ -608,12 +892,27 @@ mape_updated <- mape_updated %>%
 mape_updated
 ```
 
+The final table is an empirical comparison over one specific holdout window. The mathematical object being compared is always the same:
+
+$$
+\left\{
+\hat{y}_{T+1\mid T},
+\hat{y}_{T+2\mid T},
+\ldots,
+\hat{y}_{T+10\mid T}
+\right\}.
+$$
+
+What changes from row to row is the rule used to generate those ten forecasts. The seasonal naïve method copies the previous year's monthly pattern; ETS updates level, trend, and seasonality through smoothing equations; ARIMA models autocorrelation after differencing; NNAR learns a nonlinear function of lagged observations. The MAPE table is therefore the last step in a complete chain: model assumption, estimated parameters, forecast values, forecast errors, and summary accuracy.
+
 ```{r}
+#| echo: false
 # I save the mape_updated object to use it in the machine learning chapter.
 saveRDS(mape_updated, "mape_updated.rds")
 ```
 
 ```{r}
+#| echo: false
 # I save the forecast object to use it in the machine learning chapter.
 fpp3_fc <- bind_rows(beer_sn_fc, beer_ets_fc, beer_arima_fc,
                      beer_nnet_fc)

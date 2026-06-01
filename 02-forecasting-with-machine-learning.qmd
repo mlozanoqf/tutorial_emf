@@ -5,19 +5,19 @@
 rm(list = ls())
 ```
 
-As in the previous section, the problem is to forecast a time series. In
-particular, the time series is the *Beer, Wine, and Distilled Alcoholic
-Beverages Sales* as in the original Matt Dancho example. The data is taken
-from FRED (Federal Reserve Economic Data). The data belongs to the
-non-durable goods category; it includes U.S. merchant wholesalers, except
-manufacturers' sales branches and offices sales. The monthly time series goes
-from 2010-01-01 to 2022-10-31. The goal is to use 2022 data, 10 months, as a
-test data set for the forecast.
+As in the previous chapter, the problem is to forecast one monthly time series:
+*Beer, Wine, and Distilled Alcoholic Beverages Sales*, following the original
+Matt Dancho example. The data comes from FRED, the Federal Reserve Economic
+Data database. The series belongs to the non-durable goods category; it
+includes U.S. merchant wholesalers, excluding manufacturers' sales branches and
+offices. The observations run from 2010-01-01 to 2022-10-31. The goal is to
+estimate models with information available before 2022 and evaluate their
+forecasts over the 10 available months of 2022.
 
 For the full database details see:
 https://fred.stlouisfed.org/series/S4248SM144NCEN
 
-Let's load the R packages.
+First load the R packages.
 
 ```{r}
 # Load libraries.
@@ -51,15 +51,17 @@ beer <- tq_get("S4248SM144NCEN", get = "economic.data",
                from = "2010-01-01", to = "2022-10-31")
 ```
 
-Let's have a look at the data set. By default it says *price*, but these are
-sales figures in monetary terms. According to the main FRED reference, these
-are in millions of dollars, not seasonally adjusted.
+The first rows show the structure of the data set. By default the value column
+is named *price*, although these are sales figures in monetary terms. According
+to the main FRED reference, these are in millions of dollars and are reported
+before seasonal adjustment.
 
 ```{r see-data-ml}
 head(beer)
 ```
 
-We can change the name of the price column.
+We rename the value column so that the code matches the economic meaning of the
+variable.
 
 ```{r rename-sales-ml}
 beer <- beer %>%
@@ -68,7 +70,7 @@ beer <- beer %>%
 tail(beer)
 ```
 
-Better now.
+The column name now identifies the variable as sales.
 
 ## Supervised learning workflow
 
@@ -80,18 +82,17 @@ the training data, tune it with validation data, and evaluate it only once on
 the test data.
 
 This chapter uses the same forecasting problem as before with an explicit
-supervised learning workflow. The trade-off is intentional. Instead of asking a
-black-box system to search internally, we write the model comparison ourselves.
-The models are smaller, faster to render in Quarto, easier to explain, and
-easier to debug. The workflow is also closer to what we want students to
-understand:
+supervised learning workflow. The chapter writes the model comparison directly:
+we create the predictors, choose the candidate model families, tune the few
+hyperparameters by hand, and evaluate the final models on a holdout period. The
+models are smaller, faster to render in Quarto, easier to explain, and easier
+to debug. The workflow is also close to what students need to understand:
 
 1. create time-based features;
 2. split the data without shuffling the time order;
 3. fit several explicit models;
 4. choose hyperparameters with the validation set;
-5. evaluate the chosen models on a test set that was not used for fitting or
-   tuning.
+5. evaluate the chosen models on a test set held apart from fitting and tuning.
 
 We will compare three transparent machine learning alternatives:
 
@@ -100,14 +101,49 @@ We will compare three transparent machine learning alternatives:
 - a small neural network.
 
 The first model is highly interpretable. The tree is nonlinear and can capture
-simple threshold behavior. The neural network is also nonlinear, but we keep it
+simple threshold behavior. The neural network is also nonlinear. We keep it
 small so the model remains pedagogical and reproducible.
+
+Mathematically, this chapter changes the forecasting problem from a univariate
+time-series model into a supervised regression problem. The first chapter used
+models built directly from the history of the series. This chapter constructs a
+vector of known calendar and trend predictors:
+
+$$
+x_t =
+\left(
+\text{index.num}_t,\,
+\text{year}_t,\,
+\text{month}_t
+\right).
+$$
+
+Then each machine learning model estimates a function
+
+$$
+y_t = f(x_t) + \varepsilon_t.
+$$
+
+The three alternatives below differ only in how flexible we allow $f(\cdot)$ to
+be. Linear regression uses a straight-line additive function, the regression
+tree uses a piecewise-constant function, and the neural network uses a smooth
+nonlinear function. This is the core transparency principle of the chapter:
+the predictor matrix is explicit, the candidate functions are explicit, and the
+test set is reserved for the final evaluation.
+
+The data split has three different jobs:
+
+| Sample | Dates | Job in the workflow |
+|---|---|---|
+| Training | 2010-2020 | Estimate model parameters. |
+| Validation | 2021 | Choose hyperparameters such as tree complexity or neural-network size. |
+| Test | January-October 2022 | Evaluate the selected models once. |
 
 ## The data
 
-We need an additional data set. The *validation* data set is the sample used to
-provide an unbiased evaluation of a model while tuning hyperparameters. The new
-data sets are the following.
+We need an additional data set. The *validation* data set is used for model
+selection: it helps us choose hyperparameters before touching the final test
+period. The new data sets are the following.
 
 ```{r}
 #| label: fig-bstvats
@@ -133,8 +169,8 @@ beer %>%
   labs(subtitle =
   "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
   x = "Date", y = "Sales",
-       caption = "The models do not know the test region; this is for us
-       to see how well the models do the 10-month ahead forecast.") +
+       caption = "The test region is hidden from the models during fitting;
+       it is shown here to evaluate the 10-month ahead forecast.") +
   scale_y_continuous(labels = scales::dollar)
 ```
 
@@ -165,8 +201,8 @@ beer %>%
   labs(subtitle =
   "Train (2010 - 2020), validation (2021), and test set (Jan 2022 to Oct 2022)",
   x = "Date", y = "Sales",
-       caption = "The models do not know the test region; this is for us
-       to see how well the models do the 10-month ahead forecast.") +
+       caption = "The test region is hidden from the models during fitting;
+       it is shown here to evaluate the 10-month ahead forecast.") +
   scale_y_continuous(labels = scales::dollar)
 ```
 
@@ -174,8 +210,9 @@ The `tk_augment_timeseries_signature()` function expands the timestamp
 information column-wise into a machine learning feature set. The original data
 set has a date, a symbol, and the sales variable. The augmented data includes
 calendar information such as year, month, quarter, semester and other time
-features. Not all of them will be important for the final models, but they
-make the forecasting problem readable as a supervised learning problem.
+features. Only some of them will be useful for the final models. The full list
+still helps us inspect the forecasting problem as a supervised learning
+problem.
 
 ```{r data-in-a-machine-learning-format}
 beer_aug <- beer %>%
@@ -190,19 +227,50 @@ The variable names in `beer_aug` are:
 colnames(beer_aug)
 ```
 
-The full signature is useful for inspection, but it is too broad for this
-monthly data set. Many columns describe hours, seconds, weekdays, or day-of-
-month details. Those are meaningful for hourly or daily data, but here they
-mostly encode calendar artifacts. We keep a smaller set:
+The full signature is useful for inspection. For this monthly data set, it is
+broader than necessary. Many columns describe hours, seconds, weekdays, or
+day-of-month details. They are meaningful for hourly or daily data. In this
+monthly problem, they mostly encode calendar artifacts. We keep a smaller set:
 
 - `sales`, the target variable;
 - `index.num`, a numeric time index for the trend;
 - `year`, a coarse trend variable that also makes the split readable;
 - `month.lbl`, a factor for monthly seasonality.
 
-This is a modeling decision, not a transformation of the target. The goal is to
-make the supervised learning matrix easier to explain and less dependent on
+This modeling decision keeps the target variable intact and makes the
+supervised learning matrix easier to explain. It also reduces dependence on
 irrelevant timestamp fragments.
+
+The retained features define the design matrix used by the models. Because
+`month.lbl` is a categorical variable, R expands it internally into 0/1 dummy
+variables. For example, define
+
+$$
+D_{t,\text{Feb}} =
+\begin{cases}
+1, & \text{month } t \text{ is February},\\
+0, & \text{otherwise.}
+\end{cases}
+$$
+
+The same idea is repeated for March through December. Conceptually, the row for
+month $t$ is
+
+$$
+x_t =
+\left[
+1,\,
+\text{index.num}_t,\,
+\text{year}_t,\,
+D_{t,\text{Feb}},\ldots,
+D_{t,\text{Dec}}
+\right].
+$$
+
+January is absorbed into the intercept by default. The important forecasting
+point is that every predictor in $x_t$ is known before the sales value $y_t$ is
+observed. Future dates, years, and months are known in advance, so these
+predictors keep the future sales value unavailable to the model.
 
 ```{r feature-selection-rationale}
 selected_ml_columns <- c("sales", "index.num", "year", "month.lbl")
@@ -219,10 +287,10 @@ feature_decisions <- tibble(variable = colnames(beer_aug)) %>%
       variable == "index.num" ~ "Numeric trend over time.",
       variable == "year" ~ "Coarse trend and readable split variable.",
       variable == "month.lbl" ~ "Monthly seasonal factor.",
-      variable == "date" ~ "Raw Date object; useful for plots, not as a direct predictor here.",
+      variable == "date" ~ "Raw Date object; useful for plots; excluded as a direct predictor here.",
       variable == "symbol" ~ "Constant because there is only one series.",
       variable %in% c("hour", "minute", "second", "hour12", "am.pm") ~
-        "Intraday information; not meaningful for monthly observations.",
+        "Intraday information; irrelevant for monthly observations.",
       variable %in% c("day", "wday", "wday.xts", "wday.lbl", "mday",
                       "qday", "yday", "mweek", "week", "week.iso",
                       "week2", "week3", "week4", "mday7") ~
@@ -238,8 +306,8 @@ kable(feature_decisions,
 ```
 
 We now build the actual modeling table from the selected variables and convert
-ordered factors into plain factors. The important point is not to change
-`sales`; we are only preparing the predictor matrix.
+ordered factors into plain factors. The target variable `sales` remains
+unchanged; the code only prepares the predictor matrix.
 
 ```{r data-cleaning}
 beer_clean <- beer_aug %>%
@@ -249,9 +317,26 @@ beer_clean <- beer_aug %>%
 head(beer_clean)
 ```
 
-Let's split the database into training, validation and test sets following the
+We split the database into training, validation and test sets following the
 time ranges in the visualization above. The test set is the most recent data.
-It must remain unknown during model fitting and tuning.
+It remains unavailable during model fitting and tuning.
+
+The split can be written as three ordered sets:
+
+$$
+\mathcal{T}_{\text{train}} = \{t: 2010 \leq \text{year}_t \leq 2020\},
+$$
+
+$$
+\mathcal{T}_{\text{valid}} = \{t: \text{year}_t = 2021\},
+$$
+
+$$
+\mathcal{T}_{\text{test}} = \{t: \text{year}_t = 2022\}.
+$$
+
+The validation set is used to choose hyperparameters. The test set is used only
+after the choices have been made.
 
 ```{r split-ml-data}
 train_tbl <- beer_clean %>% filter(year < 2021)
@@ -268,6 +353,34 @@ Our goal is to forecast the first 10 months of 2022.
 The following helper functions keep the comparison compact. They calculate the
 same error measures for every model: mean error, root mean squared error, mean
 absolute error, mean absolute percentage error, and mean percentage error.
+
+For a validation or test sample of size $n$, with predictions $\hat{y}_t$, the
+main metrics are:
+
+$$
+\text{ME} = \frac{1}{n}\sum_{t=1}^{n}(y_t-\hat{y}_t),
+$$
+
+$$
+\text{RMSE} =
+\sqrt{\frac{1}{n}\sum_{t=1}^{n}(y_t-\hat{y}_t)^2},
+$$
+
+$$
+\text{MAE} =
+\frac{1}{n}\sum_{t=1}^{n}|y_t-\hat{y}_t|,
+$$
+
+$$
+\text{MAPE} =
+\frac{100}{n}\sum_{t=1}^{n}
+\left|
+\frac{y_t-\hat{y}_t}{y_t}
+\right|.
+$$
+
+The code below implements these formulas directly. This keeps the workflow
+auditable because the evaluation formulas are visible in the chapter.
 
 ```{r metric-functions}
 metric_tbl <- function(actual, pred) {
@@ -308,6 +421,25 @@ The linear regression has no hyperparameters. It is our transparent baseline.
 If this model works well, that is useful information: sometimes a simple model
 is enough when trend and seasonality are strong.
 
+The fitted equation is
+
+$$
+y_t =
+\beta_0
++ \beta_1\,\text{index.num}_t
++ \beta_2\,\text{year}_t
++ \sum_{j=2}^{12}\gamma_j
+D_{t,j}
++ \varepsilon_t.
+$$
+
+Here, $D_{t,j}$ is a monthly dummy variable: it equals 1 when observation $t$
+belongs to month $j$, and 0 otherwise. January is the baseline month because it
+is absorbed by the intercept. The coefficients have a direct interpretation:
+the trend variables explain long-run movement, and the monthly dummy variables
+explain seasonality relative to January. The code `lm(sales ~ .)` means:
+regress `sales` on all remaining columns in the modeling table.
+
 ```{r validate-lm}
 ml_formula <- sales ~ .
 
@@ -326,6 +458,42 @@ lm_validation <- validation_row(
 The regression tree has a complexity parameter, `cp`. A smaller value allows a
 larger tree; a larger value prunes the tree more aggressively. We estimate a
 small grid and choose the value that minimizes validation RMSE.
+
+A regression tree partitions the predictor space into regions
+$R_1,\ldots,R_K$. Inside each region, the forecast is the average training
+value in that region. The prediction rule can be written as a set of cases:
+
+$$
+\hat{f}(x_t)
+=
+\begin{cases}
+c_1, & x_t \in R_1,\\
+c_2, & x_t \in R_2,\\
+\vdots\\
+c_K, & x_t \in R_K,
+\end{cases}
+\qquad
+c_k = \frac{1}{|R_k|}\sum_{i:x_i\in R_k} y_i.
+$$
+
+In plain language, the tree asks a sequence of yes/no questions about the
+predictors. For example: is the month December? is the time index above a
+certain value? After following those questions to a terminal region $R_k$, the
+forecast is the historical average sales value inside that region.
+
+The `cp` parameter controls the cost of adding more splits. A useful way to
+read it is as a penalty on tree complexity:
+
+$$
+\text{penalized error}
+=
+\text{training RSS}
++ \alpha K.
+$$
+
+Small `cp` values allow more regions and can overfit. Large `cp` values produce
+simpler trees and can underfit. We choose `cp` using the validation set. The
+test set remains reserved for the final evaluation.
 
 ```{r validate-tree}
 tree_grid <- tibble(cp = c(0.001, 0.005, 0.01, 0.02, 0.05))
@@ -362,6 +530,41 @@ The neural network also receives a small manual search. We tune two
 hyperparameters: `size`, the number of hidden units, and `decay`, a penalty
 that discourages overly large weights. Because the variables have different
 scales, we standardize the model matrix before fitting.
+
+The neural network uses the same predictors as the linear regression and tree.
+With one hidden layer, its prediction can be written as
+
+$$
+\hat{y}_t =
+\mu_y + \sigma_y
+\left[
+w_0 + \sum_{j=1}^{k}
+w_j \sigma(a_j + v_j^\top z_t)
+\right],
+$$
+
+where $z_t$ is the standardized predictor vector, $k$ is the number of hidden
+units, and $\mu_y,\sigma_y$ undo the scaling of the target variable. The
+`decay` parameter adds an $L_2$ penalty to discourage large weights:
+
+$$
+\sum_t (z^y_t-\hat{z}^y_t)^2
++ \lambda \sum_r w_r^2.
+$$
+
+Its inputs remain the same explicit features used by the linear regression and
+the tree. The extra flexibility comes from the hidden layer and the nonlinear
+activation function.
+
+The helper functions below do five mechanical tasks:
+
+| Step | What the code does | Why it matters |
+|---|---|---|
+| 1 | Build the model matrix from the formula. | Convert factors such as month into numeric columns. |
+| 2 | Standardize the predictors. | Put all inputs on comparable scales. |
+| 3 | Standardize the target variable. | Help the neural network optimize more smoothly. |
+| 4 | Fit the network with `nnet()`. | Estimate the weights in the hidden and output layers. |
+| 5 | Undo the scaling during prediction. | Return forecasts in the original sales units. |
 
 ```{r nnet-functions}
 fit_nnet_regression <- function(train_data, size, decay, seed = 13) {
@@ -446,9 +649,21 @@ best_nnet <- nnet_validation %>%
   slice(1)
 ```
 
-This is the validation leaderboard. Notice that this table is not the final
-forecasting performance; it is the model selection step. The test set remains
-untouched.
+The validation leaderboard summarizes the model selection step. The final
+forecasting performance is evaluated later with the test set.
+
+Formally, for each model family we choose the setting $\lambda$ that minimizes
+validation RMSE:
+
+$$
+\lambda^\star =
+\arg\min_{\lambda \in \Lambda}
+\text{RMSE}_{\text{valid}}(\lambda).
+$$
+
+For the tree, $\lambda$ is `cp`. For the neural network, $\lambda$ represents
+the pair (`size`, `decay`). Linear regression has no tuning grid, so it enters
+the leaderboard once.
 
 ```{r validation-leaderboard}
 validation_leaderboard <- bind_rows(
@@ -471,6 +686,28 @@ data together, from 2010 through 2021. Then we forecast the 2022 test set. This
 is a standard practice: validation is used to make modeling decisions, and
 after that decision is made we can use all pre-test information to estimate
 the final model.
+
+The final fitted function is therefore
+
+$$
+\hat{f}_{\text{final}}
+=
+\hat{f}\left(
+\mathcal{T}_{\text{train}} \cup \mathcal{T}_{\text{valid}},
+\lambda^\star
+\right).
+$$
+
+The test forecasts are
+
+$$
+\hat{y}_t = \hat{f}_{\text{final}}(x_t),
+\qquad t \in \mathcal{T}_{\text{test}}.
+$$
+
+This ordering prevents methodological leakage: the test sales values never
+enter coefficient estimation, `cp` selection, neural-network size selection, or
+neural-network decay selection.
 
 ```{r fit-final-ml-models}
 train_valid_tbl <- beer_clean %>%
@@ -507,7 +744,7 @@ fit_nnet_final <- fit_nnet_regression(
 pred_nnet_test <- predict_nnet_regression(fit_nnet_final, test_tbl)
 ```
 
-Let's show the 10-month forecast errors in a table.
+The table below shows the 10-month forecast errors.
 
 ```{r ml-error-table}
 ml_errors <- bind_rows(
@@ -565,9 +802,15 @@ kable(ml_summary,
   kable_styling(latex_options = "HOLD_position")
 ```
 
-The best model by MAPE is not necessarily the best model by every metric. This
-is why it is useful to inspect multiple errors. RMSE penalizes large mistakes
+A model can rank first by MAPE and rank differently by another metric. For that
+reason, it is useful to inspect multiple errors. RMSE penalizes large mistakes
 more heavily, while MAPE is easy to read as an average percentage error.
+
+The table compares fitted forecasting functions under a common experimental
+design. Every model saw the same training data, the same validation data, the
+same predictors, and the same test months. A lower MAPE means that this
+particular fitted function was closer to the realized 2022 sales over this
+holdout period.
 
 We can also show the best individual point forecast for each model.
 
@@ -585,8 +828,8 @@ kable(point_forecast_ml,
   kable_styling(latex_options = "HOLD_position")
 ```
 
-We normally do not choose a model according to one specific point forecast.
-However, it is useful to see where each model was most accurate.
+Choosing a model according to one specific point forecast would be fragile.
+Even so, it is useful to see where each model was most accurate.
 
 ```{r update-mape-ml}
 mape_updated_ml <- mape_updated %>%
@@ -604,11 +847,24 @@ mape_updated_ml
 ## ARIMA comparison
 
 As in the original Matt Dancho example, we include a different ARIMA workflow
-using the `forecast` package and the `auto.arima()` function. This is not a
-machine learning model in the same sense as the models above. It is a classical
-time series model, and that makes it a useful benchmark.
+using the `forecast` package and the `auto.arima()` function. This benchmark
+belongs to the classical time-series family and answers a different modeling
+question. The machine learning models above estimate
+$y_t=f(x_t)+\varepsilon_t$ using trend and calendar predictors. ARIMA models
+the dependence of the series on its own past:
 
-### Prepare the data
+$$
+\Phi(B^{12})\phi(B)(1-B)^d(1-B^{12})^D y_t
+=
+c+\Theta(B^{12})\theta(B)\varepsilon_t.
+$$
+
+The `auto.arima()` function automates the selection of the ARIMA orders. The
+automation is a statistical search over candidate values of
+$(p,d,q)(P,D,Q)_{12}$, followed by parameter estimation and information-criterion
+comparison.
+
+**Prepare the data.**
 
 The `tk_ts()` function coerces time series objects and tibbles with date or
 date-time columns to `ts`.
@@ -628,17 +884,22 @@ Just verify that the `tk_ts()` function worked.
 has_timetk_idx(beer_sales_ts)
 ```
 
-### Estimation
+**Estimation.**
 
 We can use the `auto.arima()` function from the `forecast` package to model the
-time series. By doing that, we do not have to impose a specific ARIMA model;
-the function can test a set of specifications for us.
+time series. The function tests a set of specifications and selects the one
+that performs best according to its internal statistical criterion.
 
 ```{r}
 set.seed(13)
 fit_arima <- auto.arima(beer_sales_ts)
 fit_arima
 ```
+
+The printed output is the selected mathematical specification. After this line,
+we are no longer speaking abstractly about `auto.arima()`; we are speaking about
+the particular ARIMA equation selected for this data set and this training
+window.
 
 The `sw_tidy()` function returns the model coefficients in a tibble.
 
@@ -653,7 +914,7 @@ sw_glance(fit_arima) %>%
   glimpse()
 ```
 
-### Forecast
+**Forecast.**
 
 The `sw_augment()` function helps with model evaluation. We get the `.actual`,
 `.fitted` and `.resid` columns, which are useful in evaluating the model
@@ -677,6 +938,16 @@ sw_augment(fit_arima, timetk_idx = TRUE) %>%
   theme_tq() +
   scale_y_continuous(labels = scales::dollar)
 ```
+
+The residuals are
+
+$$
+\hat{\varepsilon}_t = y_t - \hat{y}_{t\mid t-1}.
+$$
+
+If the ARIMA model has captured the predictable autocorrelation, these
+residuals should have no obvious remaining time pattern. This is the same audit
+logic used in the `fpp3` chapter.
 
 Make a forecast using the `forecast()` function.
 
@@ -747,20 +1018,32 @@ fcast_tbl %>%
   scale_y_continuous(labels = scales::dollar)
 ```
 
-This is a useful benchmark forecast.
+The resulting forecast serves as a benchmark.
 
 ## Summary of all results
 
 An interesting question is: *What happens to the accuracy when you average the
-predictions of different methods?* This question makes sense because the
-decision of using one technique or another is not trivial. Taking the average
-can reduce extreme results, although it can also be harder to interpret
-because the final forecast comes from several techniques.
+predictions of different methods?* This question makes sense because model
+choice is often uncertain in forecasting. Taking the average can reduce extreme
+results, although it can also be harder to interpret because the final forecast
+comes from several techniques.
+
+If there are $M$ forecast models, the average forecast is
+
+$$
+\hat{y}^{\text{avg}}_t =
+\frac{1}{M}\sum_{m=1}^{M}\hat{y}^{(m)}_t.
+$$
+
+This ensemble rule is applied after the individual forecasts already exist. Its
+appeal is that different models can make different errors, so averaging may
+reduce model-specific noise. Its cost is interpretability: the final number no
+longer comes from one clear structural assumption.
 
 In order to calculate the average forecast we need to load the forecasts from
 the previous section. In particular, we include the seasonal naive,
-NNAR(15,1,8)[12], ETS(M,A,M), and ARIMA(4,1,1)(0,1,1)[12]. We did not include
-the naive, drift and mean forecasts.
+NNAR(15,1,8)[12], ETS(M,A,M), and ARIMA(4,1,1)(0,1,1)[12]. We exclude the
+naive, drift and mean forecasts from this average.
 
 ```{r}
 fpp3_fc <- readRDS("fpp3_fc.rds")
@@ -816,7 +1099,8 @@ beer %>%
   scale_y_continuous(labels = scales::dollar)
 ```
 
-Let's update our MAPE summary table.
+The final MAPE summary is updated with the ARIMA benchmark and the average
+forecast.
 
 ```{r}
 mape_updated_all <- mape_updated_ml %>%
@@ -829,9 +1113,9 @@ mape_updated_all <- mape_updated_ml %>%
 mape_updated_all
 ```
 
-Nice. The important lesson is not that one model family is always best. The
-important lesson is that a transparent workflow lets us see where the forecast
-comes from, how the model was selected, how long it takes to render, and how it
+The ranking is local to this data set and this holdout period. The main
+lesson is that a transparent workflow lets us see where the forecast comes
+from, how the model was selected, how long it takes to render, and how it
 performs when confronted with truly unseen data.
 
 ## References

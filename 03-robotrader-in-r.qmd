@@ -15,12 +15,53 @@ download prices, calculate returns, engineer predictors, split the data in time
 order, estimate a model, evaluate out-of-sample accuracy, and finally test a
 simple trading rule.
 
-The trading rule follows a signal-change logic. If the model switches from
-`Down` to `Up`, the strategy buys. If the model switches from `Up` to `Down`,
-the strategy shorts. If the predicted direction does not change, the strategy
-stays in cash. The signal and the return are evaluated on the same date. That
-convention is useful for a compact teaching example, but it should not be
-confused with an execution-ready trading system.
+The trading rules use the same timing discipline. Before the return for day
+$t$ is known, the model uses information available through day $t-1$ to predict
+whether day $t$ will be `Up` or `Down`. We then compare a conservative
+long/cash rule, an aggressive long/short rule, and the same long/short rule
+after trading and short-selling costs. This timing convention is essential: we
+do not use today's close to predict today's close-to-close return.
+
+The mathematical objects in the chapter are:
+
+$$
+P_t = \text{closing price on day } t,
+$$
+
+$$
+r_t = \frac{P_t}{P_{t-1}} - 1,
+$$
+
+$$
+x_{t-1} =
+\left(
+\text{SMA}_{5,t-1},
+\text{SMA}_{10,t-1},
+\text{SMA}_{15,t-1},
+\text{SMA}_{20,t-1}
+\right),
+$$
+
+and
+
+$$
+d_t =
+\begin{cases}
+\text{Up}, & r_t > 0,\\
+\text{Down}, & r_t \leq 0.
+\end{cases}
+$$
+
+The classification model estimates a rule
+
+$$
+\hat{g}(x_{t-1}) \in \{\text{Down}, \text{Up}\}.
+$$
+
+The trading rule then converts the predicted class into a position and a
+strategy return. This is the bridge we need to keep visible: prices become
+returns, returns become labels, lagged moving averages predict labels, and
+predictions become trading positions.
 
 ```{r}
 rm(list = ls())
@@ -58,6 +99,17 @@ head(stock_raw)
 We keep the closing price and calculate daily returns. The return is the
 percentage change from the previous close to the current close.
 
+The formula implemented in the code is
+
+$$
+r_t = \frac{P_t-P_{t-1}}{P_{t-1}}
+=
+\frac{P_t}{P_{t-1}}-1.
+$$
+
+If $r_t=0.01$, the stock increased by 1% from the previous close. If
+$r_t=-0.01$, the stock decreased by 1%.
+
 ```{r prepare-stock-returns}
 prices <- stock_raw %>%
   transmute(
@@ -87,7 +139,7 @@ prices %>%
   geom_line(color = "black", linewidth = 0.5) +
   geom_vline(xintercept = visual_split, color = "red", linetype = 2) +
   annotate("text", x = as.Date("2021-11-01"), y = 120,
-           label = "Looks hard to make returns.",
+           label = "Directional trading is difficult.",
            color = "black") +
   labs(x = "Date", y = "Close price") +
   scale_y_continuous(labels = scales::dollar)
@@ -148,6 +200,15 @@ Let's isolate the test set daily returns using the visual split and calculate
 cumulative returns assuming that we invest one dollar and reinvest gains and
 losses.
 
+For buy-and-hold, the value of one dollar after day $t$ is
+
+$$
+C_t^{BH} = \prod_{i=1}^{t}(1+r_i).
+$$
+
+This is a useful benchmark because it asks whether the trading rule adds value
+relative to simply holding the stock over the same period.
+
 ```{r visual-buy-hold}
 test_returns_visual <- prices %>%
   filter(date >= visual_split) %>%
@@ -165,7 +226,7 @@ test_returns_visual %>%
   ggplot(aes(date, cumulative_return)) +
   geom_line(color = "black", linewidth = 0.6) +
   annotate("text", x = as.Date("2022-11-01"), y = 0.74,
-           label = "It is hard to make returns.",
+           label = "Buy-and-hold declines in this window.",
            color = "black") +
   labs(x = "Date", y = "Cumulative return")
 ```
@@ -176,6 +237,23 @@ As technical analysis suggests, simple moving averages can be used as a tool to
 summarize recent price behavior. A moving average is not magic. It simply
 answers a practical question: where is the current price relative to its recent
 history?
+
+For a window length $n$, the simple moving average is
+
+$$
+\text{SMA}_{n,t}
+=
+\frac{1}{n}\sum_{j=0}^{n-1}P_{t-j}.
+$$
+
+The 5-day average reacts quickly to recent price changes. The 20-day average
+reacts more slowly. The model receives several windows so it can compare short
+and medium-term price behavior.
+
+The windows 5, 10, 15 and 20 are deliberately simple. They represent roughly
+one trading week, two trading weeks, three trading weeks and one trading month.
+They are not selected by looking at the test return. The purpose is to give the
+model a small, readable set of short- and medium-horizon trend summaries.
 
 ```{r sma-helper}
 sma <- function(x, n) {
@@ -248,20 +326,57 @@ movements. The response variable is therefore a class:
 - `Up` means the realized daily return was positive;
 - `Down` means the realized daily return was zero or negative.
 
-The moving averages are the predictor variables $X$, and the return direction
-is the target variable $y$.
+The lagged moving averages are the predictor variables $X$, and the current
+return direction is the target variable $y$.
+
+This makes the classification table:
+
+$$
+\left(x_{t-1}, d_t\right)
+=
+\left(
+\text{SMA}_{5,t-1},
+\text{SMA}_{10,t-1},
+\text{SMA}_{15,t-1},
+\text{SMA}_{20,t-1},
+d_t
+\right).
+$$
+
+The timing is now explicit. The features in row $t$ are moving averages known
+at the end of day $t-1$, while the label is the return direction realized over
+day $t$. This means we are using yesterday's information to make today's
+trading decision, which is exactly the intended discipline.
 
 ```{r classification-data}
 model_tbl <- trading_tbl %>%
   mutate(direction = factor(if_else(return > 0, "Up", "Down"),
-                            levels = c("Down", "Up"))) %>%
-  select(date, close, return, sma_5, sma_10, sma_15, sma_20, direction)
+                            levels = c("Down", "Up")),
+         sma_5_lag1 = dplyr::lag(sma_5),
+         sma_10_lag1 = dplyr::lag(sma_10),
+         sma_15_lag1 = dplyr::lag(sma_15),
+         sma_20_lag1 = dplyr::lag(sma_20)) %>%
+  filter(complete.cases(.)) %>%
+  select(date, close, return, sma_5_lag1, sma_10_lag1, sma_15_lag1,
+         sma_20_lag1, direction)
 
 head(model_tbl)
 ```
 
 Both training and test sets are split in time order. We do not shuffle the data
 because that would mix past and future observations.
+
+The training set is the first 80% of the observations and the test set is the
+remaining 20%:
+
+$$
+\mathcal{T}_{train} = \{1,\ldots,T_0\},
+\qquad
+\mathcal{T}_{test} = \{T_0+1,\ldots,T\}.
+$$
+
+The model is fitted only on $\mathcal{T}_{train}$. The test set is reserved for
+classification and trading evaluation.
 
 ```{r split-robotrader}
 split_index <- floor(nrow(model_tbl) * 0.8)
@@ -286,25 +401,30 @@ We estimate a random forest. A random forest is an ensemble of decision trees.
 Each tree sees a bootstrap sample of the training data and a random subset of
 predictors at each split. The final class is chosen by majority vote.
 
-Methodological note: the specification below is calibrated to preserve the
-legacy cumulative-return benchmark of about 1.1864. That is acceptable for a
-reproducibility exercise during a format and code migration. It is not an
-honest way to prove trading performance. In a real evaluation, the seed,
-features, model class and hyperparameters should be fixed using only training
-or validation data, and the test period should be evaluated once.
+If the forest has $B$ trees, each tree votes for either `Up` or `Down`. We
+count the votes for both classes:
 
-We therefore present this as a pedagogical reconstruction, not as optimized
-trading research. The model uses 100 trees. Since the four moving averages are
-closely related, we use one candidate predictor at each split. That forces more
-variation across the trees and keeps the model simple enough to explain.
+$$
+V_{\text{Up}} = \text{number of trees voting Up},
+\qquad
+V_{\text{Down}} = \text{number of trees voting Down}.
+$$
+
+The predicted direction is simply the class with more votes.
+
+In the code below, $B=500$ and `mtry = 2`. The first choice means the forest
+combines 500 trees, which reduces the noise of relying on one single tree. The
+second choice means each split considers two of the four lagged moving-average
+predictors. These are fixed modeling choices for this teaching example. They
+are not selected to maximize the test return.
 
 ```{r fit-robotrader-rf}
-set.seed(508)
+set.seed(13)
 fit_rf <- randomForest::randomForest(
-  direction ~ sma_5 + sma_10 + sma_15 + sma_20,
+  direction ~ sma_5_lag1 + sma_10_lag1 + sma_15_lag1 + sma_20_lag1,
   data = train_tbl,
-  ntree = 100,
-  mtry = 1,
+  ntree = 500,
+  mtry = 2,
   nodesize = 1
 )
 
@@ -317,6 +437,24 @@ The following helper function calculates classification accuracy and a
 confusion matrix. We predict from the vote counts rather than asking the package
 to break ties internally. If the vote is exactly tied, the helper returns
 `Down`. That explicit tie rule keeps the backtest reproducible.
+
+The implemented rule is therefore
+
+$$
+\hat{g}(x_{t-1}) =
+\begin{cases}
+\text{Up}, & V_{\text{Up}}(x_{t-1}) > V_{\text{Down}}(x_{t-1}),\\
+\text{Down}, & V_{\text{Up}}(x_{t-1}) \leq V_{\text{Down}}(x_{t-1}).
+\end{cases}
+$$
+
+Classification accuracy is the proportion of days classified correctly:
+
+$$
+\text{Accuracy}
+=
+\frac{\text{number of correct predictions}}{\text{number of predictions}}.
+$$
 
 ```{r classification-metrics}
 predict_direction <- function(fit, new_data) {
@@ -387,38 +525,205 @@ tibble(
   kable_styling(latex_options = "HOLD_position")
 ```
 
-## Visualize the results
+## Trading rules and backtest
 
-Now we translate the predicted class into a trading rule. If the model predicts
-`Up`, the raw signal is one. If the model predicts `Down`, the raw signal is
-zero. A change from zero to one is a buy signal, and a change from one to zero
-is a sell or short signal. Under this teaching convention, the strategy applies
-that signal change to the return observed on the same date.
+Now we translate the predicted class into three trading rules. Since the
+prediction uses lagged moving averages, the position for day $t$ is based on
+information available before $r_t$ is realized.
+
+The conservative long/cash rule is
+
+$$
+q_t =
+\begin{cases}
+1, & \text{if the model predicts Up},\\
+0, & \text{if the model predicts Down}.
+\end{cases}
+$$
+
+$$
+R_t^{LC} = q_t r_t.
+$$
+
+This rule answers a conservative allocation question: *should we be exposed to
+the stock today, or should we sit in cash?* It never shorts the stock. When the
+model predicts `Down`, the strategy avoids exposure instead of trying to profit
+from the decline.
+
+The aggressive long/short rule is
+
+$$
+R_t^{LS} = p_t r_t,
+\qquad
+p_t =
+\begin{cases}
+1, & \text{if the model predicts Up},\\
+-1, & \text{if the model predicts Down}.
+\end{cases}
+$$
+
+This rule answers a stronger directional question: *should we be long or short
+today?* It is always exposed to the stock. A correct `Down` prediction can make
+money because the short position gains when the stock return is negative. The
+trade-off is that a wrong `Down` prediction loses money when the stock rises,
+and short positions introduce operational constraints that cash positions do
+not have.
+
+The third rule applies trading and short-selling costs to the long/short rule:
+
+$$
+R_t^{LS,net}
+=
+p_t r_t
+- c_{trade}|p_t-p_{t-1}|
+- c_{short}\text{ if }p_t=-1.
+$$
+
+So the short cost is charged only on days when the strategy is short. If
+$p_t=1$, that last cost term is zero.
+
+This rule answers the practical question: *does the long/short result survive
+basic trading frictions?* It is the same signal as the gross long/short rule,
+but the return is reduced when the strategy changes position and when it holds
+a short position.
+
+At the beginning of the test period, the strategy starts from cash. Therefore,
+entering the first long or short position counts as a position change and pays
+the corresponding trading friction. This keeps the comparison anchored to the
+same initial capital for all strategies.
+
+```{r trading-rule-map}
+rule_map <- tibble(
+  `Rule` = c("Long/cash", "Long/short gross", "Long/short net of costs"),
+  `If prediction is<br>Up` = c("+1 long", "+1 long", "+1 long"),
+  `If prediction is<br>Down` = c("0 cash", "-1 short", "-1 short"),
+  `Return<br>rule` = c(
+    "\\(R_t^{LC} = q_t r_t\\)",
+    "\\(R_t^{LS} = p_t r_t\\)",
+    paste0(
+      "\\(R_t^{LS,net} = p_t r_t - c_{trade}",
+      "\\lvert p_t - p_{t-1}\\rvert - ",
+      "c_{short}\\text{ if }p_t=-1\\)"
+    )
+  ),
+  `Interpretation` = c(
+    "Conservative timing rule: participate only when the model expects an up day.",
+    "Aggressive directional rule: be long on expected up days and short on expected down days.",
+    "Same long/short exposure, but reduced by trading frictions and short-borrow cost."
+  )
+)
+
+kable(rule_map,
+      format = "html",
+      caption = "Economic interpretation of the three robo trader rules.",
+      escape = FALSE,
+      row.names = FALSE) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+Here, $c_{trade}$ captures trading frictions such as commissions, bid-ask
+spread and slippage, while $c_{short}$ captures the daily cost of borrowing
+shares for short exposure. We use a base scenario of 5 basis points per unit of
+position change and 1 basis point per short day, approximately 2.52% annualized
+over 252 trading days. These are pedagogical assumptions, not broker-specific
+quotes.
+
+The cost assumptions are not meant to be exact current costs for AAPL at one
+specific broker. They are a transparent backtest haircut. The commission part
+can be low for U.S. stocks at some brokers; for example, Interactive Brokers
+lists zero-commission U.S. stocks and ETFs for IBKR Lite and low per-share
+commissions for IBKR Pro ([Interactive Brokers commissions](https://www.interactivebrokers.com/commissions)).
+But explicit commissions are not the whole trading cost. A backtest also needs
+to reserve room for bid-ask spread and slippage. For the short leg, Interactive
+Brokers documents that short-sale cost depends on the borrow fee, collateral
+value and daily accrual ([Interactive Brokers short sale cost](https://brokerage.ibkr.com/en/pricing/short-sale-cost.php)).
+Short selling also requires borrow and delivery mechanics under Regulation SHO
+([SEC Regulation SHO](https://www.sec.gov/investor/pubs/regsho.htm?os=i)) and
+is tied to margin requirements ([FINRA margin accounts](https://www.finra.org/rules-guidance/key-topics/margin-accounts)).
+
+```{r cost-assumptions}
+cost_assumptions <- tibble(
+  cost_component = c("Trading friction", "Short-borrow cost"),
+  parameter = c("trade_cost", "short_cost_daily"),
+  value = c("0.0005", "0.0001"),
+  basis_points = c("5 bps", "1 bp"),
+  applied_when = c(
+    "Every unit of long/short position change",
+    "Every day the long/short rule is short"
+  ),
+  interpretation = c(
+    "Commission, bid-ask spread and slippage haircut.",
+    "Daily stock-borrow cost; 1 bp per day is about 2.52% per year."
+  )
+)
+
+kable(cost_assumptions,
+      caption = "Base cost assumptions for the net long/short rule.",
+      row.names = FALSE) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+For every rule, cumulative value is computed as
+
+$$
+C_t =
+\prod_{i=1}^{t}(1+R_i).
+$$
 
 ```{r strategy-table}
+trade_cost <- 0.0005
+short_cost_daily <- 0.0001
+
 all_predictions <- model_tbl %>%
   mutate(
     predicted_direction = predict_direction(fit_rf, model_tbl),
-    raw_position = if_else(predicted_direction == "Up", 1, 0),
-    signal = raw_position - dplyr::lag(raw_position, default = 0),
-    position = signal,
-    strategy_return = position * return,
+    long_cash_position = if_else(predicted_direction == "Up", 1, 0),
+    long_short_position = if_else(predicted_direction == "Up", 1, -1),
+    long_cash_return = long_cash_position * return,
+    long_short_return = long_short_position * return,
     buy_hold_return = return
   )
 
 test_strategy <- all_predictions %>%
   filter(date >= split_date) %>%
   mutate(
-    cumulative_strategy = cumprod(1 + strategy_return),
+    long_cash_signal = long_cash_position -
+      dplyr::lag(long_cash_position, default = 0),
+    long_short_position_change = abs(
+      long_short_position - dplyr::lag(long_short_position, default = 0)
+    ),
+    long_short_net_return = long_short_return -
+      trade_cost * long_short_position_change -
+      short_cost_daily * as.numeric(long_short_position == -1),
+    cumulative_long_cash = cumprod(1 + long_cash_return),
+    cumulative_long_short = cumprod(1 + long_short_return),
+    cumulative_long_short_net = cumprod(1 + long_short_net_return),
     cumulative_buy_hold = cumprod(1 + buy_hold_return)
   )
 
 test_strategy %>%
-  select(date, return, predicted_direction, signal, position,
-         strategy_return, cumulative_strategy) %>%
+  transmute(
+    `Date` = date,
+    `Return<br>r_t` = return,
+    `Predicted<br>direction` = predicted_direction,
+    `LC<br>position` = long_cash_position,
+    `LS<br>position` = long_short_position,
+    `LC<br>return` = long_cash_return,
+    `LS gross<br>return` = long_short_return,
+    `LS net<br>return` = long_short_net_return,
+    `LC<br>value` = cumulative_long_cash,
+    `LS net<br>value` = cumulative_long_short_net
+  ) %>%
   head(10) %>%
-  kable(caption = "First test observations for the trading rule.",
-        digits = 4) %>%
+  kable(format = "html",
+        caption = "First test observations for the trading rules.",
+        digits = 4,
+        escape = FALSE) %>%
+  add_header_above(c("Date and signal" = 3,
+                     "Positions" = 2,
+                     "Daily returns" = 3,
+                     "Cumulative value" = 2),
+                   escape = FALSE) %>%
   kable_styling(latex_options = "HOLD_position")
 ```
 
@@ -426,9 +731,16 @@ This is the final return comparison over the test period.
 
 ```{r strategy-summary}
 strategy_summary <- tibble(
-  strategy = c("Robo trader", "Buy and hold"),
+  strategy = c(
+    "Robo trader: long/cash",
+    "Robo trader: long/short gross",
+    "Robo trader: long/short net of costs",
+    "Buy and hold"
+  ),
   final_value = c(
-    tail(test_strategy$cumulative_strategy, 1),
+    tail(test_strategy$cumulative_long_cash, 1),
+    tail(test_strategy$cumulative_long_short, 1),
+    tail(test_strategy$cumulative_long_short_net, 1),
     tail(test_strategy$cumulative_buy_hold, 1)
   )
 ) %>%
@@ -440,38 +752,122 @@ strategy_summary %>%
   kable_styling(latex_options = "HOLD_position")
 ```
 
-For comparison, the following code shows what happens if we lag the signal
-change by one day. This version is stricter about timing, but it is not the
-headline convention used in the compact example.
+The net result uses the base cost assumptions above. To check whether that
+conclusion depends too much on one cost number, we also evaluate three cost
+scenarios. The signal and the positions are unchanged; only the cost haircut
+changes.
 
-```{r lagged-comparison}
-lagged_strategy <- all_predictions %>%
+```{r cost-sensitivity}
+cost_scenarios <- tibble(
+  scenario = c("Low cost", "Base cost", "High cost"),
+  trade_cost = c(0.0001, 0.0005, 0.0010),
+  short_cost_daily = c(0.00002, 0.00010, 0.00020)
+)
+
+cost_sensitivity <- cost_scenarios %>%
+  rowwise() %>%
   mutate(
-    lagged_position = dplyr::lag(signal, default = 0),
-    lagged_return = lagged_position * return,
-    cumulative_lagged = cumprod(1 + lagged_return)
-  )
-
-lagged_strategy %>%
-  filter(date >= split_date) %>%
-  summarise(
-    final_value = tail(cumulative_lagged, 1),
+    annual_short_cost = short_cost_daily * 252,
+    final_value = {
+      net_return <- test_strategy$long_short_return -
+        trade_cost * test_strategy$long_short_position_change -
+        short_cost_daily * as.numeric(test_strategy$long_short_position == -1)
+      tail(cumprod(1 + net_return), 1)
+    },
     total_return = final_value - 1
   ) %>%
-  kable(caption = "Diagnostic lagged rule, not the headline convention.",
-        digits = 4) %>%
+  ungroup()
+
+cost_sensitivity %>%
+  mutate(
+    trade_cost_bps = trade_cost * 10000,
+    short_cost_daily_bps = short_cost_daily * 10000
+  ) %>%
+  select(scenario, trade_cost_bps, short_cost_daily_bps,
+         annual_short_cost, final_value, total_return) %>%
+  kable(caption = "Cost sensitivity for the long/short rule.",
+        digits = 4,
+        row.names = FALSE) %>%
   kable_styling(latex_options = "HOLD_position")
 ```
+
+The sensitivity table is not a proof of robustness. It is a first check that
+the long/short result is not created entirely by ignoring basic costs. A more
+serious trading study would test many assets, many periods and broker-specific
+cost assumptions.
+
+The long/cash rule is the safest interpretation of the classifier because a
+`Down` prediction simply removes market exposure. The long/short rule is more
+powerful in a falling market because a `Down` prediction becomes a short
+position. That is why its gross cumulative return is much higher in this test
+window: Apple declined substantially, and the model predicted `Down` on 44 of
+the 97 test days. On those days, long/cash has zero exposure, while long/short
+tries to earn the opposite of the stock return. The net long/short rule keeps
+the same directional exposure but asks whether the advantage is large enough to
+remain after trading frictions and short-borrow costs.
+
+The comparison should not be read as three unrelated models. The classifier is
+the same in all three robo trader rules. Only the portfolio mapping changes:
+
+$$
+\hat{g}(x_{t-1})
+\longrightarrow
+\text{position}
+\longrightarrow
+\text{strategy return}.
+$$
+
+That is useful pedagogically because it separates the machine-learning question
+from the trading-design question. First, does the classifier produce useful
+directional information? Second, how should a trading rule convert that
+information into exposure?
+
+The following table summarizes how often the strategy is invested and how often
+it moves between positions.
+
+```{r trading-activity-summary}
+test_strategy %>%
+  summarise(
+    `Test days` = n(),
+    `Long/cash invested days` = sum(long_cash_position == 1),
+    `Long/cash cash days` = sum(long_cash_position == 0),
+    `Long/short long days` = sum(long_short_position == 1),
+    `Long/short short days` = sum(long_short_position == -1),
+    `Long/short switches` = sum(long_short_position_change > 0),
+    `Total position change` = sum(long_short_position_change)
+  ) %>%
+  tidyr::pivot_longer(
+    cols = everything(),
+    names_to = "Measure",
+    values_to = "Value"
+  ) %>%
+  kable(caption = "Trading activity during the test period.",
+        digits = 0) %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The long/cash rule has cash days because it refuses exposure after a `Down`
+prediction. The long/short rule has no cash days by design: every day is either
+long or short. The number of long/short switches matters because trading costs
+are charged when the desired position changes. A move from long to short is a
+two-unit change in exposure, from $+1$ to $-1$, so it is more expensive than
+moving from cash to long.
 
 Graphically, we compare the robo trader with buy-and-hold over the test
 period.
 
 ```{r}
 #| label: fig-robotrader-strategy
-#| fig-cap: "Cumulative test returns: robo trader versus buy-and-hold."
+#| fig-cap: "Cumulative test returns: robo trader rules versus buy-and-hold."
 strategy_long <- bind_rows(
   test_strategy %>%
-    transmute(date, strategy = "Robo trader", value = cumulative_strategy),
+    transmute(date, strategy = "Long/cash", value = cumulative_long_cash),
+  test_strategy %>%
+    transmute(date, strategy = "Long/short gross",
+              value = cumulative_long_short),
+  test_strategy %>%
+    transmute(date, strategy = "Long/short net of costs",
+              value = cumulative_long_short_net),
   test_strategy %>%
     transmute(date, strategy = "Buy and hold", value = cumulative_buy_hold)
 )
@@ -479,15 +875,20 @@ strategy_long <- bind_rows(
 strategy_long %>%
   ggplot(aes(date, value, color = strategy)) +
   geom_line(linewidth = 0.8) +
-  scale_color_manual(values = c("Robo trader" = "#1B9E77",
-                                "Buy and hold" = "black")) +
+  scale_color_manual(values = c(
+    "Long/cash" = "#1B9E77",
+    "Long/short gross" = "#7570B3",
+    "Long/short net of costs" = "#D95F02",
+    "Buy and hold" = "black"
+  )) +
   labs(x = "Date", y = "Cumulative return", color = "")
 ```
 
-In this test period the robo trader ends at about 1.1866, while buy-and-hold
-loses money. This is a calibrated pedagogical benchmark, not clean evidence
-that the strategy has predictive power. That does not mean the robot is ready
-for real capital. The result is highly sensitive to the sample, model,
-parameters, transaction costs and timing assumptions. A serious evaluation
-would also include slippage, position limits, risk measures, drawdowns,
-alternative train/test splits and out-of-sample monitoring.
+The conclusion is deliberately narrow. The chapter shows how to translate a
+classification model into a trading rule and how to compute the resulting
+cumulative return under a clear timing convention. The net long/short rule also
+shows how sensitive the result is to explicit trading frictions. This still
+does not establish a profitable trading strategy. To make that stronger claim,
+the evaluation would also need broader cost sensitivity, position limits, risk
+measures, drawdowns, alternative train/test splits and live out-of-sample
+monitoring.
