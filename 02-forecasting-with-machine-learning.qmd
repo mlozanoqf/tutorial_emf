@@ -1,4 +1,4 @@
-# Forecasting with machine learning in R
+# Time series forecasting with machine learning in R
 
 ```{r echo=FALSE}
 # This removes all items in environment.
@@ -72,17 +72,18 @@ tail(beer)
 
 The column name now identifies the variable as sales.
 
-## Supervised learning workflow
+## Supervised forecasting workflow
 
-Machine learning is the study of algorithms that improve their predictions
-from data. In time series forecasting, the basic idea is to transform a
-sequence into a supervised learning problem: build a table of predictors
-called $X$, keep the variable we want to forecast as $y$, estimate a model on
-the training data, tune it with validation data, and evaluate it only once on
-the test data.
+In this chapter, machine learning is used as a forecasting tool. The goal is
+narrowly defined: forecast a monthly time series by turning calendar and trend
+information into predictors. In time series forecasting, the supervised
+learning idea is to transform an ordered sequence into a modeling table: build
+a table of predictors called $X$, keep the variable we want to forecast as
+$y$, estimate a model on the training data, tune it with validation data, and
+evaluate it once on the test data.
 
 This chapter uses the same forecasting problem as before with an explicit
-supervised learning workflow. The chapter writes the model comparison directly:
+supervised forecasting workflow. The chapter writes the model comparison directly:
 we create the predictors, choose the candidate model families, tune the few
 hyperparameters by hand, and evaluate the final models on a holdout period. The
 models are smaller, faster to render in Quarto, easier to explain, and easier
@@ -94,7 +95,7 @@ to debug. The workflow is also close to what students need to understand:
 4. choose hyperparameters with the validation set;
 5. evaluate the chosen models on a test set held apart from fitting and tuning.
 
-We will compare three transparent machine learning alternatives:
+We will compare three transparent machine-learning forecasting alternatives:
 
 - a multivariate linear regression;
 - a regression tree;
@@ -105,31 +106,28 @@ simple threshold behavior. The neural network is also nonlinear. We keep it
 small so the model remains pedagogical and reproducible.
 
 Mathematically, this chapter changes the forecasting problem from a univariate
-time-series model into a supervised regression problem. The first chapter used
-models built directly from the history of the series. This chapter constructs a
-vector of known calendar and trend predictors:
+time-series model into a supervised forecasting regression problem. The first
+chapter used models built directly from the history of the series. This chapter
+turns each month into one row of a modeling table:
+
+| Row element | Meaning |
+|---|---|
+| `sales` | The value we want to forecast. |
+| `index.num` | A numeric time trend. |
+| `year` | A coarse trend variable and split variable. |
+| `month.lbl` | Monthly seasonality. |
+
+Then each supervised forecasting model estimates a rule
 
 $$
-x_t =
-\left(
-\text{index.num}_t,\,
-\text{year}_t,\,
-\text{month}_t
-\right).
+\text{sales} = f(\text{trend and month variables}) + \text{error}.
 $$
 
-Then each machine learning model estimates a function
-
-$$
-y_t = f(x_t) + \varepsilon_t.
-$$
-
-The three alternatives below differ only in how flexible we allow $f(\cdot)$ to
-be. Linear regression uses a straight-line additive function, the regression
-tree uses a piecewise-constant function, and the neural network uses a smooth
-nonlinear function. This is the core transparency principle of the chapter:
-the predictor matrix is explicit, the candidate functions are explicit, and the
-test set is reserved for the final evaluation.
+The three alternatives below differ in how flexible we allow the rule to be.
+Linear regression uses an additive straight-line rule. The regression tree uses
+if-then splits. The neural network uses a small nonlinear rule. The transparency
+principle is simple: we can see the columns, we can see the candidate model
+families, and the test set is reserved for the final evaluation.
 
 The data split has three different jobs:
 
@@ -207,14 +205,14 @@ beer %>%
 ```
 
 The `tk_augment_timeseries_signature()` function expands the timestamp
-information column-wise into a machine learning feature set. The original data
+information column-wise into a forecasting feature set. The original data
 set has a date, a symbol, and the sales variable. The augmented data includes
 calendar information such as year, month, quarter, semester and other time
 features. Only some of them will be useful for the final models. The full list
-still helps us inspect the forecasting problem as a supervised learning
+still helps us inspect the forecasting problem as a supervised forecasting
 problem.
 
-```{r data-in-a-machine-learning-format}
+```{r data-in-a-forecasting-feature-format}
 beer_aug <- beer %>%
   tk_augment_timeseries_signature()
 
@@ -238,7 +236,7 @@ monthly problem, they mostly encode calendar artifacts. We keep a smaller set:
 - `month.lbl`, a factor for monthly seasonality.
 
 This modeling decision keeps the target variable intact and makes the
-supervised learning matrix easier to explain. It also reduces dependence on
+supervised forecasting matrix easier to explain. It also reduces dependence on
 irrelevant timestamp fragments.
 
 The retained features define the design matrix used by the models. Because
@@ -321,19 +319,13 @@ We split the database into training, validation and test sets following the
 time ranges in the visualization above. The test set is the most recent data.
 It remains unavailable during model fitting and tuning.
 
-The split can be written as three ordered sets:
+The split can be read directly from the `year` column:
 
-$$
-\mathcal{T}_{\text{train}} = \{t: 2010 \leq \text{year}_t \leq 2020\},
-$$
-
-$$
-\mathcal{T}_{\text{valid}} = \{t: \text{year}_t = 2021\},
-$$
-
-$$
-\mathcal{T}_{\text{test}} = \{t: \text{year}_t = 2022\}.
-$$
+| Sample | Rule in the code | Use |
+|---|---|---|
+| Training | `year < 2021` | Fit model parameters. |
+| Validation | `year == 2021` | Choose hyperparameters. |
+| Test | `year == 2022` | Evaluate the chosen models. |
 
 The validation set is used to choose hyperparameters. The test set is used only
 after the choices have been made.
@@ -421,7 +413,7 @@ The linear regression has no hyperparameters. It is our transparent baseline.
 If this model works well, that is useful information: sometimes a simple model
 is enough when trend and seasonality are strong.
 
-The fitted equation is
+The fitted linear regression equation is
 
 $$
 y_t =
@@ -459,37 +451,20 @@ The regression tree has a complexity parameter, `cp`. A smaller value allows a
 larger tree; a larger value prunes the tree more aggressively. We estimate a
 small grid and choose the value that minimizes validation RMSE.
 
-A regression tree partitions the predictor space into regions
-$R_1,\ldots,R_K$. Inside each region, the forecast is the average training
-value in that region. The prediction rule can be written as a set of cases:
+A regression tree asks a sequence of yes/no questions about the predictors.
+For example: is the month December? is the time index above a certain value?
+After following those questions to a final group, the forecast is the average
+sales value among the training observations in that group:
 
 $$
-\hat{f}(x_t)
+\text{tree forecast}
 =
-\begin{cases}
-c_1, & x_t \in R_1,\\
-c_2, & x_t \in R_2,\\
-\vdots\\
-c_K, & x_t \in R_K,
-\end{cases}
-\qquad
-c_k = \frac{1}{|R_k|}\sum_{i:x_i\in R_k} y_i.
+\text{average sales in the final group}.
 $$
-
-In plain language, the tree asks a sequence of yes/no questions about the
-predictors. For example: is the month December? is the time index above a
-certain value? After following those questions to a terminal region $R_k$, the
-forecast is the historical average sales value inside that region.
 
 The `cp` parameter controls the cost of adding more splits. A useful way to
-read it is as a penalty on tree complexity:
-
-$$
-\text{penalized error}
-=
-\text{training RSS}
-+ \alpha K.
-$$
+read it is as a penalty on tree complexity: larger `cp` values prune more
+splits, and smaller `cp` values allow more splits.
 
 Small `cp` values allow more regions and can overfit. Large `cp` values produce
 simpler trees and can underfit. We choose `cp` using the validation set. The
@@ -532,25 +507,11 @@ that discourages overly large weights. Because the variables have different
 scales, we standardize the model matrix before fitting.
 
 The neural network uses the same predictors as the linear regression and tree.
-With one hidden layer, its prediction can be written as
-
-$$
-\hat{y}_t =
-\mu_y + \sigma_y
-\left[
-w_0 + \sum_{j=1}^{k}
-w_j \sigma(a_j + v_j^\top z_t)
-\right],
-$$
-
-where $z_t$ is the standardized predictor vector, $k$ is the number of hidden
-units, and $\mu_y,\sigma_y$ undo the scaling of the target variable. The
-`decay` parameter adds an $L_2$ penalty to discourage large weights:
-
-$$
-\sum_t (z^y_t-\hat{z}^y_t)^2
-+ \lambda \sum_r w_r^2.
-$$
+The difference is the way it combines them. It first standardizes the inputs,
+then creates a small number of hidden units, and finally combines those hidden
+units into one forecast. The `size` hyperparameter controls how many hidden
+units are used. The `decay` hyperparameter discourages very large weights, so
+the fitted rule stays smoother.
 
 Its inputs remain the same explicit features used by the linear regression and
 the tree. The extra flexibility comes from the hidden layer and the nonlinear
@@ -652,18 +613,10 @@ best_nnet <- nnet_validation %>%
 The validation leaderboard summarizes the model selection step. The final
 forecasting performance is evaluated later with the test set.
 
-Formally, for each model family we choose the setting $\lambda$ that minimizes
-validation RMSE:
-
-$$
-\lambda^\star =
-\arg\min_{\lambda \in \Lambda}
-\text{RMSE}_{\text{valid}}(\lambda).
-$$
-
-For the tree, $\lambda$ is `cp`. For the neural network, $\lambda$ represents
-the pair (`size`, `decay`). Linear regression has no tuning grid, so it enters
-the leaderboard once.
+For each model family, we choose the setting with the smallest validation RMSE.
+For the tree, the setting is `cp`. For the neural network, the setting is the
+pair (`size`, `decay`). Linear regression has no tuning grid, so it enters the
+leaderboard once.
 
 ```{r validation-leaderboard}
 validation_leaderboard <- bind_rows(
@@ -674,7 +627,7 @@ validation_leaderboard <- bind_rows(
   arrange(rmse)
 
 kable(validation_leaderboard,
-      caption = "Validation leaderboard for transparent machine learning models.",
+      caption = "Validation leaderboard for machine-learning forecasting models.",
       digits = 2) %>%
   kable_styling(latex_options = "HOLD_position")
 ```
@@ -687,23 +640,9 @@ is a standard practice: validation is used to make modeling decisions, and
 after that decision is made we can use all pre-test information to estimate
 the final model.
 
-The final fitted function is therefore
-
-$$
-\hat{f}_{\text{final}}
-=
-\hat{f}\left(
-\mathcal{T}_{\text{train}} \cup \mathcal{T}_{\text{valid}},
-\lambda^\star
-\right).
-$$
-
-The test forecasts are
-
-$$
-\hat{y}_t = \hat{f}_{\text{final}}(x_t),
-\qquad t \in \mathcal{T}_{\text{test}}.
-$$
+The final fitted function uses all observations from 2010 through 2021 and the
+hyperparameters selected in validation. The test forecasts are obtained by
+applying that final fitted rule to the 2022 rows.
 
 This ordering prevents methodological leakage: the test sales values never
 enter coefficient estimation, `cp` selection, neural-network size selection, or
@@ -748,24 +687,24 @@ The table below shows the 10-month forecast errors.
 
 ```{r ml-error-table}
 ml_errors <- bind_rows(
-  forecast_error_tbl("ML linear regression", pred_lm_test),
-  forecast_error_tbl("ML regression tree", pred_tree_test),
-  forecast_error_tbl("ML neural network", pred_nnet_test)
+  forecast_error_tbl("ML forecast: linear regression", pred_lm_test),
+  forecast_error_tbl("ML forecast: regression tree", pred_tree_test),
+  forecast_error_tbl("ML forecast: neural network", pred_nnet_test)
 )
 
 kable(ml_errors,
-      caption = "Detailed test performance for transparent machine learning models.",
+      caption = "Detailed test performance for machine-learning forecasting models.",
       digits = 3,
       row.names = FALSE) %>%
   kable_styling(latex_options = "HOLD_position")
 ```
 
 The same information is clearer in a plot. The black line is the actual series.
-The colored lines are the machine learning forecasts for the 2022 test period.
+The colored lines are the machine-learning forecasts for the 2022 test period.
 
 ```{r}
 #| label: fig-transparent-ml-forecasts
-#| fig-cap: "Forecasts from transparent machine learning models."
+#| fig-cap: "Forecasts from machine-learning forecasting models."
 beer %>%
   filter(date > as.Date("2021-01-01")) %>%
   ggplot(aes(x = yearmonth(date), y = sales)) +
@@ -797,7 +736,7 @@ ml_summary <- ml_errors %>%
   arrange(mape)
 
 kable(ml_summary,
-      caption = "Test summary for transparent machine learning models.",
+      caption = "Test summary for machine-learning forecasting models.",
       digits = 2) %>%
   kable_styling(latex_options = "HOLD_position")
 ```
@@ -812,6 +751,14 @@ same predictors, and the same test months. A lower MAPE means that this
 particular fitted function was closer to the realized 2022 sales over this
 holdout period.
 
+In the current render, the machine-learning neural network forecast is the best
+of the three supervised forecasting models, with MAPE around 4.91. The
+regression tree follows with MAPE around 5.16, and the linear regression has
+MAPE around 5.81. The differences are modest, so the interpretation should
+focus on the pattern: calendar and trend predictors carry useful information,
+and a small nonlinear model extracts a little more from those predictors in
+this test window.
+
 We can also show the best individual point forecast for each model.
 
 ```{r point-forecast-ml}
@@ -822,7 +769,7 @@ point_forecast_ml <- ml_errors %>%
   select(model, date, actual, pred, error, error_pct)
 
 kable(point_forecast_ml,
-      caption = "Best point forecast for each transparent machine learning model.",
+      caption = "Best point forecast for each machine-learning forecasting model.",
       digits = 4,
       row.names = FALSE) %>%
   kable_styling(latex_options = "HOLD_position")
@@ -833,12 +780,12 @@ Even so, it is useful to see where each model was most accurate.
 
 ```{r update-mape-ml}
 mape_updated_ml <- mape_updated %>%
-  add_row(.model = "ML linear regression",
-          MAPE = ml_summary$mape[ml_summary$model == "ML linear regression"]) %>%
-  add_row(.model = "ML regression tree",
-          MAPE = ml_summary$mape[ml_summary$model == "ML regression tree"]) %>%
-  add_row(.model = "ML neural network",
-          MAPE = ml_summary$mape[ml_summary$model == "ML neural network"]) %>%
+  add_row(.model = "ML forecast: linear regression",
+          MAPE = ml_summary$mape[ml_summary$model == "ML forecast: linear regression"]) %>%
+  add_row(.model = "ML forecast: regression tree",
+          MAPE = ml_summary$mape[ml_summary$model == "ML forecast: regression tree"]) %>%
+  add_row(.model = "ML forecast: neural network",
+          MAPE = ml_summary$mape[ml_summary$model == "ML forecast: neural network"]) %>%
   arrange(MAPE)
 
 mape_updated_ml
@@ -849,20 +796,27 @@ mape_updated_ml
 As in the original Matt Dancho example, we include a different ARIMA workflow
 using the `forecast` package and the `auto.arima()` function. This benchmark
 belongs to the classical time-series family and answers a different modeling
-question. The machine learning models above estimate
-$y_t=f(x_t)+\varepsilon_t$ using trend and calendar predictors. ARIMA models
-the dependence of the series on its own past:
-
-$$
-\Phi(B^{12})\phi(B)(1-B)^d(1-B^{12})^D y_t
-=
-c+\Theta(B^{12})\theta(B)\varepsilon_t.
-$$
+question. The machine-learning forecasting models above estimate
+$\text{sales}=f(\text{trend and month variables})+\text{error}$ using trend
+and calendar predictors. ARIMA models the dependence of the series on its own
+past.
 
 The `auto.arima()` function automates the selection of the ARIMA orders. The
 automation is a statistical search over candidate values of
 $(p,d,q)(P,D,Q)_{12}$, followed by parameter estimation and information-criterion
 comparison.
+
+The order notation is read as follows:
+
+| Order | Meaning |
+|---|---|
+| $p$ | Number of recent lagged values used by the autoregressive part. |
+| $d$ | Number of ordinary differences. |
+| $q$ | Number of recent forecast errors used by the moving-average part. |
+| $P$ | Number of seasonal lagged values. |
+| $D$ | Number of seasonal differences. |
+| $Q$ | Number of seasonal forecast errors. |
+| 12 | Monthly seasonal cycle. |
 
 **Prepare the data.**
 
@@ -1020,6 +974,13 @@ fcast_tbl %>%
 
 The resulting forecast serves as a benchmark.
 
+In this render, `forecast::auto.arima` has MAPE around 3.69. This makes it a
+strong benchmark: it beats the supervised machine-learning forecasts in this
+specific holdout period and lands close to the best models from the first
+chapter. That result is pedagogically useful because it shows that classical
+time-series structure can remain highly competitive when the series has strong
+trend, seasonality and autocorrelation.
+
 ## Summary of all results
 
 An interesting question is: *What happens to the accuracy when you average the
@@ -1049,7 +1010,7 @@ naive, drift and mean forecasts from this average.
 fpp3_fc <- readRDS("fpp3_fc.rds")
 ```
 
-We add the transparent machine learning forecasts and the `forecast::auto.arima`
+We add the machine-learning forecasts and the `forecast::auto.arima`
 forecast into the `fpp3` forecast table.
 
 ```{r}
@@ -1117,6 +1078,15 @@ The ranking is local to this data set and this holdout period. The main
 lesson is that a transparent workflow lets us see where the forecast comes
 from, how the model was selected, how long it takes to render, and how it
 performs when confronted with truly unseen data.
+
+The average forecast is the best row in this render, with MAPE around 2.37.
+That result has a clear interpretation: the individual models make different
+errors, and averaging reduces part of that model-specific noise. The cost is
+interpretability because the final number comes from several forecasting
+rules. For teaching purposes, this is a valuable ending point: students can
+see that the best empirical forecast may come from combining models, while the
+individual models remain necessary for understanding what information the
+forecast is using.
 
 ## References
 

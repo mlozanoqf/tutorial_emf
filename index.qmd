@@ -28,11 +28,13 @@ write_book_dates()
 ## Preface {.unnumbered}
 
 ::: {.home-panel}
-This material relies on @hull2020machine, @hyndman2021forecasting, and on Matt Dancho Business Science IO freely available codes in R that explain how to implement forecasting and machine learning workflows. Some mathematical background is skipped to emphasize the data analysis, model logic, discussion, graphical approach and R coding [@Rref]. As in the philosophy of @knuth1984literate, the objective of this document is to explain to human beings what we want a computer to do as literate programming. This is a work in progress and it is under revision.
+This book is an applied introduction to forecasting with R. The central problem is to take an ordered time series, define a forecast origin, estimate models using only past information, and evaluate predictions on a future holdout period. The first chapter builds the classical forecasting workflow with <tt>`fpp3`</tt>: decomposition, simple benchmarks, exponential smoothing, ARIMA, and neural network autoregression. The second chapter recasts the same forecasting task as a supervised forecasting problem, using time-based features, temporal validation, regression, trees, neural networks, an ARIMA benchmark, and an average forecast. The emphasis is on forecasting logic, mathematical notation, R implementation, model comparison, and interpretation of out-of-sample results.
+
+This material relies on @hyndman2021forecasting, @hull2020machine, and Matt Dancho Business Science IO freely available code examples in R. Some mathematical background is developed only as far as needed to connect model notation, data analysis, code, graphics, and forecast accuracy [@Rref]. As in the philosophy of @knuth1984literate, the objective is to explain to human beings what we want a computer to do as literate programming. This is a work in progress and it is under revision.
 :::
 
 ## What's new in this edition {.unnumbered}
 
-- **Book format:** The material is now organized as a Quarto book with chapter navigation, search, and a cleaner reading flow.
-- **Separated chapters:** The fpp3, transparent machine learning, and R robotrader material now live in individual chapters instead of one long rendered document.
-- **Reader tools:** Code folding, copy buttons, local section navigation, reading progress, and back-to-top controls are available across the book.
+- **Forecasting identity:** The book is now focused on applied time-series forecasting, temporal validation, model comparison, and interpretation of forecast errors.
+- **Two-chapter structure:** Chapter 1 covers classical forecasting with <tt>`fpp3`</tt>. Chapter 2 extends the same sales forecasting problem with supervised machine-learning forecasting models and benchmark comparisons.
+- **Book format:** The material is organized as a Quarto book with chapter navigation, search, local section navigation, code folding, copy buttons, reading progress, and back-to-top controls.

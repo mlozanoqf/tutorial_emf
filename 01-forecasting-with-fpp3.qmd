@@ -660,47 +660,61 @@ mape_updated
 
 ## ARIMA.
 
-According to @hyndman2021forecasting, exponential smoothing models describe trend and seasonality, while ARIMA models describe autocorrelation. The <tt>`ARIMA()`</tt> function combines unit root tests, AICc minimisation, and maximum likelihood estimation to select an ARIMA model. Setting <tt>`stepwise = FALSE`</tt> and <tt>`approximation = FALSE`</tt> asks R to run a more exhaustive search.
+According to @hyndman2021forecasting, exponential smoothing models emphasize trend and seasonality. ARIMA models emphasize autocorrelation: the way a series is related to its own recent values and recent forecast errors. The <tt>`ARIMA()`</tt> function combines unit root tests, AICc minimisation, and maximum likelihood estimation to select an ARIMA model. Setting <tt>`stepwise = FALSE`</tt> and <tt>`approximation = FALSE`</tt> asks R to run a more exhaustive search.
 
-The general seasonal ARIMA structure is
+Following the notation used in Chapter 9 of @hyndman2021forecasting, a non-seasonal ARIMA model is written as
 
 $$
-\Phi(B^m)\phi(B)(1-B)^d(1-B^m)^D y_t
-=
-c + \Theta(B^m)\theta(B)\varepsilon_t.
+\text{ARIMA}(p,d,q).
 $$
 
-The symbols have the following meaning:
+The three orders have direct meanings:
 
-| Symbol | Meaning |
+| Order | Name | What it controls |
 |---|---|
-| $B$ | Backshift operator: $B y_t = y_{t-1}$. |
-| $m$ | Seasonal period. Here $m=12$. |
-| $d$ | Number of ordinary differences used to remove non-stationary trend. |
-| $D$ | Number of seasonal differences used to remove seasonal persistence. |
-| $\phi(B)$ | Non-seasonal autoregressive polynomial. |
-| $\theta(B)$ | Non-seasonal moving-average polynomial. |
-| $\Phi(B^m)$ | Seasonal autoregressive polynomial. |
-| $\Theta(B^m)$ | Seasonal moving-average polynomial. |
-| $\varepsilon_t$ | Innovation or shock left after using the past. |
+| $p$ | Autoregressive order | How many lagged values of the transformed series enter the model. |
+| $d$ | Differencing order | How many times the series is differenced to remove persistent trend. |
+| $q$ | Moving-average order | How many lagged forecast errors enter the model. |
 
-Three short examples make the backshift notation readable:
+The basic building blocks can be read without compact operator notation. An autoregressive model of order $p$ uses recent values:
 
 $$
-B y_t = y_{t-1},
+y_t
+=
+c+\phi_1y_{t-1}+\phi_2y_{t-2}+\cdots+\phi_py_{t-p}+\varepsilon_t.
 $$
 
-$$
-(1-B)y_t = y_t-y_{t-1},
-$$
+The coefficient $\phi_1$ measures how much the previous observation helps explain the current observation after accounting for the other terms. A moving-average model of order $q$ uses recent forecast errors:
 
 $$
-(1-B^{12})y_t = y_t-y_{t-12}.
+y_t
+=
+c+\varepsilon_t+\theta_1\varepsilon_{t-1}
+\theta_2\varepsilon_{t-2}+\cdots+\theta_q\varepsilon_{t-q}.
 $$
 
-The first line says that $B$ moves the series one month backward. The second line computes a monthly change. The third line compares the current month with the same month one year earlier.
+The coefficient $\theta_1$ measures how much yesterday's unexpected shock carries into today's value. Differencing is the step that turns levels into changes:
 
-In words, ARIMA first transforms the series so that trend and seasonal persistence are reduced. Then it models the remaining dependence using lagged values and lagged shocks. The `ARIMA()` function performs an organized model search: it tries candidate values for the ARIMA orders, estimates parameters by maximum likelihood, and chooses a specification using AICc. Setting `stepwise = FALSE` and `approx = FALSE` makes that search more exhaustive and less approximate.
+$$
+y'_t = y_t-y_{t-1}.
+$$
+
+For monthly data, seasonal ARIMA adds seasonal orders:
+
+$$
+\text{ARIMA}(p,d,q)(P,D,Q)_{m},
+$$
+
+where $m=12$ for monthly seasonality. The seasonal orders have parallel meanings:
+
+| Order | Name | What it controls in monthly data |
+|---|---|---|
+| $P$ | Seasonal autoregressive order | Dependence on values one or more years apart. |
+| $D$ | Seasonal differencing order | Differences against the same month in a previous year. |
+| $Q$ | Seasonal moving-average order | Dependence on seasonal forecast errors. |
+| $m$ | Seasonal period | The number of observations in one seasonal cycle. Here $m=12$. |
+
+In words, ARIMA first chooses the amount of ordinary differencing $d$ and seasonal differencing $D$. Then it chooses how many lagged values and lagged errors are useful: $p$, $q$, $P$, and $Q$. The `ARIMA()` function performs an organized model search: it tries candidate orders, estimates parameters by maximum likelihood, and chooses a specification using AICc.
 
 ```{r}
 beer_arima <- beer_train %>%
@@ -708,15 +722,19 @@ beer_arima <- beer_train %>%
 report(beer_arima)
 ```
 
-The selected model is reported by R. Once we know the selected specification, the model can be read as an equation. For example, if the selected model is ARIMA(4,1,1)(0,1,1)[12], then the differenced series is modeled as
+The selected model is reported by R. In this chapter, the selected specification is ARIMA(4,1,1)(0,1,1)[12]. This can be read piece by piece:
 
-$$
-\phi(B)(1-B)(1-B^{12})y_t
-=
-\theta(B)\Theta(B^{12})\varepsilon_t.
-$$
+| Part | Meaning in this fitted model |
+|---|---|
+| $p=4$ | Use four recent lagged values after differencing. |
+| $d=1$ | Use one ordinary difference to reduce trend. |
+| $q=1$ | Use one recent forecast error. |
+| $P=0$ | No seasonal autoregressive term is selected. |
+| $D=1$ | Use one seasonal difference, comparing a month with the same month one year earlier. |
+| $Q=1$ | Use one seasonal forecast error. |
+| $m=12$ | Monthly data have a twelve-month seasonal cycle. |
 
-The ordinary difference $(1-B)y_t = y_t-y_{t-1}$ removes local trend. The seasonal difference $(1-B^{12})y_t = y_t-y_{t-12}$ removes annual persistence. The AR and MA terms then model the remaining dependence.
+The model therefore says: first remove ordinary trend and annual seasonal persistence; then model what remains using four recent values, one recent error, and one seasonal error. That reading is the main pedagogical point. The order notation tells us what information the model uses.
 
 The residuals for the best ARIMA model.
 
@@ -797,17 +815,22 @@ mape_updated <- mape_updated %>%
   arrange(desc(-MAPE))
 mape_updated
 ```
+
+The ARIMA result should be interpreted together with the seasonal naïve and ETS results. The test window has only ten months, so small MAPE differences deserve caution. In this render, ETS has a MAPE around 3.77, seasonal naïve around 3.89, and ARIMA around 4.40. That ranking suggests that trend and seasonality explain most of the test period, and that the extra ARIMA autocorrelation structure improves the simple baselines while ETS remains the strongest model in this particular holdout window.
+
 ## Neural network.
 
 Neural networks are flexible nonlinear forecasting models. With time series data, lagged values of the series can be used as inputs, just as lagged values appear in a linear autoregression. When a neural network uses autoregressive inputs, we call it a neural network autoregression or NNAR model.
 
-A neural network autoregression can be understood as a nonlinear version of an autoregressive model. It replaces a fixed linear relation with a flexible function of past values:
+The starting point is still the same forecasting question: can recent history help predict the next value? A linear autoregression answers that question with a weighted sum of lagged observations. A NNAR model allows the weights to interact through hidden units, so the effect of one lag can depend on the values of other lags.
 
 $$
 y_t = f(y_{t-1}, y_{t-2}, \ldots, y_{t-p}, y_{t-m}, y_{t-2m}, \ldots) + \varepsilon_t.
 $$
 
-With one hidden layer, the function $f$ can be written as
+Here, $f(\cdot)$ is the forecasting rule learned from the training data. The inputs are lagged sales values. For example, $y_{t-1}$ is last month's sales and $y_{t-12}$ is sales in the same month one year earlier.
+
+With one hidden layer, a neural network forecast can be described in three stages. First, the model forms an input vector $x_t$ from lagged sales values. Second, each hidden unit combines those inputs and passes the result through a nonlinear function. Third, the output layer combines the hidden units into the forecast:
 
 $$
 f(x_t)
@@ -815,7 +838,19 @@ f(x_t)
 w_0 + \sum_{j=1}^{k} w_j \sigma(a_j + v_j^\top x_t),
 $$
 
-where $x_t$ is the vector of lagged inputs, $k$ is the number of hidden neurons, $\sigma(\cdot)$ is a nonlinear activation function, and the weights $w_j$, $a_j$, and $v_j$ are estimated from the training data. This flexibility increases the need for an audit of the inputs. In this chapter, the NNAR model receives lagged sales values only.
+where $x_t$ is the vector of lagged inputs, $k$ is the number of hidden units, $\sigma(\cdot)$ is the nonlinear activation function, and the weights $w_j$, $a_j$, and $v_j$ are estimated from the training data.
+
+The equation can be read as a recipe:
+
+| Component | Plain-language role |
+|---|---|
+| $x_t$ | The lagged sales values available before the forecast is made. |
+| $v_j^\top x_t$ | A weighted summary of those lagged values for hidden unit $j$. |
+| $\sigma(\cdot)$ | A nonlinear transformation that allows curved relationships. |
+| $w_j$ | The weight assigned to hidden unit $j$ in the final forecast. |
+| $k$ | The number of hidden units, which controls flexibility. |
+
+The audit question for NNAR is therefore simple: what information enters the model? In this chapter, the NNAR model receives lagged sales values only. Future test values, external regressors and hand-adjusted forecasts stay outside the model.
 
 ```{r}
 beer_nnet <- beer_train %>%
@@ -823,7 +858,16 @@ beer_nnet <- beer_train %>%
 report(beer_nnet)
 ```
 
-The NNAR(15,1,8)[12] model has inputs $y_{t-1}, y_{t-2},\ldots,y_{t-15}$ plus one seasonal lag structure for monthly data, and 8 neurons in the hidden layer. In plain language, `NNETAR()` learns a nonlinear forecasting rule from recent monthly history and annual seasonal history.
+The reported model is NNAR(15,1,8)[12]. This notation can be read as follows:
+
+| Part | Meaning |
+|---|---|
+| 15 | The model uses recent non-seasonal lag information up to 15 months. |
+| 1 | The model also includes one seasonal lag structure for monthly data. |
+| 8 | The hidden layer has 8 units. |
+| [12] | The seasonal cycle has 12 months. |
+
+In plain language, `NNETAR()` learns a nonlinear forecasting rule from recent monthly history and annual seasonal history.
 
 The calculation can be read in four steps:
 
@@ -892,6 +936,8 @@ mape_updated <- mape_updated %>%
 mape_updated
 ```
 
+The NNAR result is informative even though it ranks below ETS, seasonal naïve and ARIMA in this holdout period. Its MAPE is around 8.79. This tells us that the added nonlinear flexibility produced weaker 2022 forecasts for this short test window. A useful teaching point follows: a flexible model can learn complicated patterns, yet forecasting performance still depends on whether those patterns persist into the holdout period.
+
 The final table is an empirical comparison over one specific holdout window. The mathematical object being compared is always the same:
 
 $$
@@ -904,6 +950,8 @@ $$
 $$
 
 What changes from row to row is the rule used to generate those ten forecasts. The seasonal naïve method copies the previous year's monthly pattern; ETS updates level, trend, and seasonality through smoothing equations; ARIMA models autocorrelation after differencing; NNAR learns a nonlinear function of lagged observations. The MAPE table is therefore the last step in a complete chain: model assumption, estimated parameters, forecast values, forecast errors, and summary accuracy.
+
+The main empirical interpretation is that the strong seasonal structure of the series matters a great deal. Seasonal naïve already performs well, which means that copying last year's monthly pattern is a serious benchmark. ETS improves slightly by updating level, trend and seasonality. ARIMA also performs well, suggesting that differencing and autocorrelation help, although the selected ARIMA model is a little less accurate than ETS here. NNAR is more flexible, yet its holdout error is larger in this example. For students, the lesson is direct: out-of-sample error is the criterion that disciplines model complexity.
 
 ```{r}
 #| echo: false

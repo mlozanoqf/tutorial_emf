@@ -3,8 +3,8 @@ project:
   output-dir: _book
 
 book:
-  title: "Forecasting with R"
-  subtitle: "Book"
+  title: "Applied Forecasting with R"
+  subtitle: "Classical and machine-learning approaches to time-series forecasting"
   author: "Dr. Martín Lozano"
   page-navigation: true
   search: true
@@ -14,17 +14,15 @@ book:
     style: docked
     collapse-level: 1
   page-footer:
-    left: "Forecasting with R"
+    left: "Applied Forecasting with R"
     right: 'Dr. Martín Lozano &middot; <a href="mailto:mlozanoqf@gmail.com">mlozanoqf@gmail.com</a> &middot; <a href="https://mlozanoqf.github.io/">mlozanoqf.github.io</a>'
   chapters:
-    - text: "Forecasting with R"
+    - text: "Applied Forecasting with R"
       href: index.qmd
     - text: "Forecasting with fpp3"
       href: 01-forecasting-with-fpp3.qmd
-    - text: "Forecasting with machine learning"
+    - text: "Time series forecasting with machine learning"
       href: 02-forecasting-with-machine-learning.qmd
-    - text: "Robotrader in R"
-      href: 03-robotrader-in-r.qmd
     - references.qmd
 
 bibliography: references.bib
