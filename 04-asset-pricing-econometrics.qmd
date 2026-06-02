@@ -1,0 +1,1956 @@
+# Asset pricing econometrics
+
+```{r}
+# This removes all items in environment.
+rm(list = ls())
+
+library(tidyquant)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(readr)
+library(lubridate)
+library(broom)
+library(ggplot2)
+library(tibble)
+library(knitr)
+library(kableExtra)
+library(scales)
+```
+
+## Asset pricing as an econometric problem
+
+Asset pricing models connect expected excess returns to systematic sources of
+risk. The econometric task is to estimate that connection from data. In this
+chapter, the test assets are mutual-fund returns and the 25 Fama-French
+size-value portfolios. The risk factors are the market excess return, size,
+value, momentum, profitability, and investment factors from the Kenneth French
+Data Library.
+
+The chapter adapts the original Fama-French material in the `FF` source folder
+into the book's current format. The source folder is left untouched. The chapter
+downloads the data during execution, fixes the sample end at 2020-12-31 to
+preserve the original empirical window, and rebuilds the workflow with a clearer
+bridge between the model equations, the code, and the interpretation.
+
+The central object is an excess return:
+
+$$
+R_{i,t}^e
+=
+R_{i,t}-R_{f,t},
+$$
+
+where $R_{i,t}$ is the return on asset $i$ in month $t$ and $R_{f,t}$ is the
+risk-free return. A factor model explains $R_{i,t}^e$ using common sources of
+variation. The CAPM uses one factor, the market excess return
+[@sharpe1964capital; @lintner1965valuation; @mossin1966equilibrium]. The
+Fama-French three-factor model adds size and value factors
+[@fama1992cross; @fama1993common]. Momentum and the five-factor model extend
+the factor set [@carhart1997persistence; @fama2015five].
+
+The workflow is:
+
+$$
+\text{factor returns}
+\longrightarrow
+\text{test assets}
+\longrightarrow
+\text{time-series regressions}
+\longrightarrow
+\text{alphas and betas}
+\longrightarrow
+\text{cross-sectional fit}.
+$$
+
+That sequence matters. A factor model combines regression evidence with an
+economic claim about which risks should explain average excess returns.
+
+## Data, downloads, and sample construction
+
+The factor data and the 25 size-value portfolio returns are downloaded from the
+Kenneth French Data Library [@kennethFrenchDataLibrary]. The individual test
+asset example uses the Fidelity Contrafund ticker `FCNTX` downloaded with
+`tidyquant`. All returns are converted from percentages to decimal units during
+estimation. Percent units are used only when a table or graph is meant for
+interpretation.
+
+```{r asset-pricing-data}
+sample_end <- as.Date("2020-12-31")
+
+ff_urls <- list(
+  ff3 = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_CSV.zip",
+  momentum = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Momentum_Factor_CSV.zip",
+  ff5 = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_5_Factors_2x3_CSV.zip",
+  portfolios_25 = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/25_Portfolios_5x5_CSV.zip"
+)
+
+download_ff_csv <- function(url, skip) {
+  zip_file <- tempfile(fileext = ".zip")
+  unzip_dir <- tempfile()
+  dir.create(unzip_dir)
+
+  download_ok <- tryCatch(
+    {
+      utils::download.file(url, zip_file, mode = "wb", quiet = TRUE, method = "libcurl")
+      TRUE
+    },
+    error = function(error) FALSE,
+    warning = function(warning) FALSE
+  )
+
+  if (!download_ok && nzchar(Sys.which("curl.exe"))) {
+    status <- system2(
+      Sys.which("curl.exe"),
+      c("-L", "-s", "-o", zip_file, url),
+      stdout = TRUE,
+      stderr = TRUE
+    )
+    download_ok <- file.exists(zip_file) && file.info(zip_file)$size > 0
+  }
+
+  if (!download_ok) {
+    stop("Could not download Fama-French data from: ", url, call. = FALSE)
+  }
+
+  utils::unzip(zip_file, exdir = unzip_dir)
+
+  csv_file <- list.files(unzip_dir, pattern = "\\.csv$|\\.CSV$", full.names = TRUE)
+
+  if (!length(csv_file)) {
+    stop("No CSV file found in downloaded archive: ", url, call. = FALSE)
+  }
+
+  readr::read_csv(csv_file[[1]], skip = skip, show_col_types = FALSE, progress = FALSE)
+}
+
+parse_ff_monthly <- function(raw_data) {
+  names(raw_data)[1] <- "date_raw"
+
+  date_text <- trimws(as.character(raw_data$date_raw))
+  first_blank <- which(is.na(raw_data$date_raw) | date_text == "")[1]
+
+  if (!is.na(first_blank) && first_blank > 1) {
+    raw_data <- raw_data[seq_len(first_blank - 1), ]
+  }
+
+  raw_data |>
+    mutate(
+      date_raw = trimws(as.character(date_raw)),
+      date = lubridate::ceiling_date(lubridate::ymd(paste0(date_raw, "01")), "month") -
+        lubridate::days(1)
+    ) |>
+    select(date, everything(), -date_raw) |>
+    mutate(across(-date, ~ as.numeric(.x) / 100)) |>
+    rename_with(~ gsub("-", "_", .x, fixed = TRUE))
+}
+
+first_last_rows <- function(data, n = 3) {
+  idx <- unique(c(seq_len(min(n, nrow(data))), seq(max(nrow(data) - n + 1, 1), nrow(data))))
+  data[idx, , drop = FALSE]
+}
+
+ff3 <- download_ff_csv(ff_urls$ff3, skip = 3) |>
+  parse_ff_monthly() |>
+  filter(date <= sample_end)
+
+momentum <- download_ff_csv(ff_urls$momentum, skip = 13) |>
+  parse_ff_monthly() |>
+  filter(date <= sample_end)
+
+ff5 <- download_ff_csv(ff_urls$ff5, skip = 3) |>
+  parse_ff_monthly() |>
+  filter(date <= sample_end, !is.na(RMW), !is.na(CMA))
+
+portfolios_25 <- download_ff_csv(ff_urls$portfolios_25, skip = 15) |>
+  parse_ff_monthly() |>
+  filter(date <= sample_end)
+
+ff3_momentum <- ff3 |>
+  inner_join(momentum, by = "date") |>
+  rename(SMB3 = SMB) |>
+  relocate(RF, .after = Mom)
+
+ff5_extra <- ff5 |>
+  select(date, SMB, RMW, CMA) |>
+  rename(SMB5 = SMB)
+
+all_factors <- ff3_momentum |>
+  inner_join(ff5_extra, by = "date") |>
+  relocate(RF, .after = CMA)
+
+factor_windows <- bind_rows(
+  ff3 |> summarise(source = "Fama-French 3 factors", start = min(date), end = max(date), months = n()),
+  momentum |> summarise(source = "Momentum factor", start = min(date), end = max(date), months = n()),
+  ff5 |> summarise(source = "Fama-French 5 factors", start = min(date), end = max(date), months = n()),
+  portfolios_25 |> summarise(source = "25 size-value portfolios", start = min(date), end = max(date), months = n())
+)
+
+```
+
+The code keeps the data in decimal form. For example, a monthly return of
+`0.01` means one percent. This convention prevents unit mistakes when returns
+are added, multiplied, or used in regressions.
+
+The original material shows the first and last observations of the main data
+objects. Those checks are included here because they verify dates, decimal
+units, and column names before any model is estimated.
+
+```{r data-sample-tables}
+first_last_rows(ff3) |>
+  kable(
+    caption = "First and last observations of the Fama-French three-factor data.",
+    digits = 6,
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+first_last_rows(momentum) |>
+  kable(
+    caption = "First and last observations of the momentum factor.",
+    digits = 6,
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+first_last_rows(ff5) |>
+  kable(
+    caption = "First and last observations of the Fama-French five-factor data.",
+    digits = 6,
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+first_last_rows(all_factors) |>
+  kable(
+    caption = "First and last observations of the combined factor data.",
+    digits = 6,
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+first_last_rows(portfolios_25) |>
+  select(date, `SMALL LoBM`, `SMALL HiBM`, `BIG LoBM`, `BIG HiBM`) |>
+  kable(
+    caption = "First and last observations of selected 25-portfolio corner returns.",
+    digits = 6,
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+These tables are a data audit. The first and last rows show that the factor
+files and the portfolio file are monthly series, expressed in decimal units,
+and aligned on month-end dates. The selected corner portfolios already hint at
+the empirical structure used later: small growth, small value, big growth, and
+big value are the extreme cells of the size-value grid.
+
+## Excess returns and factor notation
+
+The CAPM time-series regression for asset $i$ is
+
+$$
+R_{i,t}^e
+=
+\alpha_i
++
+\beta_{i,M} MKT_t
++
+\varepsilon_{i,t},
+$$
+
+where $MKT_t$ is the market excess return. The intercept $\alpha_i$ is the
+average excess return that remains after controlling for market exposure. In a
+well-specified asset pricing model, alphas should be economically small.
+
+The Fama-French three-factor model is
+
+$$
+R_{i,t}^e
+=
+\alpha_i
++
+\beta_{i,M} MKT_t
++
+\beta_{i,S} SMB_t
++
+\beta_{i,H} HML_t
++
+\varepsilon_{i,t}.
+$$
+
+The factors have direct economic interpretations:
+
+| Factor | Interpretation |
+|---|---|
+| $MKT_t$ | Market excess return. |
+| $SMB_t$ | Size factor: small minus big. |
+| $HML_t$ | Value factor: high book-to-market minus low book-to-market. |
+| $MOM_t$ | Momentum factor: recent winners minus recent losers. |
+| $RMW_t$ | Profitability factor: robust minus weak profitability. |
+| $CMA_t$ | Investment factor: conservative minus aggressive investment. |
+
+The five-factor model replaces the three-factor specification with
+
+$$
+R_{i,t}^e
+=
+\alpha_i
++
+\beta_{i,M} MKT_t
++
+\beta_{i,S} SMB_t
++
+\beta_{i,H} HML_t
++
+\beta_{i,R} RMW_t
++
+\beta_{i,C} CMA_t
++
+\varepsilon_{i,t}.
+$$
+
+The code names these variables as `Mkt_RF`, `SMB3`, `HML`, `Mom`, `SMB5`,
+`RMW`, and `CMA`. The distinction between `SMB3` and `SMB5` is intentional:
+the size factor in the three-factor data and the size factor in the five-factor
+data are constructed from different portfolio sorts.
+
+## Factor portfolios through time
+
+Before estimating asset pricing regressions, it is useful to inspect the factor
+returns themselves. The next helper computes annualized return, annualized
+volatility, and a simple return-to-risk ratio.
+
+```{r factor-performance}
+annualized_performance <- function(data, cols) {
+  data |>
+    select(date, all_of(cols)) |>
+    pivot_longer(-date, names_to = "factor", values_to = "return") |>
+    filter(!is.na(return)) |>
+    group_by(factor) |>
+    summarise(
+      months = n(),
+      annualized_return = prod(1 + return)^(12 / months) - 1,
+      annualized_volatility = sd(return) * sqrt(12),
+      return_per_unit_risk = annualized_return / annualized_volatility,
+      .groups = "drop"
+    ) |>
+    arrange(return_per_unit_risk)
+}
+
+factor_perf <- annualized_performance(ff3_momentum, c("Mkt_RF", "SMB3", "HML", "Mom"))
+
+factor_perf |>
+  mutate(across(c(annualized_return, annualized_volatility, return_per_unit_risk), ~ round(.x, 4))) |>
+  kable(
+    caption = "Annualized performance of the three Fama-French factors and momentum.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The annualized table turns each factor into an object that can be compared like
+a portfolio. The return column shows the long-run reward, the volatility column
+shows the risk of the factor strategy, and the return-per-risk column gives a
+compact scale for ranking factor performance before looking at individual
+assets.
+
+The three-factor file is inspected first by itself. This mirrors the original
+workflow: read the Fama-French factors, check their time path, and then add
+momentum as an extension.
+
+```{r}
+#| label: fig-ff3-cumulative
+#| fig-cap: "Cumulative returns of the Fama-French three factors."
+ff3 |>
+  select(date, Mkt_RF, SMB, HML, RF) |>
+  pivot_longer(-date, names_to = "factor", values_to = "return") |>
+  group_by(factor) |>
+  mutate(cumulative_return = cumprod(1 + return)) |>
+  ungroup() |>
+  ggplot(aes(date, cumulative_return, color = factor)) +
+  geom_line(linewidth = 0.8) +
+  scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
+  labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The cumulative-return plot emphasizes that factor premia are earned through
+time, with long expansions and reversals. A factor can have a positive average
+return and still experience long drawdowns, so the time path is part of the
+economic story.
+
+```{r}
+#| label: fig-ff3-distribution
+#| fig-cap: "Distribution of monthly returns for the Fama-French three factors."
+ff3 |>
+  select(date, Mkt_RF, SMB, HML) |>
+  pivot_longer(-date, names_to = "factor", values_to = "return") |>
+  ggplot(aes(return, fill = factor)) +
+  geom_density(alpha = 0.45, adjust = 2.5) +
+  geom_vline(xintercept = 0, linetype = 2, color = "gray30") +
+  coord_cartesian(xlim = c(-0.2, 0.2)) +
+  labs(x = "Monthly return", y = "Density", fill = NULL) +
+  scale_x_continuous(labels = scales::percent) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The density plot complements the cumulative plot. It shows where monthly
+returns are concentrated and how far negative or positive observations can
+extend. This helps students read factor performance as both a distribution of
+monthly outcomes and an annualized average.
+
+```{r}
+#| label: fig-ff-factor-risk-return
+#| fig-cap: "Risk-return profile of the factor portfolios."
+factor_perf |>
+  ggplot(aes(annualized_volatility, annualized_return, color = return_per_unit_risk)) +
+  geom_hline(yintercept = 0, color = "gray70", linewidth = 0.4) +
+  geom_abline(intercept = 0, slope = 1, color = "#B22222", linewidth = 0.5) +
+  geom_point(size = 3) +
+  geom_text(aes(label = factor), vjust = -0.9, color = "black", size = 3.5) +
+  labs(
+    x = "Annualized volatility",
+    y = "Annualized return",
+    color = "Return per unit of risk"
+  ) +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_viridis_c(option = "C") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The risk-return profile compresses the table into one visual comparison. Points
+above the red reference line have annualized returns larger than annualized
+volatility on this scale. Labels make clear which factor drives each position,
+so the graph can be read as a map of factor rewards and risks.
+
+Cumulative factor returns show that factors are portfolios through time. The
+line for each factor is the wealth path from investing one dollar in that
+long-short factor portfolio:
+
+$$
+W_{j,t}
+=
+\prod_{s=1}^{t}
+(1+F_{j,s}).
+$$
+
+```{r}
+#| label: fig-ff-factor-cumulative
+#| fig-cap: "Cumulative returns of Fama-French factors and momentum."
+ff3_momentum |>
+  select(date, Mkt_RF, SMB3, HML, Mom) |>
+  pivot_longer(-date, names_to = "factor", values_to = "return") |>
+  group_by(factor) |>
+  mutate(cumulative_return = cumprod(1 + return)) |>
+  ungroup() |>
+  ggplot(aes(date, cumulative_return, color = factor)) +
+  geom_line(linewidth = 0.8) +
+  scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
+  labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+Adding momentum changes the visual comparison because the set of candidate
+factor portfolios is now broader. The purpose of the figure is to show how the
+market, size, value, and momentum factor histories differ before any asset
+pricing regression uses them as explanatory variables.
+
+The distribution of monthly factor returns is another diagnostic. Momentum and
+value can have long episodes of strong performance and sharp reversals, so a
+factor's average return should always be read together with its volatility and
+tail behavior.
+
+```{r}
+#| label: fig-ff-factor-distribution
+#| fig-cap: "Distribution of monthly factor returns."
+ff3_momentum |>
+  select(date, Mkt_RF, SMB3, HML, Mom) |>
+  pivot_longer(-date, names_to = "factor", values_to = "return") |>
+  ggplot(aes(return, fill = factor)) +
+  geom_density(alpha = 0.45, adjust = 2.5) +
+  geom_vline(xintercept = 0, linetype = 2, color = "gray30") +
+  coord_cartesian(xlim = c(-0.2, 0.2)) +
+  labs(x = "Monthly return", y = "Density", fill = NULL) +
+  scale_x_continuous(labels = scales::percent) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The monthly distributions also show why factor regressions can be sensitive to
+large episodes. A factor with a similar average return can have a different
+tail profile, and that affects how individual assets load on it in a regression.
+
+The same workflow can be applied to the five-factor data. The shorter sample
+starts in 1963, because the profitability and investment factors are available
+from that point in the downloaded file.
+
+```{r ff5-performance}
+ff5_perf <- annualized_performance(ff5, c("Mkt_RF", "SMB", "HML", "RMW", "CMA"))
+
+ff5_perf |>
+  mutate(across(c(annualized_return, annualized_volatility, return_per_unit_risk), ~ round(.x, 4))) |>
+  kable(
+    caption = "Annualized performance of the Fama-French five factors.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The five-factor table prepares the reader for a different factor set and a
+shorter historical window. Profitability and investment are interpreted as
+additional dimensions of systematic risk, so their return and volatility should
+be inspected before they are added to any regression.
+
+The original workflow also inspects the five-factor sample and the combined
+factor set with momentum. This matters because the samples differ: the
+five-factor data start later, and the `SMB` factor in the five-factor file is a
+different constructed series from the `SMB` factor in the three-factor file. The
+chapter keeps the variable names `SMB3` and `SMB5` to make that distinction
+visible in the code.
+
+```{r additional-factor-performance}
+all_factor_perf <- annualized_performance(
+  all_factors,
+  c("Mkt_RF", "SMB3", "HML", "Mom", "SMB5", "RMW", "CMA")
+)
+
+all_factor_perf |>
+  mutate(across(c(annualized_return, annualized_volatility, return_per_unit_risk), ~ round(.x, 4))) |>
+  kable(
+    caption = "Annualized performance of the combined factor set.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The combined table is mainly a bookkeeping and comparison device. It gathers
+all factor candidates used later in the chapter and makes the sample change
+visible. A model with more factors is easier to estimate mechanically, but the
+reader still needs to know which factor histories are being compared.
+
+```{r}
+#| label: fig-ff5-risk-return
+#| fig-cap: "Risk-return profile of the Fama-French five factors."
+ff5_perf |>
+  ggplot(aes(annualized_volatility, annualized_return, color = return_per_unit_risk)) +
+  geom_hline(yintercept = 0, color = "gray70", linewidth = 0.4) +
+  geom_abline(intercept = 0, slope = 1, color = "#B22222", linewidth = 0.5) +
+  geom_point(size = 3) +
+  geom_text(aes(label = factor), vjust = -0.9, color = "black", size = 3.3) +
+  labs(
+    x = "Annualized volatility",
+    y = "Annualized return",
+    color = "Return per unit of risk"
+  ) +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_viridis_c(option = "C") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The five-factor risk-return graph shows whether the added profitability and
+investment factors occupy distinct positions relative to market, size, and
+value. If two factors have similar risk-return profiles, the regression may
+still distinguish them through covariance with asset returns.
+
+```{r}
+#| label: fig-all-factor-risk-return
+#| fig-cap: "Risk-return profile of all factors used in the chapter."
+all_factor_perf |>
+  ggplot(aes(annualized_volatility, annualized_return, color = return_per_unit_risk)) +
+  geom_hline(yintercept = 0, color = "gray70", linewidth = 0.4) +
+  geom_abline(intercept = 0, slope = 1, color = "#B22222", linewidth = 0.5) +
+  geom_point(size = 3) +
+  geom_text(aes(label = factor), vjust = -0.9, color = "black", size = 3.1) +
+  labs(
+    x = "Annualized volatility",
+    y = "Annualized return",
+    color = "Return per unit of risk"
+  ) +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_viridis_c(option = "C") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The all-factor graph is the broadest factor map in the chapter. It summarizes
+the candidate explanatory variables before the chapter turns to test assets,
+where these factor histories become regressors.
+
+```{r}
+#| label: fig-ff5-cumulative
+#| fig-cap: "Cumulative returns of the Fama-French five factors."
+ff5 |>
+  select(date, Mkt_RF, SMB, HML, RMW, CMA) |>
+  pivot_longer(-date, names_to = "factor", values_to = "return") |>
+  group_by(factor) |>
+  mutate(cumulative_return = cumprod(1 + return)) |>
+  ungroup() |>
+  ggplot(aes(date, cumulative_return, color = factor)) +
+  geom_line(linewidth = 0.8) +
+  scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
+  labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The cumulative five-factor plot lets the reader compare the newer factors in
+their available sample. The shorter window should be kept in mind when comparing
+these paths with the earlier three-factor histories.
+
+```{r}
+#| label: fig-all-factor-cumulative
+#| fig-cap: "Cumulative returns of all factors used in the chapter."
+all_factors |>
+  select(date, Mkt_RF, SMB3, HML, Mom, SMB5, RMW, CMA) |>
+  pivot_longer(-date, names_to = "factor", values_to = "return") |>
+  group_by(factor) |>
+  mutate(cumulative_return = cumprod(1 + return)) |>
+  ungroup() |>
+  ggplot(aes(date, cumulative_return, color = factor)) +
+  geom_line(linewidth = 0.8) +
+  scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
+  labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The cumulative all-factor figure is useful for seeing which factors dominate
+visually and which have more modest paths. This is a descriptive step; the
+regression step later asks whether these paths help explain asset returns.
+
+```{r}
+#| label: fig-ff5-distribution
+#| fig-cap: "Distribution of monthly returns for the Fama-French five factors."
+ff5 |>
+  select(date, Mkt_RF, SMB, HML, RMW, CMA) |>
+  pivot_longer(-date, names_to = "factor", values_to = "return") |>
+  ggplot(aes(return, fill = factor)) +
+  geom_density(alpha = 0.45, adjust = 2.5) +
+  geom_vline(xintercept = 0, linetype = 2, color = "gray30") +
+  coord_cartesian(xlim = c(-0.2, 0.2)) +
+  labs(x = "Monthly return", y = "Density", fill = NULL) +
+  scale_x_continuous(labels = scales::percent) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The five-factor density plot shows how each factor behaves month by month.
+Students should read it together with the cumulative plot: the same factor can
+look attractive cumulatively while still having large monthly downside episodes.
+
+```{r}
+#| label: fig-all-factor-distribution
+#| fig-cap: "Distribution of monthly returns for all factors used in the chapter."
+all_factors |>
+  select(date, Mkt_RF, SMB3, HML, Mom, SMB5, RMW, CMA) |>
+  pivot_longer(-date, names_to = "factor", values_to = "return") |>
+  ggplot(aes(return, fill = factor)) +
+  geom_density(alpha = 0.45, adjust = 2.5) +
+  geom_vline(xintercept = 0, linetype = 2, color = "gray30") +
+  coord_cartesian(xlim = c(-0.2, 0.2)) +
+  labs(x = "Monthly return", y = "Density", fill = NULL) +
+  scale_x_continuous(labels = scales::percent) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The final factor-density plot closes the descriptive block. At this point, the
+reader has seen factor returns as tables, cumulative paths, risk-return points,
+and monthly distributions. The next step is to use those factor returns to
+explain the behavior of test assets.
+
+## Test assets and the size-value portfolios
+
+The chapter uses two kinds of test assets. The first is `FCNTX`, a single mutual
+fund. The second is the 25 Fama-French size-value portfolios. The single asset
+is useful for seeing one regression closely. The 25 portfolios are useful for
+testing whether the model explains a structured cross-section of returns.
+
+```{r asset-and-portfolio-data}
+ticker <- "FCNTX"
+
+fund_prices <- tq_get(
+  ticker,
+  from = "1980-01-01",
+  to = sample_end,
+  get = "stock.prices"
+)
+
+fund_returns <- fund_prices |>
+  group_by(symbol) |>
+  tq_transmute(
+    select = adjusted,
+    mutate_fun = periodReturn,
+    period = "monthly",
+    col_rename = "returns"
+  ) |>
+  ungroup()
+
+fund_factors <- fund_returns |>
+  filter(date <= max(all_factors$date)) |>
+  mutate(date = lubridate::ceiling_date(date, "month") - lubridate::days(1)) |>
+  left_join(all_factors, by = "date") |>
+  mutate(Re = returns - RF) |>
+  select(symbol, date, returns, Re, Mkt_RF, SMB3, HML, Mom, SMB5, RMW, CMA, RF)
+
+portfolio_long <- portfolios_25 |>
+  pivot_longer(-date, names_to = "symbol", values_to = "returns")
+
+portfolio_labels <- function(symbols) {
+  tibble(symbol = symbols) |>
+    mutate(
+      Size = case_when(
+        grepl("^SMALL|^ME1", symbol) ~ "Small",
+        grepl("^ME2", symbol) ~ "2",
+        grepl("^ME3", symbol) ~ "3",
+        grepl("^ME4", symbol) ~ "4",
+        grepl("^BIG|^ME5", symbol) ~ "Big",
+        TRUE ~ NA_character_
+      ),
+      Value = case_when(
+        grepl("LoBM|BM1", symbol) ~ "Low",
+        grepl("BM2", symbol) ~ "2",
+        grepl("BM3", symbol) ~ "3",
+        grepl("BM4", symbol) ~ "4",
+        grepl("HiBM|BM5", symbol) ~ "High",
+        TRUE ~ NA_character_
+      ),
+      Size = factor(Size, levels = c("Small", "2", "3", "4", "Big")),
+      Value = factor(Value, levels = c("Low", "2", "3", "4", "High"))
+    )
+}
+
+portfolio_label_tbl <- portfolio_labels(unique(portfolio_long$symbol))
+label_portfolios <- c("SMALL LoBM", "SMALL HiBM", "BIG LoBM", "BIG HiBM")
+
+portfolio_factor_data <- portfolio_long |>
+  filter(date <= max(ff3_momentum$date)) |>
+  inner_join(ff3_momentum, by = "date") |>
+  mutate(Re = returns - RF) |>
+  select(date, symbol, returns, Re, Mkt_RF, SMB3, HML, Mom) |>
+  left_join(portfolio_label_tbl, by = "symbol")
+
+portfolio_all_factor_data <- portfolio_long |>
+  filter(date <= max(all_factors$date)) |>
+  inner_join(all_factors, by = "date") |>
+  mutate(Re = returns - RF) |>
+  select(date, symbol, returns, Re, Mkt_RF, SMB3, HML, Mom, SMB5, RMW, CMA) |>
+  left_join(portfolio_label_tbl, by = "symbol")
+
+fund_factors |>
+  select(symbol, date, returns, Re, Mkt_RF, SMB3, HML, Mom) |>
+  slice(c(1:3, (n() - 2):n())) |>
+  kable(
+    caption = "FCNTX monthly returns joined to factor returns.",
+    digits = 6,
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+This table is the first bridge between an individual asset and the factor data.
+The column `returns` is the raw FCNTX return, while `Re` subtracts the risk-free
+rate. The regression will use `Re` as the dependent variable and factor returns
+as explanatory variables, so this joined table is the dataset for the first
+asset-pricing exercise.
+
+The source material checks the single asset before estimating the regression.
+The price table verifies the data source. The return table verifies the monthly
+transformation. The joined table verifies that the excess return and factors are
+aligned at month end.
+
+```{r fcntx-data-checks}
+first_last_rows(fund_prices) |>
+  select(symbol, date, adjusted, close, volume) |>
+  kable(
+    caption = "First and last FCNTX price observations.",
+    digits = 6,
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+first_last_rows(fund_returns) |>
+  kable(
+    caption = "First and last FCNTX monthly raw returns.",
+    digits = 6,
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+first_last_rows(fund_factors) |>
+  select(symbol, date, returns, Re, Mkt_RF, SMB3, HML, Mom, SMB5, RMW, CMA, RF) |>
+  kable(
+    caption = "First and last FCNTX excess returns joined to all factors.",
+    digits = 6,
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+first_last_rows(portfolio_factor_data) |>
+  select(date, symbol, returns, Re, Mkt_RF, SMB3, HML, Mom) |>
+  kable(
+    caption = "First and last 25-portfolio excess-return rows joined to FF3 and momentum.",
+    digits = 6,
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+first_last_rows(portfolio_all_factor_data) |>
+  select(date, symbol, returns, Re, Mkt_RF, SMB3, HML, Mom, SMB5, RMW, CMA) |>
+  kable(
+    caption = "First and last 25-portfolio excess-return rows joined to the expanded factor set.",
+    digits = 6,
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The sequence of data checks has a simple logic. First, prices become monthly
+returns. Second, raw returns become excess returns. Third, each excess return is
+matched to factor returns for the same month. The 25-portfolio checks repeat
+the same process for many test assets instead of a single mutual fund.
+
+```{r fcntx-factor-performance}
+fund_factor_returns <- fund_factors |>
+  select(date, Mkt_RF, SMB3, HML, Mom, SMB5, RMW, CMA, Re) |>
+  rename(FCNTX = Re)
+
+fund_factor_perf <- annualized_performance(
+  fund_factor_returns,
+  c("Mkt_RF", "SMB3", "HML", "Mom", "SMB5", "RMW", "CMA", "FCNTX")
+)
+
+fund_factor_perf |>
+  mutate(across(c(annualized_return, annualized_volatility, return_per_unit_risk), ~ round(.x, 4))) |>
+  kable(
+    caption = "Annualized performance of FCNTX excess returns and the factors.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The FCNTX performance table places the mutual fund and factor portfolios on the
+same scale. This helps answer a descriptive question before estimation: does
+the fund look more volatile, less volatile, or more rewarded per unit of risk
+than the factors used to explain it?
+
+```{r}
+#| label: fig-fcntx-factor-risk-return
+#| fig-cap: "Risk-return profile of FCNTX excess returns and the factors."
+fund_factor_perf |>
+  ggplot(aes(annualized_volatility, annualized_return, color = return_per_unit_risk)) +
+  geom_hline(yintercept = 0, color = "gray70", linewidth = 0.4) +
+  geom_abline(intercept = 0, slope = 1, color = "#B22222", linewidth = 0.5) +
+  geom_point(size = 3) +
+  geom_text(aes(label = factor), vjust = -0.9, color = "black", size = 3.1) +
+  labs(
+    x = "Annualized volatility",
+    y = "Annualized return",
+    color = "Return per unit of risk"
+  ) +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_viridis_c(option = "C") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The risk-return figure makes the same comparison visually. FCNTX appears as one
+point among the factor portfolios, which helps the reader see whether the fund
+is close to market-like behavior or whether it sits in a different region of
+the return-risk space.
+
+```{r}
+#| label: fig-fcntx-factors-cumulative
+#| fig-cap: "Cumulative excess returns of FCNTX and the factor portfolios."
+fund_factor_returns |>
+  pivot_longer(-date, names_to = "series", values_to = "return") |>
+  group_by(series) |>
+  mutate(cumulative_return = cumprod(1 + return)) |>
+  ungroup() |>
+  ggplot(aes(date, cumulative_return, color = series)) +
+  geom_line(linewidth = 0.8) +
+  scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
+  labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The cumulative plot turns the FCNTX comparison into a time-series story. A fund
+can have a similar average return to a factor while following a different path
+through time. That difference is exactly what the regression tries to summarize
+with an intercept, beta, and residual.
+
+```{r}
+#| label: fig-fcntx-market-cumulative
+#| fig-cap: "Cumulative excess returns of FCNTX and the market factor."
+fund_factor_returns |>
+  select(date, Mkt_RF, FCNTX) |>
+  pivot_longer(-date, names_to = "series", values_to = "return") |>
+  group_by(series) |>
+  mutate(cumulative_return = cumprod(1 + return)) |>
+  ungroup() |>
+  ggplot(aes(date, cumulative_return, color = series)) +
+  geom_line(linewidth = 0.8) +
+  scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
+  labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The market comparison isolates the CAPM idea. If FCNTX is mostly a market-risk
+asset, the FCNTX and market excess-return paths should move together in broad
+strokes. Differences between the paths foreshadow the residual component in the
+CAPM regression.
+
+```{r}
+#| label: fig-fcntx-market-distribution
+#| fig-cap: "Distribution of monthly excess returns for FCNTX and the market factor."
+fund_factor_returns |>
+  select(date, Mkt_RF, FCNTX) |>
+  pivot_longer(-date, names_to = "series", values_to = "return") |>
+  ggplot(aes(return, fill = series)) +
+  geom_density(alpha = 0.45, adjust = 2.5) +
+  geom_vline(xintercept = 0, linetype = 2, color = "gray30") +
+  coord_cartesian(xlim = c(-0.2, 0.2)) +
+  labs(x = "Monthly excess return", y = "Density", fill = NULL) +
+  scale_x_continuous(labels = scales::percent) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The distribution plot adds another view of the same comparison. Overlap in the
+two densities suggests similar monthly-return behavior, while differences in
+spread or tails suggest that market exposure alone may leave unexplained
+variation.
+
+The 25 portfolios are organized by size and book-to-market. Their average raw
+returns form a surface. This is the visual reason the portfolios are useful for
+asset pricing: a model should explain systematic differences across size and
+value cells.
+
+The same 25 portfolios can be read as investment portfolios through the usual
+risk-return lens. The original material uses annualized return, annualized
+volatility, and return per unit of risk to show the economic content of the
+size-value grid. Each cell is a portfolio with its own average return and
+volatility.
+
+```{r portfolio-performance}
+portfolio_perf <- portfolio_long |>
+  group_by(symbol) |>
+  summarise(
+    months = n(),
+    annualized_return = prod(1 + returns)^(12 / months) - 1,
+    annualized_volatility = sd(returns) * sqrt(12),
+    return_per_unit_risk = annualized_return / annualized_volatility,
+    .groups = "drop"
+  ) |>
+  arrange(return_per_unit_risk) |>
+  left_join(portfolio_label_tbl, by = "symbol")
+
+portfolio_perf |>
+  select(symbol, annualized_return, annualized_volatility, return_per_unit_risk) |>
+  slice(c(1:5, (n() - 4):n())) |>
+  mutate(across(where(is.numeric), ~ round(.x, 4))) |>
+  kable(
+    caption = "Lowest and highest return-risk ratios among the 25 size-value portfolios.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The table shows the extremes of the 25-portfolio risk-return ranking. This is a
+compact way to see that the size-value grid contains meaningful heterogeneity:
+some portfolios deliver much more return per unit of volatility than others.
+
+```{r}
+#| label: fig-ff25-risk-return
+#| fig-cap: "Risk-return profile of the 25 size-value portfolios."
+portfolio_perf |>
+  ggplot(aes(annualized_volatility, annualized_return, color = return_per_unit_risk)) +
+  geom_point(aes(size = return_per_unit_risk), alpha = 0.85, show.legend = FALSE) +
+  geom_text(aes(label = symbol), vjust = -0.9, size = 2.4, color = "black") +
+  labs(
+    x = "Annualized volatility",
+    y = "Annualized return",
+    color = "Return per unit of risk"
+  ) +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_viridis_c(option = "C") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The risk-return scatter makes the heterogeneity visible across all 25
+portfolios. Dense labels are intentional here because each point is a named
+test asset. The graph prepares the reader for the asset-pricing question: can
+factor exposures explain why these portfolios occupy different locations?
+
+Kenneth French's data library often illustrates the extreme size-value
+portfolios because they make the empirical pattern easy to see. The plot below
+keeps the four corner portfolios from the original material: small growth,
+small value, big growth, and big value.
+
+```{r}
+#| label: fig-kf-hilo-cumulative
+#| fig-cap: "Cumulative raw returns for the four corner size-value portfolios."
+portfolios_25 |>
+  select(date, `SMALL HiBM`, `BIG HiBM`, `SMALL LoBM`, `BIG LoBM`) |>
+  filter(date >= as.Date("1927-07-31"), date <= as.Date("1999-12-31")) |>
+  pivot_longer(-date, names_to = "portfolio", values_to = "return") |>
+  mutate(
+    portfolio = factor(
+      portfolio,
+      levels = c("SMALL HiBM", "BIG HiBM", "BIG LoBM", "SMALL LoBM")
+    )
+  ) |>
+  group_by(portfolio) |>
+  mutate(cumulative_return = cumprod(1 + return)) |>
+  ungroup() |>
+  ggplot(aes(date, cumulative_return, color = portfolio)) +
+  geom_line(linewidth = 0.8) +
+  scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
+  labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "right")
+```
+
+The four-corner cumulative plot focuses on the most interpretable cells of the
+grid. Comparing small versus big and low versus high book-to-market portfolios
+shows why the size-value sort became a standard test bed for factor models.
+
+The source material also included rendered 3D assets of the mean-return
+surface. The chapter keeps the surface render and adds the original animation
+as a web video: the height and color of each cell represent the average monthly
+raw return of that portfolio.
+
+```{r portfolio-surface-table}
+portfolio_means <- portfolio_long |>
+  left_join(portfolio_label_tbl, by = "symbol") |>
+  group_by(Size, Value) |>
+  summarise(mean_return = mean(returns, na.rm = TRUE), .groups = "drop")
+
+portfolio_surface_data <- portfolio_means |>
+  mutate(
+    ME = as.integer(Size),
+    BM = as.integer(Value),
+    raw_return_percent = 100 * mean_return
+  ) |>
+  select(ME, BM, raw_return_percent)
+
+portfolio_surface_data |>
+  arrange(ME, BM) |>
+  mutate(raw_return_percent = round(raw_return_percent, 4)) |>
+  kable(
+    caption = "Data used to build the size-value mean-return surface.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The surface table gives the numeric values behind the rendered image. It is the
+same information in tabular form: `ME` moves from small to big firms, `BM` moves
+from low to high book-to-market firms, and `raw_return_percent` is the average
+monthly raw return in that cell.
+
+```{r}
+#| label: fig-ff25-surface-original
+#| fig-cap: "Rendered surface of the 25 size-value portfolio mean returns."
+#| out-width: 60%
+#| fig-align: center
+knitr::include_graphics("figures/ff-p25-surface.png")
+```
+
+The rendered surface is a visual summary of the size-value pattern. Peaks mark
+cells with higher average monthly returns; lower blocks mark cells with lower
+average returns. The point of the figure is to make the cross-sectional pattern
+visible before the regression tries to explain it with factor exposures.
+
+```{=html}
+<figure class="quarto-float">
+  <video controls autoplay loop muted playsinline preload="metadata" style="width: min(100%, 520px); display: block; margin: 0 auto;">
+    <source src="figures/ff-p25-surface.mp4" type="video/mp4">
+  </video>
+  <figcaption>Animated rendered surface of the 25 size-value portfolio mean returns.</figcaption>
+</figure>
+```
+
+The animation rotates the same surface. It uses the same data and helps the
+reader see the three-dimensional structure of the 25 portfolio averages.
+
+## Time-series asset pricing regressions
+
+The time-series regression estimates factor exposures for each asset. In matrix
+form, for asset $i$ and $K$ factors,
+
+$$
+R_{i,t}^e
+=
+\alpha_i
++
+\boldsymbol{\beta}_i^\top
+\mathbf{f}_t
++
+\varepsilon_{i,t}.
+$$
+
+The code below wraps that equation in a reusable function. The formula defines
+the right-hand side. The grouping variable `symbol` defines which asset receives
+its own regression.
+
+```{r regression-functions}
+fit_factor_model <- function(data, formula) {
+  data |>
+    group_by(symbol) |>
+    nest() |>
+    mutate(
+      model = map(data, ~ lm(formula, data = .x)),
+      tidy = map(model, broom::tidy),
+      glance = map(model, broom::glance),
+      augmented = map2(model, data, ~ broom::augment(.x, data = .y))
+    ) |>
+    ungroup()
+}
+
+tidy_factor_model <- function(model_tbl) {
+  model_tbl |>
+    select(symbol, tidy) |>
+    unnest(tidy)
+}
+
+glance_factor_model <- function(model_tbl) {
+  model_tbl |>
+    select(symbol, glance) |>
+    unnest(glance)
+}
+
+augment_factor_model <- function(model_tbl) {
+  model_tbl |>
+    select(symbol, augmented) |>
+    unnest(augmented)
+}
+```
+
+For `FCNTX`, the CAPM regression is
+
+$$
+R_{\text{FCNTX},t}^e
+=
+\alpha_{\text{FCNTX}}
++
+\beta_{\text{FCNTX},M} MKT_t
++
+\varepsilon_{\text{FCNTX},t}.
+$$
+
+```{r fcntx-capm}
+fund_capm <- fit_factor_model(fund_factors, Re ~ Mkt_RF)
+
+tidy_factor_model(fund_capm) |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "CAPM time-series regression for FCNTX.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The CAPM table has two central entries. The market coefficient is the estimated
+market beta of FCNTX: it measures how much the fund's excess return changes
+with the market excess return. The intercept is the fund's average excess
+return after controlling for market exposure.
+
+The fitted value is the model-implied excess return for each month:
+
+$$
+\widehat{R}_{i,t}^e
+=
+\widehat{\alpha}_i
++
+\widehat{\beta}_{i,M}MKT_t.
+$$
+
+```{r}
+#| label: fig-fcntx-capm-fit
+#| fig-cap: "FCNTX excess returns and CAPM fitted values."
+augment_factor_model(fund_capm) |>
+  ggplot(aes(date)) +
+  geom_col(aes(y = Re, fill = "Observed excess return"), alpha = 0.5) +
+  geom_col(aes(y = .fitted, fill = "CAPM fitted value"), alpha = 0.5) +
+  labs(x = "Date", y = "Monthly excess return", fill = NULL) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The fitted-value plot shows the CAPM as a month-by-month approximation. Months
+where the fitted bars and observed bars are close are months where market
+exposure explains much of the fund's movement. Large gaps are residuals: the
+part of the FCNTX excess return left after the market factor is used.
+
+The original material then checks whether the fitted values and residuals look
+reasonable. These graphs are diagnostics for the time-series fit. They ask
+whether the CAPM regression is fitting the single asset in a stable way before
+the chapter moves to the 25-portfolio cross-section.
+
+```{r}
+#| label: fig-fcntx-capm-observed-fitted
+#| fig-cap: "Observed and fitted FCNTX excess returns."
+fund_capm_aug <- augment_factor_model(fund_capm)
+
+fund_capm_aug |>
+  ggplot(aes(Re, .fitted)) +
+  geom_point(alpha = 0.75) +
+  geom_abline(slope = 1, intercept = 0, linetype = 2, color = "#D55E00", linewidth = 0.8) +
+  coord_fixed() +
+  labs(x = "Observed excess return", y = "Fitted excess return") +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal(base_size = 12)
+```
+
+The observed-versus-fitted scatter compresses the time-series fit into one
+plane. Points near the 45-degree line indicate months where the CAPM fitted
+return is close to the observed FCNTX excess return. The spread around the line
+shows the size of month-level errors.
+
+```{r}
+#| label: fig-fcntx-capm-residuals-fitted
+#| fig-cap: "FCNTX residuals against fitted values."
+fund_capm_aug |>
+  ggplot(aes(.fitted, .resid)) +
+  geom_hline(yintercept = 0, color = "gray60", linewidth = 0.5) +
+  geom_point(alpha = 0.75) +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE, linewidth = 0.8) +
+  labs(x = "Fitted excess return", y = "Residual") +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal(base_size = 12)
+```
+
+The residuals-against-fitted graph checks whether errors change systematically
+with the fitted return. A visible slope or curved pattern would suggest that the
+single market factor is leaving structure in the residuals.
+
+```{r}
+#| label: fig-fcntx-capm-residuals-time
+#| fig-cap: "FCNTX CAPM residuals through time."
+fund_capm_aug |>
+  ggplot(aes(date, .resid)) +
+  geom_hline(yintercept = 0, color = "gray60", linewidth = 0.5) +
+  geom_col(fill = "#2C7FB8", alpha = 0.75) +
+  labs(x = "Date", y = "Residual") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal(base_size = 12)
+```
+
+The residual time plot shows whether unexplained returns cluster in particular
+periods. Clusters matter because they suggest that the model misses episodes
+where FCNTX behaves differently from the market factor.
+
+```{r}
+#| label: fig-fcntx-capm-residual-acf
+#| fig-cap: "Autocorrelation function for FCNTX CAPM residuals."
+fund_residual_acf <- stats::acf(fund_capm_aug$.resid, lag.max = 24, plot = FALSE)
+
+tibble(
+  lag = as.numeric(fund_residual_acf$lag),
+  acf = as.numeric(fund_residual_acf$acf)
+) |>
+  filter(lag > 0) |>
+  ggplot(aes(lag, acf)) +
+  geom_hline(yintercept = 0, color = "gray60", linewidth = 0.5) +
+  geom_col(fill = "#2C7FB8", alpha = 0.75) +
+  labs(x = "Lag", y = "ACF") +
+  theme_minimal(base_size = 12)
+```
+
+The autocorrelation plot asks whether residuals are serially related. In a clean
+time-series regression, residuals should have little predictable structure
+across lags. Large bars would indicate persistence in the unexplained component.
+
+```{r fcntx-residual-tests}
+fund_capm_aug |>
+  group_by(symbol) |>
+  summarise(
+    ljung_box_p_value = Box.test(.resid, lag = 10, type = "Ljung-Box", fitdf = 2)$p.value,
+    box_pierce_p_value = Box.test(.resid, lag = 10, type = "Box-Pierce", fitdf = 2)$p.value,
+    .groups = "drop"
+  ) |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "Residual autocorrelation checks for the FCNTX CAPM regression.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The Ljung-Box and Box-Pierce p-values formalize the residual-autocorrelation
+check. They summarize whether residual autocorrelation is large enough to be a
+statistical concern at the chosen lag.
+
+For the 25 portfolios, the CAPM estimates 25 market betas:
+
+```{r portfolio-capm}
+portfolio_capm <- fit_factor_model(portfolio_factor_data, Re ~ Mkt_RF)
+
+tidy_factor_model(portfolio_capm) |>
+  filter(term == "Mkt_RF") |>
+  arrange(estimate) |>
+  slice(c(1:5, (n() - 4):n())) |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "Lowest and highest CAPM market betas among the 25 portfolios.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The beta table shows the range of market exposures across the 25 portfolios.
+This range is important because cross-sectional asset pricing needs variation
+in exposures. If all portfolios had nearly identical market betas, market beta
+would have little power to explain differences in average returns.
+
+```{r portfolio-capm-full-table}
+tidy_factor_model(portfolio_capm) |>
+  arrange(symbol, term) |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "CAPM coefficients for all 25 size-value portfolios.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The full coefficient table keeps the individual portfolio estimates visible.
+Each portfolio has its own intercept and market beta, so the CAPM is estimated
+as 25 separate time-series regressions, one for each test asset.
+
+The 25 separate CAPM regressions have different levels of fit. A compact way to
+inspect them is to compare $R^2$, residual standard error, and residual
+autocorrelation diagnostics across portfolios.
+
+```{r portfolio-capm-diagnostics}
+portfolio_capm_diagnostics <- glance_factor_model(portfolio_capm) |>
+  select(symbol, r.squared, adj.r.squared, sigma, AIC, BIC) |>
+  arrange(r.squared)
+
+portfolio_capm_diagnostics |>
+  slice(c(1:5, (n() - 4):n())) |>
+  mutate(across(where(is.numeric), ~ round(.x, 4))) |>
+  kable(
+    caption = "Lowest and highest CAPM goodness-of-fit values among the 25 portfolios.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The goodness-of-fit table shows which portfolios are relatively well described
+by the market factor and which are less well described. A higher $R^2$ means
+that market movements explain a larger fraction of that portfolio's excess
+return variation.
+
+```{r portfolio-capm-residual-tests}
+augment_factor_model(portfolio_capm) |>
+  group_by(symbol) |>
+  summarise(
+    box_pierce_p_value = Box.test(.resid, lag = 10, type = "Box-Pierce", fitdf = 2)$p.value,
+    .groups = "drop"
+  ) |>
+  arrange(box_pierce_p_value) |>
+  slice(c(1:5, (n() - 4):n())) |>
+  mutate(box_pierce_p_value = round(box_pierce_p_value, 6)) |>
+  kable(
+    caption = "Lowest and highest Box-Pierce p-values for the 25 CAPM residual series.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The residual test table extends the diagnostic logic from FCNTX to the full
+portfolio set. Portfolios with very small p-values deserve attention because
+their residuals show stronger serial structure under the CAPM specification.
+
+## Asset pricing errors and factor exposures
+
+The Fama-French three-factor model adds size and value exposures:
+
+$$
+R_{i,t}^e
+=
+\alpha_i
++
+\beta_{i,M}MKT_t
++
+\beta_{i,S}SMB_t
++
+\beta_{i,H}HML_t
++
+\varepsilon_{i,t}.
+$$
+
+The fitted expected excess return is obtained by taking the estimated
+factor loadings and multiplying them by average factor returns. The intercept is
+reported separately because, in asset pricing, alpha is the pricing error:
+
+$$
+\widehat{E}_{\text{factors}}(R_i^e)
+=
+\widehat{\beta}_{i,M}\bar{MKT}
++
+\widehat{\beta}_{i,S}\bar{SMB}
++
+\widehat{\beta}_{i,H}\bar{HML}.
+$$
+
+This equation is the bridge between the regression table and the asset-pricing
+plot. The regression estimates betas. The asset-pricing restriction asks
+whether those betas, without an asset-specific alpha, explain average excess
+returns. If $\widehat{\alpha}_i$ is economically important, the factor model is
+leaving a pricing error for asset $i$.
+
+The distinction is important for interpretation. A time-series regression with
+an intercept can always decompose the sample average return into two parts:
+
+$$
+\bar{R}_i^e
+=
+\widehat{\alpha}_i
++
+\widehat{\boldsymbol{\beta}}_i^\top
+\bar{\mathbf{f}}.
+$$
+
+The term
+$\widehat{\boldsymbol{\beta}}_i^\top\bar{\mathbf{f}}$ is the return explained
+by factor exposures. The term $\widehat{\alpha}_i$ is the part that remains
+asset-specific after those exposures have been used. The asset-pricing question
+is therefore direct: are the alphas small enough for the factor model to be a
+credible explanation of average returns?
+
+```{r ff3-expected-returns}
+portfolio_ff3 <- fit_factor_model(portfolio_factor_data, Re ~ Mkt_RF + SMB3 + HML)
+ff3_betas <- tidy_factor_model(portfolio_ff3)
+
+expected_return_from_betas <- function(data, model_tbl, factors) {
+  factor_means <- data |>
+    summarise(across(all_of(factors), mean, na.rm = TRUE)) |>
+    pivot_longer(everything(), names_to = "term", values_to = "factor_mean")
+
+  average_returns <- data |>
+    group_by(symbol) |>
+    summarise(ERe = mean(Re, na.rm = TRUE), .groups = "drop")
+
+  alpha_tbl <- tidy_factor_model(model_tbl) |>
+    filter(term == "(Intercept)") |>
+    transmute(symbol, alpha = estimate)
+
+  factor_implied <- tidy_factor_model(model_tbl) |>
+    filter(term != "(Intercept)") |>
+    select(symbol, term, estimate) |>
+    inner_join(factor_means, by = "term") |>
+    group_by(symbol) |>
+    summarise(factor_implied = sum(estimate * factor_mean), .groups = "drop")
+
+  factor_implied |>
+    inner_join(alpha_tbl, by = "symbol") |>
+    inner_join(average_returns, by = "symbol") |>
+    left_join(portfolio_label_tbl, by = "symbol") |>
+    mutate(
+      ERe_percent = 100 * ERe,
+      factor_implied_percent = 100 * factor_implied,
+      alpha_percent = 100 * alpha,
+      pricing_error_percent = ERe_percent - factor_implied_percent
+    )
+}
+
+ff3_expected <- expected_return_from_betas(
+  portfolio_factor_data,
+  portfolio_ff3,
+  c("Mkt_RF", "SMB3", "HML")
+)
+
+```
+
+This code block prepares the data for the figures that follow. It estimates the
+three-factor model, stores each portfolio's factor exposures, computes the
+factor-implied part of average return, and keeps alpha as the remaining
+asset-specific component.
+
+The size and value patterns can be inspected directly by reading average excess
+returns against market beta by portfolio sort.
+
+The market-beta plots deliberately ignore the fitted-return axis and return to
+the raw relation between market exposure and average excess returns. If market
+beta were enough to explain the 25 portfolios, higher beta portfolios would line
+up with higher average returns in a stable pattern. The size and value groupings
+show whether portfolios with similar market beta still differ because of their
+position in the size-value grid.
+
+```{r}
+#| label: fig-ff-market-beta-return
+#| fig-cap: "Market beta and average excess returns for the 25 portfolios."
+ff3_betas |>
+  filter(term == "Mkt_RF") |>
+  rename(market_beta = estimate) |>
+  select(symbol, market_beta) |>
+  inner_join(ff3_expected, by = "symbol") |>
+  ggplot(aes(market_beta, ERe_percent)) +
+  geom_point(size = 2.2) +
+  labs(x = "Market beta", y = "Observed average excess return (%)") +
+  theme_minimal(base_size = 12)
+```
+
+The plain market-beta graph is the starting point for the anomaly discussion.
+If market beta alone organized average returns, the cloud would show a clear
+upward relation. A scattered pattern motivates the size and value groupings in
+the next two figures.
+
+```{r}
+#| label: fig-ff-size-anomaly
+#| fig-cap: "Market beta and average excess returns by size portfolio."
+ff3_betas |>
+  filter(term == "Mkt_RF") |>
+  rename(market_beta = estimate) |>
+  select(symbol, market_beta) |>
+  inner_join(ff3_expected, by = "symbol") |>
+  ggplot(aes(market_beta, ERe_percent, color = Size, group = Size)) +
+  geom_line(alpha = 0.6, linewidth = 0.9) +
+  geom_point(size = 2) +
+  geom_text(aes(label = Size), color = "black", size = 3, show.legend = FALSE) +
+  labs(x = "Market beta", y = "Observed average excess return (%)", color = "Size") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The size plot connects each point to its size group. Lines that separate by
+size indicate that portfolios with similar market beta can have different
+average returns because they belong to different size cells.
+
+```{r}
+#| label: fig-ff-value-anomaly
+#| fig-cap: "Market beta and average excess returns by value portfolio."
+ff3_betas |>
+  filter(term == "Mkt_RF") |>
+  rename(market_beta = estimate) |>
+  select(symbol, market_beta) |>
+  inner_join(ff3_expected, by = "symbol") |>
+  ggplot(aes(market_beta, ERe_percent, color = Value, group = Value)) +
+  geom_line(alpha = 0.6, linewidth = 0.9) +
+  geom_point(size = 2) +
+  geom_text(aes(label = Value), color = "black", size = 3, show.legend = FALSE) +
+  labs(x = "Market beta", y = "Observed average excess return (%)", color = "Value") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The value plot reads the same beta-return relation through book-to-market
+groups. Separation by value group is the visual motivation for adding the HML
+factor to the model.
+
+## Cross-sectional asset pricing tests
+
+Time-series regressions estimate betas. Cross-sectional regressions ask whether
+those betas explain average returns across assets. The beta-pricing equation is
+
+$$
+\bar{R}_i^e
+=
+\lambda_0
++
+\lambda_M \widehat{\beta}_{i,M}
++
+\lambda_S \widehat{\beta}_{i,S}
++
+\lambda_H \widehat{\beta}_{i,H}
++
+\eta_i.
+$$
+
+This is the second-pass logic associated with Fama-MacBeth style asset pricing
+tests [@fama1973risk]. In this chapter, the cross-section is the set of 25
+size-value portfolios.
+
+The equation has a clear economic reading. The left-hand side,
+$\bar{R}_i^e$, is the average excess return of portfolio $i$. The regressors are
+estimated exposures from the first-pass time-series regressions. The
+coefficients $\lambda_M$, $\lambda_S$, and $\lambda_H$ are prices of risk in the
+cross-section. A positive $\lambda_H$ means that, holding market and size
+exposure fixed, portfolios with higher value exposure have higher average
+excess returns in this sample. A low fitted value for a portfolio means that
+its estimated betas explain less than its observed average return under this
+second-pass equation.
+
+There are therefore two layers of estimation:
+
+| Layer | Object estimated | Data orientation | Economic role |
+|---|---|---|---|
+| Time-series regression | $\alpha_i$ and $\boldsymbol{\beta}_i$ for each asset | One asset across many months | Measures exposure to factors |
+| Cross-sectional regression | $\lambda$ coefficients | Many assets in one average-return cross-section | Prices those exposures |
+
+The first layer asks how each portfolio moves with the factors. The second
+layer asks whether those exposures explain why some portfolios earn higher
+average excess returns than others.
+
+```{r cross-sectional-beta-method}
+beta_wide <- ff3_betas |>
+  select(symbol, term, estimate) |>
+  pivot_wider(names_from = term, values_from = estimate) |>
+  select(symbol, Mkt_RF, SMB3, HML) |>
+  rename(
+    beta_market = Mkt_RF,
+    beta_size = SMB3,
+    beta_value = HML
+  )
+
+cross_section_data <- ff3_expected |>
+  select(symbol, ERe_percent) |>
+  inner_join(beta_wide, by = "symbol")
+
+cross_section_fit <- lm(ERe_percent ~ beta_market + beta_size + beta_value, data = cross_section_data)
+
+cross_section_data |>
+  arrange(symbol) |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "Database for the beta-method cross-sectional regression.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+broom::tidy(cross_section_fit) |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "Cross-sectional regression using estimated betas.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+broom::glance(cross_section_fit) |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "Goodness-of-fit summary for the beta-method cross-sectional regression.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+```
+
+The cross-sectional block should be read as a second pass. The first table is
+the data matrix: one row per portfolio, average excess return as the outcome,
+and estimated betas as regressors. The coefficient table estimates the prices
+attached to those betas. The goodness-of-fit table summarizes how much of the
+25-portfolio average-return pattern is captured by this beta-pricing equation.
+
+```{r}
+#| label: fig-cross-sectional-beta-fit
+#| fig-cap: "Cross-sectional fitted returns using estimated betas."
+cross_section_aug <- broom::augment(cross_section_fit, data = cross_section_data)
+
+cross_section_aug |>
+  left_join(portfolio_label_tbl, by = "symbol") |>
+  ggplot(aes(.fitted, ERe_percent)) +
+  geom_abline(slope = 1, intercept = 0, linetype = 2, color = "#D55E00", linewidth = 0.8) +
+  geom_text(aes(label = symbol), size = 2.2) +
+  coord_fixed(xlim = c(0.5, 1.65), ylim = c(0.5, 1.65)) +
+  labs(
+    x = "Cross-sectional fitted return (%)",
+    y = "Observed average excess return (%)"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+The fitted-return figure is the visual version of the second-pass regression.
+Each label is one portfolio. Points close to the 45-degree line are portfolios
+whose average returns are close to what the estimated beta prices predict.
+Points above the line have observed average returns larger than the fitted
+value; points below the line have observed average returns smaller than the
+fitted value.
+
+```{r cross-sectional-fitted-table}
+cross_section_aug |>
+  select(symbol, ERe_percent, fitted_return_percent = .fitted) |>
+  arrange(symbol) |>
+  mutate(across(where(is.numeric), ~ round(.x, 4))) |>
+  kable(
+    caption = "Observed and fitted average excess returns from the beta method.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The fitted-value table gives the same comparison portfolio by portfolio. It is
+useful when labels overlap in the figure or when the reader wants to inspect a
+particular size-value cell directly.
+
+The coefficients $\lambda_M$, $\lambda_S$, and $\lambda_H$ are estimated prices
+of risk. A positive $\lambda_H$, for example, means that portfolios with higher
+value exposure have higher average excess returns in this cross-section,
+conditional on the other beta estimates.
+
+The fitted-return graph and fitted-value table should be read together. The
+graph shows the overall geometry: points close to the 45-degree line are
+well-explained by the beta-pricing equation. The table makes the individual
+portfolio comparison auditable. Large vertical gaps indicate portfolios whose
+average returns remain far from the fitted values implied by the estimated
+prices of market, size, and value exposure.
+
+## SDF moments and GMM logic
+
+The stochastic discount factor view starts from the pricing condition
+
+$$
+E(m_t R_{i,t}^e)=0.
+$$
+
+This notation is standard in modern asset pricing and GMM treatments
+[@cochrane2005asset; @hansen1982large].
+
+The object $m_t$ is a stochastic discount factor. It assigns value today to
+future payoffs. For an excess return, the cost of the payoff is zero after
+financing at the risk-free rate, so the model-implied present value should also
+be zero. That is the meaning of $E(m_t R_{i,t}^e)=0$: once returns are adjusted
+by the discount factor, no test asset should have a remaining average payoff
+that the model leaves unexplained.
+
+A linear SDF writes
+
+$$
+m_t
+=
+a
+-
+\mathbf{b}^{\top}\mathbf{f}_t.
+$$
+
+This says that the discount factor moves with the same systematic factors used
+earlier in the chapter. The vector $\mathbf{b}$ controls how strongly each
+factor enters the SDF. If a factor captures bad times for investors, assets
+that pay poorly when that factor is adverse should require higher average
+excess returns. The SDF formulation and the beta-pricing formulation are two
+ways to organize the same economic idea: systematic covariance with factors is
+what matters for average returns.
+
+With this specification, the empirical content comes from sample moments such
+as
+
+$$
+\widehat{E}(R_i^e f_j)
+=
+\frac{1}{T}
+\sum_{t=1}^{T}
+R_{i,t}^e f_{j,t}.
+$$
+
+The moment $\widehat{E}(R_i^e f_j)$ is an average product. It is large when
+portfolio $i$ tends to have high excess returns in months when factor $j$ is
+high. It is negative when the portfolio tends to move against the factor. In
+matrix form, the code builds these quantities with
+
+$$
+\mathbf{M}
+=
+\mathbf{R}^{\top}\mathbf{F},
+$$
+
+where $\mathbf{R}$ is a $T \times N$ matrix of portfolio excess returns and
+$\mathbf{F}$ is a $T \times K$ matrix of factor returns. The result
+$\mathbf{M}$ is an $N \times K$ matrix: one row for each test portfolio and one
+column for each factor moment.
+
+The original material computes these return-factor moments and uses them in a
+cross-sectional regression. The code below keeps that logic and writes it
+explicitly. The moment matrix is left on the original unscaled sum used in the
+source material. A common rescaling would change the numerical coefficients and
+preserve the fitted values from this regression.
+
+```{r sdf-moment-regression}
+sdf_source <- portfolio_factor_data |>
+  select(date, symbol, Re, Mkt_RF, SMB3, HML)
+
+returns_wide <- sdf_source |>
+  select(date, symbol, Re) |>
+  pivot_wider(names_from = symbol, values_from = Re) |>
+  arrange(date)
+
+factors_wide <- sdf_source |>
+  distinct(date, Mkt_RF, SMB3, HML) |>
+  arrange(date)
+
+common_dates <- intersect(returns_wide$date, factors_wide$date)
+
+returns_matrix <- returns_wide |>
+  filter(date %in% common_dates) |>
+  select(-date) |>
+  as.matrix()
+
+factor_matrix <- factors_wide |>
+  filter(date %in% common_dates) |>
+  select(Mkt_RF, SMB3, HML) |>
+  as.matrix()
+
+moment_matrix <- t(returns_matrix) %*% factor_matrix
+
+sdf_data <- as_tibble(moment_matrix, rownames = "symbol") |>
+  rename(moment_market = Mkt_RF, moment_size = SMB3, moment_value = HML) |>
+  inner_join(ff3_expected |> select(symbol, ERe_percent), by = "symbol")
+
+sdf_fit <- lm(ERe_percent ~ moment_market + moment_size + moment_value, data = sdf_data)
+
+sdf_data |>
+  arrange(symbol) |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "Database for the SDF-moment cross-sectional regression.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+broom::tidy(sdf_fit) |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "Cross-sectional regression using return-factor moments.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+broom::glance(sdf_fit) |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "Goodness-of-fit summary for the SDF-moment cross-sectional regression.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+```
+
+The SDF-moment tables follow the same reading order as the beta method. The
+first table contains the return-factor moments used as regressors. The
+coefficient table estimates how those moments map into average excess returns.
+The goodness-of-fit table summarizes the fitted cross-section for this
+moment-based specification.
+
+```{r}
+#| label: fig-sdf-fit
+#| fig-cap: "SDF-moment fitted returns."
+sdf_aug <- broom::augment(sdf_fit, data = sdf_data)
+
+sdf_aug |>
+  left_join(portfolio_label_tbl, by = "symbol") |>
+  ggplot(aes(.fitted, ERe_percent)) +
+  geom_abline(slope = 1, intercept = 0, linetype = 2, color = "#D55E00", linewidth = 0.8) +
+  geom_text(aes(label = symbol), size = 2.2) +
+  coord_fixed(xlim = c(0.5, 1.65), ylim = c(0.5, 1.65)) +
+  labs(
+    x = "SDF-moment fitted return (%)",
+    y = "Observed average excess return (%)"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+The SDF fitted-return figure should be compared with the beta-method fitted
+figure. Both plots use the same vertical axis, observed average excess return.
+The horizontal axis changes: the beta method uses fitted returns from estimated
+betas, while the SDF method uses fitted returns from return-factor moments.
+
+```{r sdf-fitted-table}
+sdf_aug |>
+  select(symbol, ERe_percent, fitted_return_percent = .fitted) |>
+  arrange(symbol) |>
+  mutate(across(where(is.numeric), ~ round(.x, 4))) |>
+  kable(
+    caption = "Observed and fitted average excess returns from the SDF-moment method.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The fitted-value table makes the SDF comparison explicit for each portfolio.
+Together with the graph, it lets the reader see which portfolios are matched
+closely and which remain difficult for the moment-based specification.
+
+The beta method and the SDF-moment method use different regressors, but they
+are both asking a cross-sectional asset pricing question: can a small set of
+factor-related quantities explain the average excess returns of the test
+assets?
+
+The SDF-moment method uses products $R_i^e f_j$ as regressors. Each regressor
+measures how a portfolio return co-moves with a factor in the sample.
+The fitted values answer the same practical question as the beta method: given
+the factor information, what average excess return does the model assign to
+each portfolio?
+
+```{r compare-cross-sectional-methods}
+comparison_methods <- cross_section_aug |>
+  transmute(symbol, beta_method = .fitted) |>
+  inner_join(
+    sdf_aug |> transmute(symbol, sdf_moment_method = .fitted),
+    by = "symbol"
+  ) |>
+  inner_join(ff3_expected |> select(symbol, observed = ERe_percent), by = "symbol")
+
+comparison_methods |>
+  arrange(symbol) |>
+  slice(c(1:5, (n() - 4):n())) |>
+  mutate(across(where(is.numeric), ~ round(.x, 4))) |>
+  kable(
+    caption = "Fitted average excess returns from the two cross-sectional methods.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The final comparison table puts the two fitted values side by side. The reader
+can inspect whether the two approaches agree for a portfolio or whether one
+method assigns a noticeably different fitted average return. This closes the
+empirical loop: time-series betas, cross-sectional beta pricing, and SDF
+moments are now connected to the same 25 test assets.
+
+## Implementation checks
+
+The main implementation risk in factor models is losing the connection between
+units, equations, and samples. These checks keep the workflow auditable:
+
+| Check | Why it matters |
+|---|---|
+| Decimal returns in estimation | Regression coefficients assume returns and factors are in the same units. |
+| Month-end dates | Asset returns and factors must align on the same calendar month. |
+| Excess returns | Test-asset returns must subtract the risk-free rate before estimation. |
+| Sample windows | FF3, momentum, and FF5 have different starting dates. |
+| Intercepts | Alphas are pricing errors after controlling for the chosen factors. |
+| Betas | Betas are exposures estimated from time-series regressions. |
+| Cross-section | The second-pass regression tests whether estimated exposures explain average returns. |
+
+The chapter deliberately keeps the code close to the equations. The data
+download creates factor and portfolio returns. The time-series regressions
+estimate $\alpha_i$ and $\boldsymbol{\beta}_i$. The fitted expected-return
+equation converts those estimates into model-implied average excess returns.
+The cross-sectional regressions then test whether factor exposures or
+factor-moment quantities explain the 25 portfolio averages.
+
+## Conclusion
+
+This chapter extends the book from forecasting and volatility into asset
+pricing econometrics. The object of interest is no longer a forecast of a
+single future observation. The object is an estimated relation between average
+excess returns and systematic risk exposures.
+
+The empirical logic has three layers. First, factor returns define candidate
+sources of systematic risk. Second, time-series regressions estimate each
+asset's exposure to those factors. Third, cross-sectional regressions evaluate
+whether those exposures explain average returns across test assets. This is the
+core bridge from financial theory to econometric implementation.
+
+The Fama-French chapter also illustrates a broader lesson for applied financial
+econometrics: a model is useful only when the equation, data construction,
+estimation code, and economic interpretation remain connected.

@@ -3,8 +3,8 @@ project:
   output-dir: _book
 
 book:
-  title: "Applied Forecasting with R"
-  subtitle: "Classical and machine-learning approaches to time-series forecasting"
+  title: "Applied Financial Econometrics with R"
+  subtitle: "Forecasting, volatility, and asset-pricing models"
   author: "Dr. Martín Lozano"
   page-navigation: true
   search: true
@@ -14,15 +14,19 @@ book:
     style: docked
     collapse-level: 1
   page-footer:
-    left: "Applied Forecasting with R"
+    left: "Applied Financial Econometrics with R"
     right: 'Dr. Martín Lozano &middot; <a href="mailto:mlozanoqf@gmail.com">mlozanoqf@gmail.com</a> &middot; <a href="https://mlozanoqf.github.io/">mlozanoqf.github.io</a>'
   chapters:
-    - text: "Applied Forecasting with R"
+    - text: "Applied Financial Econometrics with R"
       href: index.qmd
     - text: "Forecasting with fpp3"
       href: 01-forecasting-with-fpp3.qmd
     - text: "Time series forecasting with machine learning"
       href: 02-forecasting-with-machine-learning.qmd
+    - text: "GARCH volatility forecasting"
+      href: 03-garch-volatility.qmd
+    - text: "Asset pricing econometrics"
+      href: 04-asset-pricing-econometrics.qmd
     - references.qmd
 
 bibliography: references.bib

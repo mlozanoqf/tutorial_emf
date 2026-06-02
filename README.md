@@ -1,6 +1,6 @@
-# Applied Forecasting with R
+# Applied Financial Econometrics with R
 
-This repository contains the source files for **Applied Forecasting with R**, a Quarto book by Dr. Martin Lozano. The book focuses on applied time-series forecasting in R, combining classical forecasting methods with supervised machine-learning forecasting workflows.
+This repository contains the source files for **Applied Financial Econometrics with R**, a Quarto book by Dr. Martin Lozano. The book connects time-series forecasting tools, volatility modeling, and asset pricing econometrics in R.
 
 Published site: <https://mlozanoqf.github.io/tutorial_emf/>
 
@@ -9,19 +9,23 @@ Published site: <https://mlozanoqf.github.io/tutorial_emf/>
 The current version focuses on:
 
 - Forecast notation, forecast origins, holdout samples, and forecast errors
-- Monthly sales data from FRED
+- Monthly sales data from FRED as an introductory time-series example
 - Classical forecasting with `fpp3`: decomposition, simple benchmarks, ETS, ARIMA, and NNAR
 - Supervised forecasting with time-based features
 - Temporal train/validation/test splits
 - Linear regression, regression trees, and small neural networks for forecasting
 - ARIMA benchmarking with the `forecast` package
 - Forecast averaging and out-of-sample model comparison
+- GARCH(1,1) conditional volatility modeling and volatility forecasting
+- Asset pricing econometrics with CAPM, Fama-French factors, 25 size-value portfolios, time-series regressions, cross-sectional tests, and SDF/GMM logic
 
 ## Book Structure
 
 - `index.qmd`: preface, book identity, and publication metadata
 - `01-forecasting-with-fpp3.qmd`: classical forecasting workflow with `fpp3`
 - `02-forecasting-with-machine-learning.qmd`: time-series forecasting with machine learning
+- `03-garch-volatility.qmd`: GARCH volatility forecasting
+- `04-asset-pricing-econometrics.qmd`: asset pricing econometrics with Fama-French factors
 - `references.qmd`: references chapter
 - `references.bib`: bibliography
 
@@ -35,14 +39,15 @@ The book configuration lives in `_quarto.yml`.
 - `.github/workflows/publish.yml`: GitHub Actions workflow for rendering and deploying the book to GitHub Pages
 - `styles.css` and `*.html` partials: custom navigation, layout, analytics, and page behavior
 - `_extensions/`: bundled Quarto extension files
-- `fpp3_fc.rds` and `mape_updated.rds`: rendered intermediate objects shared across chapters
+- `fpp3_fc.rds` and `mape_updated.rds`: rendered intermediate objects shared across forecasting chapters
+- `FF/`: source material for the asset-pricing chapter; kept as read-only reference material and not required as rendered book output
 
 ## Render Locally
 
 Install Quarto and R, then install the R packages used by the book:
 
 ```bash
-Rscript -e "install.packages(c('bit64','dplyr','fontawesome','forecast','fpp3','ggplot2','kableExtra','knitr','lubridate','nnet','rmarkdown','rpart','scales','seasonal','sweep','tibble','tictoc','timetk','tidyquant','tidyr','vembedr','xfun'), repos = 'https://cloud.r-project.org')"
+Rscript -e "install.packages(c('bit64','broom','dplyr','fontawesome','forecast','fpp3','ggplot2','kableExtra','knitr','lubridate','nnet','purrr','readr','rmarkdown','rpart','scales','seasonal','sweep','tibble','tictoc','timetk','tidyquant','tidyr','vembedr','xfun'), repos = 'https://cloud.r-project.org')"
 ```
 
 Render the book from the repository root:

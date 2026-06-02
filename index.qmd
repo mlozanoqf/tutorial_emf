@@ -28,13 +28,13 @@ write_book_dates()
 ## Preface {.unnumbered}
 
 ::: {.home-panel}
-This book is an applied introduction to forecasting with R. The central problem is to take an ordered time series, define a forecast origin, estimate models using only past information, and evaluate predictions on a future holdout period. The first chapter builds the classical forecasting workflow with <tt>`fpp3`</tt>: decomposition, simple benchmarks, exponential smoothing, ARIMA, and neural network autoregression. The second chapter recasts the same forecasting task as a supervised forecasting problem, using time-based features, temporal validation, regression, trees, neural networks, an ARIMA benchmark, and an average forecast. The emphasis is on forecasting logic, mathematical notation, R implementation, model comparison, and interpretation of out-of-sample results.
+This book is an applied introduction to financial econometrics with R. The first chapters build the time-series toolkit used throughout the book: forecast origins, temporal validation, model comparison, and interpretation of prediction errors. They use a monthly sales series as a pedagogical example because the forecasting logic is easier to see before moving to financial applications. The later chapters apply the same equation-to-code approach to financial econometrics: GARCH conditional volatility and Fama-French asset pricing models. The emphasis is on mathematical notation, R implementation, model comparison, and interpretation of time-dependent or cross-sectional results.
 
 This material relies on @hyndman2021forecasting, @hull2020machine, and Matt Dancho Business Science IO freely available code examples in R. Some mathematical background is developed only as far as needed to connect model notation, data analysis, code, graphics, and forecast accuracy [@Rref]. As in the philosophy of @knuth1984literate, the objective is to explain to human beings what we want a computer to do as literate programming. This is a work in progress and it is under revision.
 :::
 
 ## What's new in this edition {.unnumbered}
 
-- **Forecasting identity:** The book is now focused on applied time-series forecasting, temporal validation, model comparison, and interpretation of forecast errors.
-- **Two-chapter structure:** Chapter 1 covers classical forecasting with <tt>`fpp3`</tt>. Chapter 2 extends the same sales forecasting problem with supervised machine-learning forecasting models and benchmark comparisons.
+- **Financial econometrics identity:** The book now connects time-series forecasting tools, volatility modeling, and asset pricing econometrics.
+- **Four-chapter structure:** Chapter 1 covers classical forecasting with <tt>`fpp3`</tt>. Chapter 2 extends the same sales forecasting problem with supervised machine-learning forecasting models and benchmark comparisons. Chapter 3 introduces GARCH conditional volatility forecasting. Chapter 4 estimates CAPM and Fama-French asset pricing models.
 - **Book format:** The material is organized as a Quarto book with chapter navigation, search, local section navigation, code folding, copy buttons, reading progress, and back-to-top controls.

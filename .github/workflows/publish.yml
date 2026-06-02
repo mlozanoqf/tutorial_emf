@@ -57,6 +57,7 @@ jobs:
           options(repos = c(CRAN = "https://cloud.r-project.org"), timeout = 600)
           emf_packages <- c(
             "bit64",
+            "broom",
             "dplyr",
             "fontawesome",
             "forecast",
@@ -66,6 +67,8 @@ jobs:
             "knitr",
             "lubridate",
             "nnet",
+            "purrr",
+            "readr",
             "rpart",
             "scales",
             "seasonal",
