@@ -815,7 +815,7 @@ much of the conditional heteroskedasticity.
 A manual GARCH implementation is useful because it makes mistakes visible. The
 most important checks are:
 
-| Check | Why it matters |
+| Check | Why it is important |
 |---|---|
 | Lag alignment | The recursion must use $u_{t-1}^2$ and $v_{t-1}$ to compute $v_t$. |
 | Scale consistency | Returns should stay in decimal units during estimation. Percent units can be used for plots. |
@@ -842,7 +842,7 @@ which restrictions are reasonable for the question.
 
 The volatility forecast is the central forecasting object in this chapter. It
 summarizes expected future risk; directional return forecasting is outside the
-model target. In an applied forecasting book, that distinction matters:
+model target. In an applied forecasting book, that distinction is important:
 forecasting can target a level, a mean, a probability, or a variance. Here the
 target is dynamic risk.
 

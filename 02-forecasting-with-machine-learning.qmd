@@ -342,7 +342,7 @@ Our goal is to forecast the first 10 months of 2022.
 
 ## Validation workflow
 
-The following helper functions keep the comparison compact. They calculate the
+The following support functions keep the comparison compact. They calculate the
 same error measures for every model: mean error, root mean squared error, mean
 absolute error, mean absolute percentage error, and mean percentage error.
 
@@ -517,9 +517,9 @@ Its inputs remain the same explicit features used by the linear regression and
 the tree. The extra flexibility comes from the hidden layer and the nonlinear
 activation function.
 
-The helper functions below do five mechanical tasks:
+The support functions below do five mechanical tasks:
 
-| Step | What the code does | Why it matters |
+| Step | What the code does | Why it is important |
 |---|---|---|
 | 1 | Build the model matrix from the formula. | Convert factors such as month into numeric columns. |
 | 2 | Standardize the predictors. | Put all inputs on comparable scales. |

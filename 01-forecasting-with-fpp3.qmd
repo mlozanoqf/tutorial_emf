@@ -45,7 +45,7 @@ $$
 \hat{y}_{T+h\mid T}, \qquad h = 1,2,\ldots,10.
 $$
 
-The notation $\hat{y}_{T+h\mid T}$ means: the forecast for month $T+h$ using only the information available up to month $T$. This point matters. When we evaluate the forecast, the realized value $y_{T+h}$ is known to us after the fact. At the forecast origin, that future value was unavailable to the model.
+The notation $\hat{y}_{T+h\mid T}$ means: the forecast for month $T+h$ using only the information available up to month $T$. This point is essential. When we evaluate the forecast, the realized value $y_{T+h}$ is known to us after the fact. At the forecast origin, that future value was unavailable to the model.
 
 The out-of-sample forecast error at horizon $h$ is
 
@@ -199,7 +199,7 @@ beer %>%
 
 The forecasting techniques should capture the main time-series components, especially trend and seasonality. Here we use the @hyndman2021forecasting <tt>`fpp3`</tt> package to study those properties before estimating the forecasting models. To use <tt>`fpp3`</tt>, we transform <tt>`beer`</tt> from a <tt>`tibble`</tt> to a <tt>`tsibble`</tt> object.
 
-A time series is an ordered process, so the position of each observation matters. For many business series, the observed value can be understood as the combination of three latent components:
+A time series is an ordered process, so the position of each observation is part of the information. For many business series, the observed value can be understood as the combination of three latent components:
 
 $$
 y_t = T_t + S_t + R_t
@@ -448,7 +448,7 @@ The four formulas can be compared directly:
 | Seasonal naïve | $\hat{y}_{T+h\mid T}=y_{T+h-m}$ | Copy the same month from the previous year. |
 | Drift | $\hat{y}_{T+h\mid T}=y_T+h(y_T-y_1)/(T-1)$ | Extend a straight-line historical slope. |
  
-This table matters pedagogically because the code below estimates four named models, while the equations show exactly what each model does.
+This table is useful pedagogically because the code below estimates four named models, while the equations show exactly what each model does.
 
 Estimate the four models.
 
@@ -951,7 +951,7 @@ $$
 
 What changes from row to row is the rule used to generate those ten forecasts. The seasonal naïve method copies the previous year's monthly pattern; ETS updates level, trend, and seasonality through smoothing equations; ARIMA models autocorrelation after differencing; NNAR learns a nonlinear function of lagged observations. The MAPE table is therefore the last step in a complete chain: model assumption, estimated parameters, forecast values, forecast errors, and summary accuracy.
 
-The main empirical interpretation is that the strong seasonal structure of the series matters a great deal. Seasonal naïve already performs well, which means that copying last year's monthly pattern is a serious benchmark. ETS improves slightly by updating level, trend and seasonality. ARIMA also performs well, suggesting that differencing and autocorrelation help, although the selected ARIMA model is a little less accurate than ETS here. NNAR is more flexible, yet its holdout error is larger in this example. For students, the lesson is direct: out-of-sample error is the criterion that disciplines model complexity.
+The main empirical interpretation is that the strong seasonal structure of the series is central. Seasonal naïve already performs well, which means that copying last year's monthly pattern is a serious benchmark. ETS improves slightly by updating level, trend and seasonality. ARIMA also performs well, suggesting that differencing and autocorrelation help, although the selected ARIMA model is a little less accurate than ETS here. NNAR is more flexible, yet its holdout error is larger in this example. For students, the lesson is direct: out-of-sample error is the criterion that disciplines model complexity.
 
 ```{r}
 #| echo: false

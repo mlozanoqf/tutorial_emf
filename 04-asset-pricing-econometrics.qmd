@@ -1,6 +1,6 @@
 # Asset pricing econometrics
 
-```{r}
+```{r setup, include=FALSE}
 # This removes all items in environment.
 rm(list = ls())
 
@@ -18,20 +18,37 @@ library(kableExtra)
 library(scales)
 ```
 
+This chapter studies asset pricing as an applied econometric problem. The goal
+is to connect factor-model logic, mathematical notation, R code, and empirical
+interpretation in one continuous workflow. The chapter starts with the economic
+question, builds the data and test assets, estimates time-series regressions,
+uses cross-sectional regressions to price factor exposures, and then rewrites
+the same pricing problem with stochastic discount factor GMM. The emphasis is
+on making each equation operational: what it means, why it is estimated, how it
+appears in the code, and how its results should be read.
+
 ## Asset pricing as an econometric problem
 
-Asset pricing models connect expected excess returns to systematic sources of
-risk. The econometric task is to estimate that connection from data. In this
-chapter, the test assets are mutual-fund returns and the 25 Fama-French
-size-value portfolios. The risk factors are the market excess return, size,
-value, momentum, profitability, and investment factors from the Kenneth French
-Data Library.
+Asset pricing econometrics asks a precise empirical question: can a small set
+of systematic risk factors explain why some assets or portfolios earn higher
+average excess returns than others? The answer is estimated from data, but the
+data work has to stay connected to the economic model. A coefficient is useful
+only when the reader can say what it measures, how the code estimated it, and
+what its value implies for the model.
 
-The chapter adapts the original Fama-French material in the `FF` source folder
-into the book's current format. The source folder is left untouched. The chapter
-downloads the data during execution, fixes the sample end at 2020-12-31 to
-preserve the original empirical window, and rebuilds the workflow with a clearer
-bridge between the model equations, the code, and the interpretation.
+This chapter follows the regression-based logic used in empirical asset
+pricing [@cochrane2005asset]. The same idea appears in three connected forms.
+Time-series regressions estimate each asset's exposure to common factors.
+Cross-sectional regressions ask whether those exposures explain average excess
+returns across test assets. Stochastic discount factor moments express the same
+restriction as a pricing condition: after discounting by the model, excess
+returns should have zero remaining average payoff.
+
+The empirical examples use one mutual fund and the 25 Fama-French size-value
+portfolios as test assets. The risk factors are the market excess return, size,
+value, momentum, profitability, and investment factors from the Kenneth French
+Data Library. The chapter downloads the data during execution and fixes the
+sample end at 2020-12-31 so the empirical window is reproducible.
 
 The central object is an excess return:
 
@@ -60,11 +77,60 @@ $$
 \longrightarrow
 \text{alphas and betas}
 \longrightarrow
-\text{cross-sectional fit}.
+\text{cross-sectional pricing}
+\longrightarrow
+\text{pricing errors}.
 $$
 
-That sequence matters. A factor model combines regression evidence with an
-economic claim about which risks should explain average excess returns.
+The chapter should be read as a sequence of empirical questions. The data
+tables verify samples, dates, and units. The factor figures show what the
+explanatory portfolios look like before they become regressors. The
+time-series regressions translate co-movement into alphas and betas. The
+cross-sectional regressions then ask whether those estimated exposures, or
+equivalent return-factor moments, explain average excess returns across the 25
+portfolios. The final diagnostic reads the remaining pricing errors by size and
+value characteristics. Each table and figure therefore has a specific role:
+audit the data, describe the factors, estimate exposures, diagnose the first
+pass, test the asset-pricing restriction, or interpret what the model leaves
+unexplained.
+
+The main vocabulary is:
+
+| Concept | Symbol | Reading in the chapter |
+|---|---|---|
+| Test asset | $i$ | An asset or portfolio whose average excess return the model tries to explain. |
+| Excess return | $R_{i,t}^e$ | The asset return after subtracting the risk-free rate. |
+| Factor | $f_{j,t}$ | A common return series used to represent a source of systematic risk. |
+| Beta | $\beta_{i,j}$ | The exposure of asset $i$ to factor $j$, estimated from a time-series regression. |
+| Alpha | $\alpha_i$ | The average excess return left over after the factor exposures are used. |
+| Price of risk | $\lambda_j$ | The cross-sectional reward attached to one unit of exposure to factor $j$. |
+| Pricing error | $\eta_i$ or $\alpha_i$ | The part of average return that the model leaves unexplained in the relevant test. |
+| Stochastic discount factor | $m_t$ | A random discount factor that prices excess returns through moment restrictions. |
+
+The chapter uses these concepts in a fixed order. First define excess returns.
+Then estimate betas and alphas from time-series regressions. Then estimate
+prices of risk from a cross-section of average returns. Finally inspect pricing
+errors to see where the model still struggles.
+
+This ordering is useful because asset pricing notation can compress several
+ideas into one equation. The economic question, the statistical object, and the
+code object should be separated before they are joined again:
+
+| Question | Mathematical object | Code object | Interpretation |
+|---|---|---|---|
+| What is being explained? | $\bar{R}_i^e$ | `ERe_percent` | Average excess return of each test asset. |
+| What is the proposed source of explanation? | $\mathbf{f}_t$ | `Mkt_RF`, `SMB3`, `HML`, `Mom`, `RMW`, `CMA` | Common factor returns. |
+| How exposed is each asset? | $\boldsymbol{\beta}_i$ | Time-series `lm()` coefficients | Sensitivity of asset returns to factor returns. |
+| What does the model leave behind? | $\alpha_i$ or $\eta_i$ | Intercepts and fitted-value gaps | Pricing errors. |
+| How is risk priced across assets? | $\boldsymbol{\lambda}$ | Cross-sectional `lm()` coefficients | Reward attached to factor exposure. |
+| How does the SDF view express the same restriction? | $E(m_tR_{i,t}^e)=0$ | Return-factor moments | Discounted excess returns should average to zero. |
+
+The word "pricing" should also be read carefully. In this chapter, pricing
+means testing whether a model can explain average excess returns. For an excess
+return, the initial cost is zero because the investment is financed at the
+risk-free rate. A correct model should assign zero value to that excess-return
+payoff after applying the relevant risk adjustment. That is why alphas,
+fitted-value gaps, and SDF moments all become ways of measuring pricing errors.
 
 ## Data, downloads, and sample construction
 
@@ -192,22 +258,23 @@ The code keeps the data in decimal form. For example, a monthly return of
 `0.01` means one percent. This convention prevents unit mistakes when returns
 are added, multiplied, or used in regressions.
 
-The original material shows the first and last observations of the main data
-objects. Those checks are included here because they verify dates, decimal
-units, and column names before any model is estimated.
+The first data audit shows the opening and closing observations of the main
+data objects. These checks verify dates, decimal units, and column names before
+any model is estimated.
 
 ```{r data-sample-tables}
-first_last_rows(ff3) |>
+factor_windows |>
+  mutate(across(c(start, end), as.character)) |>
   kable(
-    caption = "First and last observations of the Fama-French three-factor data.",
-    digits = 6,
+    caption = "Sample windows of the downloaded Fama-French data files.",
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
 
-first_last_rows(momentum) |>
+first_last_rows(ff3_momentum) |>
+  select(date, Mkt_RF, SMB3, HML, Mom, RF) |>
   kable(
-    caption = "First and last observations of the momentum factor.",
+    caption = "First and last observations of the joined FF3 and momentum sample.",
     digits = 6,
     row.names = FALSE
   ) |>
@@ -216,14 +283,6 @@ first_last_rows(momentum) |>
 first_last_rows(ff5) |>
   kable(
     caption = "First and last observations of the Fama-French five-factor data.",
-    digits = 6,
-    row.names = FALSE
-  ) |>
-  kable_styling(latex_options = "HOLD_position")
-
-first_last_rows(all_factors) |>
-  kable(
-    caption = "First and last observations of the combined factor data.",
     digits = 6,
     row.names = FALSE
   ) |>
@@ -239,13 +298,29 @@ first_last_rows(portfolios_25) |>
   kable_styling(latex_options = "HOLD_position")
 ```
 
-These tables are a data audit. The first and last rows show that the factor
-files and the portfolio file are monthly series, expressed in decimal units,
-and aligned on month-end dates. The selected corner portfolios already hint at
-the empirical structure used later: small growth, small value, big growth, and
-big value are the extreme cells of the size-value grid.
+These tables are a data audit. The window table shows which raw files can be
+used over which dates. The joined FF3-momentum table then shows the actual
+intersection used when the model includes momentum, so every displayed column
+has an observed value for the same month. The first and last rows also confirm
+that the factor files and the portfolio file are monthly series, expressed in
+decimal units, and aligned on month-end dates. The selected corner portfolios
+already hint at the empirical structure used later: small growth, small value,
+big growth, and big value are the extreme cells of the size-value grid.
 
 ## Excess returns and factor notation
+
+The notation in this chapter has three indices in the background. The subscript
+$i$ identifies the asset or portfolio. The subscript $t$ identifies the month.
+The subscript attached to a beta, such as $M$, $S$, or $H$, identifies the
+factor. For example, $\beta_{i,H}$ is the value-factor exposure of asset $i$,
+estimated from monthly observations over time.
+
+Each model has an observed left-hand side and estimated right-hand-side
+coefficients. The observed variable is always an excess return,
+$R_{i,t}^e$. The factors are also observed return series. The unknown objects
+are the intercept and the betas. The regression estimates those unknowns by
+choosing the line, or plane, that best summarizes the historical relation
+between the asset's excess return and the factor returns.
 
 The CAPM time-series regression for asset $i$ is
 
@@ -262,6 +337,12 @@ $$
 where $MKT_t$ is the market excess return. The intercept $\alpha_i$ is the
 average excess return that remains after controlling for market exposure. In a
 well-specified asset pricing model, alphas should be economically small.
+
+The CAPM is therefore a one-factor claim. It says that market exposure is the
+relevant systematic risk for expected returns. The regression version asks how
+strongly each asset moves with the market. The asset-pricing version asks
+whether that market exposure is enough to account for the asset's average
+excess return.
 
 The Fama-French three-factor model is
 
@@ -290,6 +371,13 @@ The factors have direct economic interpretations:
 | $RMW_t$ | Profitability factor: robust minus weak profitability. |
 | $CMA_t$ | Investment factor: conservative minus aggressive investment. |
 
+Each factor is constructed as a portfolio return. This point is central for the
+interpretation of betas. A positive loading on $SMB_t$ means that the asset
+tends to behave like the small-minus-big portfolio. A positive loading on
+$HML_t$ means that the asset tends to behave like the high-book-to-market
+minus low-book-to-market portfolio. The factor return series already encode the
+small and value portfolio strategies used in the regression.
+
 The five-factor model replaces the three-factor specification with
 
 $$
@@ -315,11 +403,25 @@ The code names these variables as `Mkt_RF`, `SMB3`, `HML`, `Mom`, `SMB5`,
 the size factor in the three-factor data and the size factor in the five-factor
 data are constructed from different portfolio sorts.
 
+The notation and the code follow the same structure. In the equation,
+$R_{i,t}^e$ is the dependent variable and the factors are regressors. In R,
+`Re` is the dependent variable and the factor columns appear on the right side
+of the formula. For example, `Re ~ Mkt_RF + SMB3 + HML` is the code version of
+the Fama-French three-factor regression.
+
 ## Factor portfolios through time
 
 Before estimating asset pricing regressions, it is useful to inspect the factor
-returns themselves. The next helper computes annualized return, annualized
-volatility, and a simple return-to-risk ratio.
+returns themselves. The next calculation computes annualized return,
+annualized volatility, and a simple return-to-risk ratio.
+
+This descriptive step has a practical purpose. A factor is a return series, so
+it can be read like a portfolio before it is used as a regressor. The annualized
+table summarizes reward and risk. The cumulative plots show the path by which
+those rewards are earned over time. The density plots show the distribution of
+monthly outcomes. The risk-return plots then compress those summaries into a
+single visual comparison. Together, these checks tell the reader what economic
+objects enter the regressions.
 
 ```{r factor-performance}
 annualized_performance <- function(data, cols) {
@@ -336,6 +438,18 @@ annualized_performance <- function(data, cols) {
       .groups = "drop"
     ) |>
     arrange(return_per_unit_risk)
+}
+
+order_series_by_final_value <- function(data, series_col, value_col = "cumulative_return") {
+  final_values <- data |>
+    group_by(.data[[series_col]]) |>
+    summarise(final_value = dplyr::last(.data[[value_col]]), .groups = "drop") |>
+    arrange(desc(final_value))
+
+  final_order <- final_values[[series_col]]
+
+  data[[series_col]] <- factor(data[[series_col]], levels = final_order)
+  data
 }
 
 factor_perf <- annualized_performance(ff3_momentum, c("Mkt_RF", "SMB3", "HML", "Mom"))
@@ -368,12 +482,13 @@ ff3 |>
   group_by(factor) |>
   mutate(cumulative_return = cumprod(1 + return)) |>
   ungroup() |>
+  order_series_by_final_value("factor") |>
   ggplot(aes(date, cumulative_return, color = factor)) +
   geom_line(linewidth = 0.8) +
   scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
   labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "right")
 ```
 
 The cumulative-return plot emphasizes that factor premia are earned through
@@ -408,25 +523,28 @@ monthly outcomes and an annualized average.
 factor_perf |>
   ggplot(aes(annualized_volatility, annualized_return, color = return_per_unit_risk)) +
   geom_hline(yintercept = 0, color = "gray70", linewidth = 0.4) +
-  geom_abline(intercept = 0, slope = 1, color = "#B22222", linewidth = 0.5) +
-  geom_point(size = 3) +
+  geom_point(size = 3, show.legend = FALSE) +
   geom_text(aes(label = factor), vjust = -0.9, color = "black", size = 3.5) +
   labs(
     x = "Annualized volatility",
     y = "Annualized return",
     color = "Return per unit of risk"
   ) +
-  scale_x_continuous(labels = scales::percent) +
-  scale_y_continuous(labels = scales::percent) +
+  scale_x_continuous(labels = scales::percent, expand = expansion(mult = c(0.08, 0.16))) +
+  scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0.08, 0.22))) +
   scale_color_viridis_c(option = "C") +
+  coord_cartesian(clip = "off") +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
+  theme(
+    legend.position = "none",
+    plot.margin = margin(10, 34, 10, 10)
+  )
 ```
 
 The risk-return profile compresses the table into one visual comparison. Points
-above the red reference line have annualized returns larger than annualized
-volatility on this scale. Labels make clear which factor drives each position,
-so the graph can be read as a map of factor rewards and risks.
+higher on the vertical axis have larger annualized returns, while points farther
+right have higher annualized volatility. Labels make clear which factor drives
+each position, so the graph can be read as a map of factor rewards and risks.
 
 Cumulative factor returns show that factors are portfolios through time. The
 line for each factor is the wealth path from investing one dollar in that
@@ -448,12 +566,13 @@ ff3_momentum |>
   group_by(factor) |>
   mutate(cumulative_return = cumprod(1 + return)) |>
   ungroup() |>
+  order_series_by_final_value("factor") |>
   ggplot(aes(date, cumulative_return, color = factor)) +
   geom_line(linewidth = 0.8) +
   scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
   labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "right")
 ```
 
 Adding momentum changes the visual comparison because the set of candidate
@@ -507,12 +626,11 @@ shorter historical window. Profitability and investment are interpreted as
 additional dimensions of systematic risk, so their return and volatility should
 be inspected before they are added to any regression.
 
-The original workflow also inspects the five-factor sample and the combined
-factor set with momentum. This matters because the samples differ: the
-five-factor data start later, and the `SMB` factor in the five-factor file is a
-different constructed series from the `SMB` factor in the three-factor file. The
-chapter keeps the variable names `SMB3` and `SMB5` to make that distinction
-visible in the code.
+The workflow also inspects the five-factor sample and the combined factor set
+with momentum. The samples differ: the five-factor data start later, and the
+`SMB` factor in the five-factor file is a different constructed series from
+the `SMB` factor in the three-factor file. The chapter keeps the variable names
+`SMB3` and `SMB5` to make that distinction visible in the code.
 
 ```{r additional-factor-performance}
 all_factor_perf <- annualized_performance(
@@ -540,19 +658,22 @@ reader still needs to know which factor histories are being compared.
 ff5_perf |>
   ggplot(aes(annualized_volatility, annualized_return, color = return_per_unit_risk)) +
   geom_hline(yintercept = 0, color = "gray70", linewidth = 0.4) +
-  geom_abline(intercept = 0, slope = 1, color = "#B22222", linewidth = 0.5) +
-  geom_point(size = 3) +
+  geom_point(size = 3, show.legend = FALSE) +
   geom_text(aes(label = factor), vjust = -0.9, color = "black", size = 3.3) +
   labs(
     x = "Annualized volatility",
     y = "Annualized return",
     color = "Return per unit of risk"
   ) +
-  scale_x_continuous(labels = scales::percent) +
-  scale_y_continuous(labels = scales::percent) +
+  scale_x_continuous(labels = scales::percent, expand = expansion(mult = c(0.08, 0.16))) +
+  scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0.08, 0.22))) +
   scale_color_viridis_c(option = "C") +
+  coord_cartesian(clip = "off") +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
+  theme(
+    legend.position = "none",
+    plot.margin = margin(10, 34, 10, 10)
+  )
 ```
 
 The five-factor risk-return graph shows whether the added profitability and
@@ -566,19 +687,22 @@ still distinguish them through covariance with asset returns.
 all_factor_perf |>
   ggplot(aes(annualized_volatility, annualized_return, color = return_per_unit_risk)) +
   geom_hline(yintercept = 0, color = "gray70", linewidth = 0.4) +
-  geom_abline(intercept = 0, slope = 1, color = "#B22222", linewidth = 0.5) +
-  geom_point(size = 3) +
+  geom_point(size = 3, show.legend = FALSE) +
   geom_text(aes(label = factor), vjust = -0.9, color = "black", size = 3.1) +
   labs(
     x = "Annualized volatility",
     y = "Annualized return",
     color = "Return per unit of risk"
   ) +
-  scale_x_continuous(labels = scales::percent) +
-  scale_y_continuous(labels = scales::percent) +
+  scale_x_continuous(labels = scales::percent, expand = expansion(mult = c(0.08, 0.16))) +
+  scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0.08, 0.22))) +
   scale_color_viridis_c(option = "C") +
+  coord_cartesian(clip = "off") +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
+  theme(
+    legend.position = "none",
+    plot.margin = margin(10, 34, 10, 10)
+  )
 ```
 
 The all-factor graph is the broadest factor map in the chapter. It summarizes
@@ -594,12 +718,13 @@ ff5 |>
   group_by(factor) |>
   mutate(cumulative_return = cumprod(1 + return)) |>
   ungroup() |>
+  order_series_by_final_value("factor") |>
   ggplot(aes(date, cumulative_return, color = factor)) +
   geom_line(linewidth = 0.8) +
   scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
   labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "right")
 ```
 
 The cumulative five-factor plot lets the reader compare the newer factors in
@@ -615,12 +740,13 @@ all_factors |>
   group_by(factor) |>
   mutate(cumulative_return = cumprod(1 + return)) |>
   ungroup() |>
+  order_series_by_final_value("factor") |>
   ggplot(aes(date, cumulative_return, color = factor)) +
   geom_line(linewidth = 0.8) +
   scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
   labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "right")
 ```
 
 The cumulative all-factor figure is useful for seeing which factors dominate
@@ -763,16 +889,18 @@ rate. The regression will use `Re` as the dependent variable and factor returns
 as explanatory variables, so this joined table is the dataset for the first
 asset-pricing exercise.
 
-The source material checks the single asset before estimating the regression.
-The price table verifies the data source. The return table verifies the monthly
-transformation. The joined table verifies that the excess return and factors are
-aligned at month end.
+The single-asset exercise checks the data before estimating the regression. The
+price table verifies the adjusted series used to compute returns. The return
+table verifies the monthly transformation. The joined table verifies that the
+excess return and factors are aligned at month end. Reading the three tables in
+order shows exactly how a price series becomes the dependent variable in the
+CAPM regression.
 
 ```{r fcntx-data-checks}
 first_last_rows(fund_prices) |>
-  select(symbol, date, adjusted, close, volume) |>
+  select(symbol, date, adjusted) |>
   kable(
-    caption = "First and last FCNTX price observations.",
+    caption = "First and last FCNTX adjusted-price observations.",
     digits = 6,
     row.names = FALSE
   ) |>
@@ -817,7 +945,7 @@ first_last_rows(portfolio_all_factor_data) |>
 The sequence of data checks has a simple logic. First, prices become monthly
 returns. Second, raw returns become excess returns. Third, each excess return is
 matched to factor returns for the same month. The 25-portfolio checks repeat
-the same process for many test assets instead of a single mutual fund.
+the same process for many test assets at once.
 
 ```{r fcntx-factor-performance}
 fund_factor_returns <- fund_factors |>
@@ -849,19 +977,22 @@ than the factors used to explain it?
 fund_factor_perf |>
   ggplot(aes(annualized_volatility, annualized_return, color = return_per_unit_risk)) +
   geom_hline(yintercept = 0, color = "gray70", linewidth = 0.4) +
-  geom_abline(intercept = 0, slope = 1, color = "#B22222", linewidth = 0.5) +
-  geom_point(size = 3) +
+  geom_point(size = 3, show.legend = FALSE) +
   geom_text(aes(label = factor), vjust = -0.9, color = "black", size = 3.1) +
   labs(
     x = "Annualized volatility",
     y = "Annualized return",
     color = "Return per unit of risk"
   ) +
-  scale_x_continuous(labels = scales::percent) +
-  scale_y_continuous(labels = scales::percent) +
+  scale_x_continuous(labels = scales::percent, expand = expansion(mult = c(0.08, 0.16))) +
+  scale_y_continuous(labels = scales::percent, expand = expansion(mult = c(0.08, 0.22))) +
   scale_color_viridis_c(option = "C") +
+  coord_cartesian(clip = "off") +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
+  theme(
+    legend.position = "none",
+    plot.margin = margin(10, 34, 10, 10)
+  )
 ```
 
 The risk-return figure makes the same comparison visually. FCNTX appears as one
@@ -877,12 +1008,13 @@ fund_factor_returns |>
   group_by(series) |>
   mutate(cumulative_return = cumprod(1 + return)) |>
   ungroup() |>
+  order_series_by_final_value("series") |>
   ggplot(aes(date, cumulative_return, color = series)) +
   geom_line(linewidth = 0.8) +
   scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
   labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "right")
 ```
 
 The cumulative plot turns the FCNTX comparison into a time-series story. A fund
@@ -899,12 +1031,13 @@ fund_factor_returns |>
   group_by(series) |>
   mutate(cumulative_return = cumprod(1 + return)) |>
   ungroup() |>
+  order_series_by_final_value("series") |>
   ggplot(aes(date, cumulative_return, color = series)) +
   geom_line(linewidth = 0.8) +
   scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
   labs(x = "Date", y = "Cumulative return, log scale", color = NULL) +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "right")
 ```
 
 The market comparison isolates the CAPM idea. If FCNTX is mostly a market-risk
@@ -933,16 +1066,17 @@ two densities suggests similar monthly-return behavior, while differences in
 spread or tails suggest that market exposure alone may leave unexplained
 variation.
 
-The 25 portfolios are organized by size and book-to-market. Their average raw
-returns form a surface. This is the visual reason the portfolios are useful for
-asset pricing: a model should explain systematic differences across size and
-value cells.
+The single-asset FCNTX example is useful because one regression can be read
+closely from beginning to end. The 25 Fama-French portfolios serve a different
+purpose: they create a structured cross-section. Each portfolio is formed by
+sorting firms by size and book-to-market, so the resulting grid gives the
+factor model a more demanding asset-pricing problem. The empirical task is now
+cross-sectional: explain systematic differences across size and value cells.
 
 The same 25 portfolios can be read as investment portfolios through the usual
-risk-return lens. The original material uses annualized return, annualized
-volatility, and return per unit of risk to show the economic content of the
-size-value grid. Each cell is a portfolio with its own average return and
-volatility.
+risk-return lens. Annualized return, annualized volatility, and return per unit
+of risk show the economic content of the size-value grid. Each cell is a
+portfolio with its own average return and volatility.
 
 ```{r portfolio-performance}
 portfolio_perf <- portfolio_long |>
@@ -998,8 +1132,8 @@ factor exposures explain why these portfolios occupy different locations?
 
 Kenneth French's data library often illustrates the extreme size-value
 portfolios because they make the empirical pattern easy to see. The plot below
-keeps the four corner portfolios from the original material: small growth,
-small value, big growth, and big value.
+keeps the four corner portfolios: small growth, small value, big growth, and
+big value.
 
 ```{r}
 #| label: fig-kf-hilo-cumulative
@@ -1008,15 +1142,10 @@ portfolios_25 |>
   select(date, `SMALL HiBM`, `BIG HiBM`, `SMALL LoBM`, `BIG LoBM`) |>
   filter(date >= as.Date("1927-07-31"), date <= as.Date("1999-12-31")) |>
   pivot_longer(-date, names_to = "portfolio", values_to = "return") |>
-  mutate(
-    portfolio = factor(
-      portfolio,
-      levels = c("SMALL HiBM", "BIG HiBM", "BIG LoBM", "SMALL LoBM")
-    )
-  ) |>
   group_by(portfolio) |>
   mutate(cumulative_return = cumprod(1 + return)) |>
   ungroup() |>
+  order_series_by_final_value("portfolio") |>
   ggplot(aes(date, cumulative_return, color = portfolio)) +
   geom_line(linewidth = 0.8) +
   scale_y_log10(labels = scales::number_format(accuracy = 0.1)) +
@@ -1029,10 +1158,9 @@ The four-corner cumulative plot focuses on the most interpretable cells of the
 grid. Comparing small versus big and low versus high book-to-market portfolios
 shows why the size-value sort became a standard test bed for factor models.
 
-The source material also included rendered 3D assets of the mean-return
-surface. The chapter keeps the surface render and adds the original animation
-as a web video: the height and color of each cell represent the average monthly
-raw return of that portfolio.
+The rendered 3D surface gives a second view of the same size-value grid. The
+height and color of each cell represent the average monthly raw return of that
+portfolio.
 
 ```{r portfolio-surface-table}
 portfolio_means <- portfolio_long |>
@@ -1049,19 +1177,32 @@ portfolio_surface_data <- portfolio_means |>
   select(ME, BM, raw_return_percent)
 
 portfolio_surface_data |>
-  arrange(ME, BM) |>
-  mutate(raw_return_percent = round(raw_return_percent, 4)) |>
+  mutate(
+    ME = factor(
+      ME,
+      levels = 1:5,
+      labels = c("ME1 small", "ME2", "ME3", "ME4", "ME5 big")
+    ),
+    BM = factor(
+      BM,
+      levels = 1:5,
+      labels = c("BM1 low", "BM2", "BM3", "BM4", "BM5 high")
+    )
+  ) |>
+  pivot_wider(names_from = BM, values_from = raw_return_percent) |>
+  arrange(ME) |>
+  mutate(across(-ME, ~ round(.x, 4))) |>
   kable(
-    caption = "Data used to build the size-value mean-return surface.",
+    caption = "Mean monthly raw returns behind the size-value surface.",
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
 ```
 
 The surface table gives the numeric values behind the rendered image. It is the
-same information in tabular form: `ME` moves from small to big firms, `BM` moves
-from low to high book-to-market firms, and `raw_return_percent` is the average
-monthly raw return in that cell.
+same information in tabular form: rows move from small to big firms, columns
+move from low to high book-to-market firms, and each entry is the average
+monthly raw return in percent for that cell.
 
 ```{r}
 #| label: fig-ff25-surface-original
@@ -1090,8 +1231,9 @@ reader see the three-dimensional structure of the 25 portfolio averages.
 
 ## Time-series asset pricing regressions
 
-The time-series regression estimates factor exposures for each asset. In matrix
-form, for asset $i$ and $K$ factors,
+The time-series regression estimates factor exposures for each asset. It uses
+many months of returns for one asset at a time and asks how that asset moves
+with the factors. In matrix form, for asset $i$ and $K$ factors,
 
 $$
 R_{i,t}^e
@@ -1104,9 +1246,46 @@ R_{i,t}^e
 \varepsilon_{i,t}.
 $$
 
+This equation has two roles. The slope vector
+$\boldsymbol{\beta}_i$ measures exposure to systematic risk. A high market beta
+means that the asset tends to rise more in strong market months and fall more
+in weak market months. A high value beta means that the asset tends to move
+with the HML factor. The intercept $\alpha_i$ measures the average excess
+return that remains after the factor exposures have been used.
+
+The residual $\varepsilon_{i,t}$ is a month-by-month error. It measures the
+difference between the observed excess return in month $t$ and the fitted value
+from the regression. The alpha is different because it is constant over the
+sample. It measures an average level left after the factors are included. This
+distinction is useful: residuals diagnose short-run fit, while alphas diagnose
+average pricing.
+
+In regression-based asset pricing, alpha is read as a pricing error when the
+factors are traded return portfolios. A model that prices the asset well should
+leave a small alpha, because the asset's average excess return should be
+accounted for by its factor exposures. For one asset, the alpha tells us what
+the model leaves unexplained for that asset. For the 25 portfolios, the
+collection of alphas is more informative: a pattern of large positive and
+negative alphas would show that the model misses a systematic part of the
+cross-section.
+
+The regression is therefore doing two jobs at once. Statistically, it is a
+least-squares fit of returns on factors. Economically, it is asking whether the
+factor model has removed the average return that should be explained by risk
+exposure. Cochrane's regression tests use this second reading: the intercept is
+evidence about whether the model prices the asset.
+
 The code below wraps that equation in a reusable function. The formula defines
 the right-hand side. The grouping variable `symbol` defines which asset receives
 its own regression.
+
+The code follows the equation in four steps. First, `group_by(symbol)` separates
+the data by asset. Second, `lm(formula, data = .x)` estimates one time-series
+regression for that asset. Third, `broom::tidy()` extracts the estimated
+intercept and betas. Fourth, `broom::augment()` returns fitted values and
+residuals month by month. These four objects correspond directly to the
+mathematical notation: coefficients, fitted values, residuals, and model
+diagnostics.
 
 ```{r regression-functions}
 fit_factor_model <- function(data, formula) {
@@ -1168,7 +1347,10 @@ tidy_factor_model(fund_capm) |>
 The CAPM table has two central entries. The market coefficient is the estimated
 market beta of FCNTX: it measures how much the fund's excess return changes
 with the market excess return. The intercept is the fund's average excess
-return after controlling for market exposure.
+return after controlling for market exposure. A positive intercept means that
+FCNTX earned more, on average, than the CAPM would assign from its market beta
+over this sample. A negative intercept means that the market exposure assigns
+more average excess return than the fund actually earned.
 
 The fitted value is the model-implied excess return for each month:
 
@@ -1198,10 +1380,10 @@ where the fitted bars and observed bars are close are months where market
 exposure explains much of the fund's movement. Large gaps are residuals: the
 part of the FCNTX excess return left after the market factor is used.
 
-The original material then checks whether the fitted values and residuals look
-reasonable. These graphs are diagnostics for the time-series fit. They ask
-whether the CAPM regression is fitting the single asset in a stable way before
-the chapter moves to the 25-portfolio cross-section.
+The next graphs check whether the fitted values and residuals look reasonable.
+They are diagnostics for the time-series fit. They ask whether the CAPM
+regression is fitting the single asset in a stable way before the chapter moves
+to the 25-portfolio cross-section.
 
 ```{r}
 #| label: fig-fcntx-capm-observed-fitted
@@ -1255,13 +1437,14 @@ fund_capm_aug |>
 ```
 
 The residual time plot shows whether unexplained returns cluster in particular
-periods. Clusters matter because they suggest that the model misses episodes
-where FCNTX behaves differently from the market factor.
+periods. Clusters are informative because they suggest that the model misses
+episodes where FCNTX behaves differently from the market factor.
 
 ```{r}
 #| label: fig-fcntx-capm-residual-acf
 #| fig-cap: "Autocorrelation function for FCNTX CAPM residuals."
 fund_residual_acf <- stats::acf(fund_capm_aug$.resid, lag.max = 24, plot = FALSE)
+fund_acf_band <- 1.96 / sqrt(nrow(fund_capm_aug))
 
 tibble(
   lag = as.numeric(fund_residual_acf$lag),
@@ -1270,6 +1453,12 @@ tibble(
   filter(lag > 0) |>
   ggplot(aes(lag, acf)) +
   geom_hline(yintercept = 0, color = "gray60", linewidth = 0.5) +
+  geom_hline(
+    yintercept = c(-fund_acf_band, fund_acf_band),
+    color = "#D55E00",
+    linetype = 2,
+    linewidth = 0.7
+  ) +
   geom_col(fill = "#2C7FB8", alpha = 0.75) +
   labs(x = "Lag", y = "ACF") +
   theme_minimal(base_size = 12)
@@ -1334,7 +1523,11 @@ tidy_factor_model(portfolio_capm) |>
 
 The full coefficient table keeps the individual portfolio estimates visible.
 Each portfolio has its own intercept and market beta, so the CAPM is estimated
-as 25 separate time-series regressions, one for each test asset.
+as 25 separate time-series regressions, one for each test asset. The market
+beta column measures exposure. The intercept column should be read as the CAPM
+pricing error for each portfolio. If those intercepts are systematically high
+for one part of the size-value grid and low for another, the CAPM is missing a
+cross-sectional pattern across many assets.
 
 The 25 separate CAPM regressions have different levels of fit. A compact way to
 inspect them is to compare $R^2$, residual standard error, and residual
@@ -1382,6 +1575,13 @@ portfolio set. Portfolios with very small p-values deserve attention because
 their residuals show stronger serial structure under the CAPM specification.
 
 ## Asset pricing errors and factor exposures
+
+The Fama-French three-factor model is the main worked example for the rest of
+the chapter. It is detailed enough to show the full econometric route: first
+estimate time-series betas, then estimate cross-sectional prices of risk, then
+compare the beta-method with SDF-GMM estimates. Momentum and the five-factor
+model appear later as faster extensions. They are useful for comparison, while
+the main explanation is developed with FF3.
 
 The Fama-French three-factor model adds size and value exposures:
 
@@ -1438,6 +1638,47 @@ asset-specific after those exposures have been used. The asset-pricing question
 is therefore direct: are the alphas small enough for the factor model to be a
 credible explanation of average returns?
 
+This decomposition comes from averaging the monthly regression over the sample.
+Start with the fitted regression,
+
+$$
+R_{i,t}^e
+=
+\widehat{\alpha}_i
++
+\widehat{\boldsymbol{\beta}}_i^\top\mathbf{f}_t
++
+\widehat{\varepsilon}_{i,t}.
+$$
+
+Averaging across months gives
+
+$$
+\bar{R}_i^e
+=
+\widehat{\alpha}_i
++
+\widehat{\boldsymbol{\beta}}_i^\top\bar{\mathbf{f}}
++
+\bar{\widehat{\varepsilon}}_i.
+$$
+
+In an ordinary least-squares regression with an intercept, the sample average
+of the residuals is zero. That is why the average return can be written as
+alpha plus the factor-implied component. This algebra also explains why a
+time-series fitted-average plot can look strong: each asset has its own
+intercept. The stricter asset-pricing question begins when the chapter asks
+whether the factor exposures alone can organize average returns across many
+assets through common prices of risk.
+
+The code mirrors the same decomposition. The function
+`expected_return_from_betas()` first computes average factor returns, then
+multiplies them by the estimated betas, then keeps alpha separately. The column
+`factor_implied_percent` is
+$100\widehat{\boldsymbol{\beta}}_i^\top\bar{\mathbf{f}}$. The column
+`alpha_percent` is $100\widehat{\alpha}_i$. The observed average excess return
+is the sum of those two pieces, up to rounding.
+
 ```{r ff3-expected-returns}
 portfolio_ff3 <- fit_factor_model(portfolio_factor_data, Re ~ Mkt_RF + SMB3 + HML)
 ff3_betas <- tidy_factor_model(portfolio_ff3)
@@ -1474,10 +1715,52 @@ expected_return_from_betas <- function(data, model_tbl, factors) {
     )
 }
 
+time_series_source_fit <- function(data, model_tbl, factors) {
+  data |>
+    group_by(symbol) |>
+    summarise(
+      ERe = mean(Re, na.rm = TRUE) * 100,
+      `(Intercept)` = 1,
+      across(all_of(factors), ~ mean(.x, na.rm = TRUE) * 100),
+      .groups = "drop"
+    ) |>
+    pivot_longer(
+      c(`(Intercept)`, all_of(factors)),
+      names_to = "term",
+      values_to = "Ef"
+    ) |>
+    inner_join(
+      tidy_factor_model(model_tbl) |>
+        select(symbol, term, estimate),
+      by = c("symbol", "term")
+    ) |>
+    rename(betas = estimate) |>
+    select(symbol, term, betas, ERe, Ef) |>
+    group_by(symbol) |>
+    mutate(pred_temp = Ef * betas, pred = sum(pred_temp)) |>
+    ungroup() |>
+    select(-pred_temp) |>
+    left_join(portfolio_label_tbl, by = "symbol")
+}
+
 ff3_expected <- expected_return_from_betas(
   portfolio_factor_data,
   portfolio_ff3,
   c("Mkt_RF", "SMB3", "HML")
+)
+
+ff3_time_series_fit <- time_series_source_fit(
+  portfolio_factor_data,
+  portfolio_ff3,
+  c("Mkt_RF", "SMB3", "HML")
+)
+
+portfolio_ff4 <- fit_factor_model(portfolio_factor_data, Re ~ Mkt_RF + SMB3 + HML + Mom)
+
+ff4_time_series_fit <- time_series_source_fit(
+  portfolio_factor_data,
+  portfolio_ff4,
+  c("Mkt_RF", "SMB3", "HML", "Mom")
 )
 
 ```
@@ -1525,7 +1808,7 @@ ff3_betas |>
   select(symbol, market_beta) |>
   inner_join(ff3_expected, by = "symbol") |>
   ggplot(aes(market_beta, ERe_percent, color = Size, group = Size)) +
-  geom_line(alpha = 0.6, linewidth = 0.9) +
+  geom_line(alpha = 0.9, linewidth = 1.5) +
   geom_point(size = 2) +
   geom_text(aes(label = Size), color = "black", size = 3, show.legend = FALSE) +
   labs(x = "Market beta", y = "Observed average excess return (%)", color = "Size") +
@@ -1546,7 +1829,7 @@ ff3_betas |>
   select(symbol, market_beta) |>
   inner_join(ff3_expected, by = "symbol") |>
   ggplot(aes(market_beta, ERe_percent, color = Value, group = Value)) +
-  geom_line(alpha = 0.6, linewidth = 0.9) +
+  geom_line(alpha = 0.9, linewidth = 1.5) +
   geom_point(size = 2) +
   geom_text(aes(label = Value), color = "black", size = 3, show.legend = FALSE) +
   labs(x = "Market beta", y = "Observed average excess return (%)", color = "Value") +
@@ -1558,10 +1841,224 @@ The value plot reads the same beta-return relation through book-to-market
 groups. Separation by value group is the visual motivation for adding the HML
 factor to the model.
 
+The next diagnostic compares observed average excess returns with predictions
+assembled from the time-series regression output. This is the last first-pass
+graph before the chapter moves to cross-sectional pricing. For each portfolio,
+the regression estimates an intercept and factor loadings. In consistent
+decimal units, the sample-average decomposition is
+
+$$
+\bar{R}_i^e
+=
+\widehat{\alpha}_i
++
+\widehat{\beta}_{i,M}\bar{MKT}
++
+\widehat{\beta}_{i,S}\bar{SMB}
++
+\widehat{\beta}_{i,H}\bar{HML}.
+$$
+
+The plotted `Prediction` uses the convention of the FF exercise being
+replicated here:
+
+$$
+\mathrm{Prediction}_i
+=
+\widehat{\alpha}_i
++
+\widehat{\beta}_{i,M}(100\bar{MKT})
++
+\widehat{\beta}_{i,S}(100\bar{SMB})
++
+\widehat{\beta}_{i,H}(100\bar{HML}).
+$$
+
+These prediction figures should be read as orientation and replication checks.
+They preserve the display convention of the source FF exercise: average excess
+returns and factor means are displayed in percent, while the intercept is kept
+as the coefficient returned by the regression. This convention preserves the
+numerical values of the FF graphic.
+
+The formal asset-pricing interpretation remains the decimal-unit decomposition
+above. That equation is the coherent accounting identity: average excess return
+equals alpha plus the factor-implied component. The figures in this block have a
+narrower role. They show whether portfolios with high observed average returns
+also receive high first-pass fitted values before the chapter moves to the
+stricter cross-sectional pricing test.
+
+```{r}
+#| label: fig-ff3-time-series-fitted-average
+#| fig-cap: "Time-series fitted average excess returns under the FF3 model."
+ff3_ts_limits <- range(
+  c(ff3_time_series_fit$pred, ff3_time_series_fit$ERe),
+  na.rm = TRUE
+) * c(0.95, 1.05)
+
+ff3_time_series_fit |>
+  ggplot(aes(pred, ERe)) +
+  geom_abline(
+    slope = 1,
+    intercept = 0,
+    linetype = "longdash",
+    color = "orange",
+    linewidth = 1.4,
+    alpha = 0.55
+  ) +
+  geom_text(aes(label = symbol), size = 2) +
+  coord_fixed(xlim = ff3_ts_limits, ylim = ff3_ts_limits, clip = "off") +
+  labs(
+    x = "Prediction",
+    y = "25 portfolios mean excess returns",
+    title = "Time series regressions.",
+    subtitle = "Re ~ Mkt_RF + SMB3 + HML",
+    caption = paste(
+      "Monthly data:",
+      min(portfolio_factor_data$date),
+      "to",
+      max(portfolio_factor_data$date)
+    )
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(plot.margin = margin(10, 28, 10, 10))
+```
+
+Adding momentum repeats the same first-pass diagnostic with a broader factor
+set:
+
+$$
+\mathrm{Prediction}_i
+=
+\widehat{\alpha}_i
++
+\widehat{\beta}_{i,M}(100\bar{MKT})
++
+\widehat{\beta}_{i,S}(100\bar{SMB})
++
+\widehat{\beta}_{i,H}(100\bar{HML})
++
+\widehat{\beta}_{i,MOM}(100\bar{MOM}).
+$$
+
+The reading is the same as in the FF3 figure. Adding momentum changes the
+factor set used to compute the prediction, while the observed average excess
+return on the vertical axis remains the same portfolio statistic. The figure is
+a source exercise replication check and a transition to the next section. The
+cross-sectional test begins after this point, where common prices of risk are
+estimated across portfolios.
+
+```{r}
+#| label: fig-ff4-time-series-fitted-average
+#| fig-cap: "Time-series fitted average excess returns under the FF3-plus-momentum model."
+ff4_ts_limits <- range(
+  c(ff4_time_series_fit$pred, ff4_time_series_fit$ERe),
+  na.rm = TRUE
+) * c(0.95, 1.05)
+
+ff4_time_series_fit |>
+  ggplot(aes(pred, ERe)) +
+  geom_abline(
+    slope = 1,
+    intercept = 0,
+    linetype = "longdash",
+    color = "orange",
+    linewidth = 1.4,
+    alpha = 0.55
+  ) +
+  geom_text(aes(label = symbol), size = 2) +
+  coord_fixed(xlim = ff4_ts_limits, ylim = ff4_ts_limits, clip = "off") +
+  labs(
+    x = "Prediction",
+    y = "E(Re)",
+    title = "Time series regressions.",
+    subtitle = "Re ~ Mkt_RF + SMB3 + HML + Mom",
+    caption = paste(
+      "Monthly data:",
+      min(portfolio_factor_data$date),
+      "to",
+      max(portfolio_factor_data$date)
+    )
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(plot.margin = margin(10, 28, 10, 10))
+```
+
+The remaining asset-pricing tests use a deliberate division of labor. FF3 is
+the detailed benchmark. The two extensions are included to show how the results
+change when the factor set expands.
+
+```{r model-comparison-roadmap}
+model_comparison_roadmap <- tibble(
+  model = c("FF3", "FF3 plus momentum", "FF5"),
+  role = c("Detailed benchmark", "Fast comparison", "Fast comparison"),
+  factors = c(
+    "Mkt_RF, SMB3, HML",
+    "Mkt_RF, SMB3, HML, Mom",
+    "Mkt_RF, SMB5, HML, RMW, CMA"
+  ),
+  sample_start = c(
+    min(portfolio_factor_data$date),
+    min(portfolio_factor_data$date),
+    min(portfolio_all_factor_data$date)
+  ),
+  sample_end = c(
+    max(portfolio_factor_data$date),
+    max(portfolio_factor_data$date),
+    max(portfolio_all_factor_data$date)
+  ),
+  months = c(
+    n_distinct(portfolio_factor_data$date),
+    n_distinct(portfolio_factor_data$date),
+    n_distinct(portfolio_all_factor_data$date)
+  )
+)
+
+model_comparison_roadmap |>
+  mutate(across(c(sample_start, sample_end), as.character)) |>
+  kable(
+    caption = "Roadmap for the FF3 benchmark and the comparison models.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The roadmap prevents repetition. FF3 receives the full mathematical and
+statistical explanation. The momentum and five-factor rows will be read later
+as robustness comparisons: the same test assets, a different factor set, and a
+different sample for FF5 because those factors start later.
+
 ## Cross-sectional asset pricing tests
 
 Time-series regressions estimate betas. Cross-sectional regressions ask whether
-those betas explain average returns across assets. The beta-pricing equation is
+those betas explain average returns across assets. The data shape changes at
+this point. The regression now has one row for each test portfolio. The
+dependent variable is the portfolio's average excess return. The explanatory
+variables are the betas estimated in the previous time-series step.
+
+The intuition is the same as pricing any characteristic. A beta is a quantity
+of exposure. A lambda is the price attached to that exposure. The fitted value
+is the total average excess return assigned by the pricing equation after
+adding up the priced exposures. For a three-factor model, the fitted value is
+
+$$
+\widehat{\bar{R}}_i^e
+=
+\widehat{\lambda}_0
++
+\widehat{\lambda}_M \widehat{\beta}_{i,M}
++
+\widehat{\lambda}_S \widehat{\beta}_{i,S}
++
+\widehat{\lambda}_H \widehat{\beta}_{i,H}.
+$$
+
+This equation should be read portfolio by portfolio. A portfolio with high
+market beta receives more fitted return when $\widehat{\lambda}_M$ is positive.
+A portfolio with high value beta receives more fitted return when
+$\widehat{\lambda}_H$ is positive. If a beta is high but its lambda is close to
+zero, that exposure does little work in the fitted cross-section.
+
+The beta-pricing equation is
 
 $$
 \bar{R}_i^e
@@ -1577,9 +2074,34 @@ $$
 \eta_i.
 $$
 
-This is the second-pass logic associated with Fama-MacBeth style asset pricing
-tests [@fama1973risk]. In this chapter, the cross-section is the set of 25
-size-value portfolios.
+This is the expected-return beta representation emphasized in regression-based
+asset pricing. Cochrane's chapter 12 frames this equation as a cross-sectional
+line fitted through test assets [@cochrane2005asset]. The betas are the
+right-hand-side variables, the lambdas are the coefficients of the pricing
+line, and the residuals are pricing errors. The OLS beta-method chooses the
+lambdas that minimize the sum of squared pricing errors across the 25
+portfolios:
+
+$$
+\min_{\lambda_0,\boldsymbol{\lambda}}
+\sum_{i=1}^{N}
+\widehat{\eta}_i^2.
+$$
+
+This objective explains the visual role of the fitted-return plot. The
+45-degree line represents perfect pricing for every test asset. OLS chooses one
+common pricing equation that brings the points as close as possible to that
+line in a least-squares sense.
+
+This is a static two-pass cross-sectional regression. It is related to the
+Fama-MacBeth logic used in asset pricing [@fama1973risk], because both
+approaches first estimate exposures and then price those exposures in a
+cross-section. A formal Fama-MacBeth procedure would repeat the cross-sectional
+regression period by period and estimate inference from the time series of
+price-of-risk estimates. The chapter uses the simpler static version to keep
+the bridge between betas, prices of risk, fitted returns, and pricing errors
+transparent. In this chapter, the cross-section is the set of 25 size-value
+portfolios.
 
 The equation has a clear economic reading. The left-hand side,
 $\bar{R}_i^e$, is the average excess return of portfolio $i$. The regressors are
@@ -1591,6 +2113,27 @@ excess returns in this sample. A low fitted value for a portfolio means that
 its estimated betas explain less than its observed average return under this
 second-pass equation.
 
+The units are also important. The response variable is measured as average
+monthly excess return in percent. Therefore a $\lambda$ coefficient is the
+change in average monthly excess return, in percentage points, associated with
+one additional unit of the corresponding beta, holding the other betas fixed. A
+positive price of risk rewards exposure to that factor in this cross-section. A
+negative price of risk penalizes that exposure in this sample. A coefficient
+near zero says that the estimated beta does little to organize average returns
+once the other betas are included.
+
+The residual $\eta_i$ is the cross-sectional pricing error. It is the vertical
+gap between the portfolio's observed average excess return and the fitted value
+assigned by the common pricing equation. This gap is different from the
+time-series residual $\varepsilon_{i,t}$: $\varepsilon_{i,t}$ is a month-level
+error, while $\eta_i$ is an average-return error for one portfolio.
+
+Cochrane often writes the cross-sectional residual as an alpha. This chapter
+uses $\eta_i$ in the cross-sectional equation to keep two objects separate:
+$\alpha_i$ is the time-series intercept for asset $i$, and $\eta_i$ is the
+cross-sectional pricing error after the common lambda estimates are applied.
+Both objects diagnose model fit, but they come from different regressions.
+
 There are therefore two layers of estimation:
 
 | Layer | Object estimated | Data orientation | Economic role |
@@ -1601,6 +2144,15 @@ There are therefore two layers of estimation:
 The first layer asks how each portfolio moves with the factors. The second
 layer asks whether those exposures explain why some portfolios earn higher
 average excess returns than others.
+
+The important change is the source of the fitted value. In the time-series
+figures, each portfolio has its own intercept, so each regression can match its
+own sample average closely. In the cross-sectional regression, the fitted value
+comes from one common pricing equation shared by the 25 portfolios. A portfolio
+receives a high fitted average return only if its estimated exposures combine
+with the estimated prices of risk to justify that return. This is the economic
+content of the second pass: betas become explanatory variables for average
+returns.
 
 ```{r cross-sectional-beta-method}
 beta_wide <- ff3_betas |>
@@ -1651,6 +2203,32 @@ the data matrix: one row per portfolio, average excess return as the outcome,
 and estimated betas as regressors. The coefficient table estimates the prices
 attached to those betas. The goodness-of-fit table summarizes how much of the
 25-portfolio average-return pattern is captured by this beta-pricing equation.
+Reading these tables in order prevents a common confusion. The beta table by
+itself only reports exposures. The coefficient table tells how the cross-section
+prices those exposures. The fitted-value plot then translates the estimated
+pricing equation back into portfolio-level average returns.
+
+The coefficient table should be read in three passes. First, inspect the sign
+of each $\lambda$: it tells whether the exposure is rewarded or penalized in
+this sample. Second, inspect the magnitude: it tells how much the fitted average
+return changes when the beta changes by one unit. Third, inspect the standard
+errors and p-values with caution: the betas were estimated in a first pass, so
+the usual OLS table is an orientation device for inference. This is why the
+chapter later separates estimation logic from formal inference limits.
+
+In this sample, the beta-method gives a concrete result. The cross-sectional
+$R^2$ is `r round(broom::glance(cross_section_fit)$r.squared, 2)`, so the
+estimated betas capture a substantial part of the 25-portfolio average-return
+pattern while leaving visible pricing errors. The estimated market price of risk
+is `r round(coef(cross_section_fit)["beta_market"], 2)` monthly percentage
+points, the size price is `r round(coef(cross_section_fit)["beta_size"], 2)`,
+and the value price is `r round(coef(cross_section_fit)["beta_value"], 2)`.
+The signs say that, conditional on the other estimated betas, size and value
+exposure raise fitted average excess returns in this cross-section, while
+market beta lowers the fitted average return over this sample. The positive
+value coefficient is especially important for the narrative because the
+size-value portfolios were built precisely to make value-related return
+patterns visible.
 
 ```{r}
 #| label: fig-cross-sectional-beta-fit
@@ -1662,7 +2240,7 @@ cross_section_aug |>
   ggplot(aes(.fitted, ERe_percent)) +
   geom_abline(slope = 1, intercept = 0, linetype = 2, color = "#D55E00", linewidth = 0.8) +
   geom_text(aes(label = symbol), size = 2.2) +
-  coord_fixed(xlim = c(0.5, 1.65), ylim = c(0.5, 1.65)) +
+  coord_fixed(xlim = c(0.5, 1.4), ylim = c(0.5, 1.4), clip = "off") +
   labs(
     x = "Cross-sectional fitted return (%)",
     y = "Observed average excess return (%)"
@@ -1705,7 +2283,55 @@ portfolio comparison auditable. Large vertical gaps indicate portfolios whose
 average returns remain far from the fitted values implied by the estimated
 prices of market, size, and value exposure.
 
-## SDF moments and GMM logic
+The reason for doing this second pass is conceptual. A time-series regression
+gives each portfolio's market beta, size beta, and value beta. The next
+question is whether those betas carry enough information to account for the
+portfolio's average return. The second pass asks that question directly. It
+treats the estimated betas as the characteristics to be priced and asks whether
+a common set of lambdas can assign reasonable average returns to all 25
+portfolios at once.
+
+The equation also clarifies the division of responsibility between data,
+estimation, and interpretation:
+
+| Piece | Where it comes from | What it tells the reader |
+|---|---|---|
+| $\bar{R}_i^e$ | Average of portfolio excess returns | The return pattern the model must explain. |
+| $\widehat{\beta}_{i,M}, \widehat{\beta}_{i,S}, \widehat{\beta}_{i,H}$ | First-pass time-series regressions | The estimated exposures of each portfolio. |
+| $\widehat{\lambda}_M, \widehat{\lambda}_S, \widehat{\lambda}_H$ | Second-pass cross-sectional regression | The price attached to each exposure. |
+| $\widehat{\bar{R}}_i^e$ | Fitted value from the second pass | The average return assigned by the model. |
+| $\widehat{\eta}_i$ | Observed minus fitted average return | The cross-sectional pricing error. |
+
+This table is also a guide to the code. `cross_section_data` contains the first
+two rows of the table: average excess returns and estimated betas.
+`cross_section_fit` estimates the lambdas. `cross_section_aug` adds fitted
+values and pricing errors. The code therefore follows the same sequence as the
+econometric argument: construct the cross-section, estimate prices of risk,
+then inspect the errors.
+
+## SDF-GMM and pricing logic
+
+The beta-method prices exposures. The SDF-GMM method prices payoffs through
+moments. Both approaches ask whether the factor model can explain average
+excess returns, but they organize the evidence differently. The beta-method
+starts with estimated betas. SDF-GMM starts with a pricing condition and turns
+that condition into sample moments.
+
+The purpose of this section is to make Cochrane's chapter 13 operational. The
+logic is:
+
+| Step | Question | Object |
+|---|---|---|
+| Pricing condition | What should be true if the model prices excess returns? | $E(m_tR_{i,t}^e)=0$ |
+| Linear SDF | How does the discount factor depend on factors? | $m_t=1-\mathbf{b}^{\top}\mathbf{f}_t$ |
+| Sample moments | What does the model leave unexplained in the data? | $\mathbf{g}_T(\mathbf{b})=\bar{\mathbf{R}}^e-\mathbf{D}\mathbf{b}$ |
+| First-stage GMM | What SDF loadings minimize unweighted pricing errors? | $W=I$ |
+| Second-stage GMM | What changes when errors are weighted by their covariance? | $W=\widehat{\mathbf{S}}^{-1}$ |
+| J-test | Are the remaining pricing errors jointly large? | $J=T\mathbf{g}'W\mathbf{g}$ |
+
+This sequence answers a question beyond the regression table: after choosing
+the SDF loadings, are the leftover pricing errors small enough to be consistent
+with the model?
 
 The stochastic discount factor view starts from the pricing condition
 
@@ -1713,36 +2339,182 @@ $$
 E(m_t R_{i,t}^e)=0.
 $$
 
-This notation is standard in modern asset pricing and GMM treatments
-[@cochrane2005asset; @hansen1982large].
+This notation is standard in modern asset pricing [@cochrane2005asset]. The
+object $m_t$ is a stochastic discount factor. It assigns value today to future
+payoffs. For an excess return, the initial cost is zero after financing at the
+risk-free rate. The model therefore asks for the discounted excess return to
+average to zero. The equation says that, after the model applies its discount
+factor, each test asset should have zero remaining average payoff.
 
-The object $m_t$ is a stochastic discount factor. It assigns value today to
-future payoffs. For an excess return, the cost of the payoff is zero after
-financing at the risk-free rate, so the model-implied present value should also
-be zero. That is the meaning of $E(m_t R_{i,t}^e)=0$: once returns are adjusted
-by the discount factor, no test asset should have a remaining average payoff
-that the model leaves unexplained.
+Read the equation literally from inside to outside. Start with the excess
+return of asset $i$ in month $t$, $R_{i,t}^e$. Multiply that payoff by the
+discount factor in the same month, $m_t$. Then take the average implied by
+$E(\cdot)$. If the model prices the asset, that average is zero because an
+excess return has zero initial cost. In the data, the sample version of this
+average is the pricing error. A model with small pricing errors is a model
+whose discount factor makes the test assets close to zero-cost payoffs in
+present-value terms.
 
-A linear SDF writes
+The equation can be read in three layers. First, $R_{i,t}^e$ is the payoff to be
+priced. Second, $m_t$ is the risk adjustment applied to that payoff. Third, the
+expectation averages the risk-adjusted payoff over time or across states. If
+the model is correct, positive and negative risk-adjusted payoffs balance out
+for every test asset. The empirical version checks whether that balance is
+close enough in the sample.
+
+The condition is easier to read through states of the world. If $m_t$ is high
+in bad states, then payoffs received in those states are especially valuable.
+An asset that performs poorly when $m_t$ is high must compensate investors with
+a higher average excess return. This is the same economic idea behind factor
+betas, written in pricing-condition form.
+
+The condition also explains why covariance is central. The expectation
+$E(m_tR_{i,t}^e)$ is an average product. It is affected by the average excess
+return of the asset and by the way that return co-moves with the discount
+factor. A high average excess return can be consistent with the model when the
+asset pays off in states where the discount factor is low. The asset is then
+less valuable as insurance, so investors require compensation through a higher
+average return.
+
+A linear SDF can be normalized as
 
 $$
 m_t
 =
-a
+1
 -
 \mathbf{b}^{\top}\mathbf{f}_t.
 $$
 
-This says that the discount factor moves with the same systematic factors used
-earlier in the chapter. The vector $\mathbf{b}$ controls how strongly each
-factor enters the SDF. If a factor captures bad times for investors, assets
-that pay poorly when that factor is adverse should require higher average
-excess returns. The SDF formulation and the beta-pricing formulation are two
-ways to organize the same economic idea: systematic covariance with factors is
-what matters for average returns.
+This is the normalization used for the GMM calculation below. The constant is
+fixed at one, and the vector $\mathbf{b}$ controls how strongly each factor
+enters the discount factor. If a factor captures bad times for investors,
+assets that pay poorly when that factor is adverse should require higher
+average excess returns. The SDF formulation and the beta-pricing formulation
+organize the same economic idea: systematic covariance with factors drives
+average returns.
 
-With this specification, the empirical content comes from sample moments such
-as
+The minus sign is useful for interpretation. With
+$m_t=1-\mathbf{b}^{\top}\mathbf{f}_t$, a positive loading $b_j$ means that
+months with a high value of factor $f_j$ reduce the discount factor. In the
+expected-return equation below, that same positive $b_j$ gives a positive
+contribution to a portfolio whose return has a positive sample moment with
+$f_j$. The loading is therefore read as the price attached to that
+return-factor moment.
+
+Substituting the linear SDF into the pricing condition gives the bridge from
+the theory to the data:
+
+$$
+E\left[
+\left(1-\mathbf{b}^{\top}\mathbf{f}_t\right)R_{i,t}^e
+\right]
+=
+0.
+$$
+
+Expanding the expectation gives
+
+$$
+E(R_{i,t}^e)
+-
+\mathbf{b}^{\top}E(\mathbf{f}_tR_{i,t}^e)
+=
+0.
+$$
+
+Solving for the average excess return gives
+
+$$
+E(R_{i,t}^e)
+=
+\mathbf{b}^{\top}E(\mathbf{f}_tR_{i,t}^e).
+$$
+
+This last equation is the key pedagogical bridge. The average excess return is
+linked to moments of the form $E(f_{j,t}R_{i,t}^e)$. The code below constructs
+sample versions of those moments for every portfolio and every factor. The
+estimated cross-sectional regression then asks whether those moments explain
+the same average excess returns studied in the beta method.
+
+For the full cross-section of $N$ test assets, define
+
+$$
+\bar{\mathbf{R}}^e
+=
+\frac{1}{T}
+\sum_{t=1}^{T}
+\mathbf{R}_t^e,
+\qquad
+\mathbf{D}
+=
+\frac{1}{T}
+\sum_{t=1}^{T}
+\mathbf{R}_t^e\mathbf{f}_t^{\top}.
+$$
+
+The sample pricing errors are
+
+$$
+\mathbf{g}_T(\mathbf{b})
+=
+\bar{\mathbf{R}}^e
+-
+\mathbf{D}\mathbf{b}.
+$$
+
+This notation is compact, so it is worth mapping it to the objects used in the
+code:
+
+| Mathematical object | Code object | Interpretation |
+|---|---|---|
+| $\bar{\mathbf{R}}^e$ | `mean_returns` | The vector of average excess returns for the 25 portfolios. |
+| $\mathbf{D}$ | `moment_matrix` | The matrix of return-factor sample moments. |
+| $\mathbf{b}$ | `b1` or `b2` | The SDF loadings estimated by GMM. |
+| $\mathbf{D}\mathbf{b}$ | `fitted_returns` | The average excess returns implied by the SDF. |
+| $\mathbf{g}_T(\mathbf{b})$ | `pricing_errors` | Observed average returns minus fitted average returns. |
+| $\widehat{\mathbf{S}}_1$ | `moment_covariance` | The covariance matrix of the pricing-moment time series. |
+
+The dimensions also help. In the FF3 case there are $N=25$ test portfolios and
+$K=3$ factors. Therefore $\bar{\mathbf{R}}^e$ has 25 entries,
+$\mathbf{D}$ has 25 rows and 3 columns, $\mathbf{b}$ has 3 entries, and
+$\mathbf{g}_T(\mathbf{b})$ has 25 pricing errors. The model has fewer SDF
+loadings than portfolios, so it is overidentified. That is why the chapter can
+estimate the loadings and still test whether the remaining errors are too
+large.
+
+The goal of SDF-GMM is to choose $\mathbf{b}$ so these pricing errors are small.
+The first-stage and second-stage estimates differ in how they weight those
+errors.
+
+The first-stage GMM estimate uses identity weighting, $W=I$. Cochrane shows
+that, in this linear SDF setting, this estimate is an OLS cross-sectional
+regression of average returns on second moments [@cochrane2005asset]:
+
+$$
+\widehat{\mathbf{b}}_1
+=
+(\mathbf{D}^{\top}\mathbf{D})^{-1}
+\mathbf{D}^{\top}
+\bar{\mathbf{R}}^e.
+$$
+
+This equation is OLS without a cross-sectional intercept. The left-hand side is
+the vector of average excess returns. The regressors are the columns of
+$\mathbf{D}$, the return-factor second moments. The estimated vector
+$\widehat{\mathbf{b}}_1$ gives the SDF loadings that make
+$\mathbf{D}\widehat{\mathbf{b}}_1$ as close as possible to
+$\bar{\mathbf{R}}^e$ in ordinary least-squares distance.
+
+The identity matrix is the natural first step because it requires only the
+average returns and the return-factor moments. It gives each portfolio's
+pricing error equal weight in the criterion
+$\mathbf{g}_T(\mathbf{b})^{\top}\mathbf{g}_T(\mathbf{b})$. This stage is the
+cleanest place to see the geometry of the SDF problem: choose the factor
+loadings that make the fitted vector $\mathbf{D}\mathbf{b}$ close to the
+observed vector $\bar{\mathbf{R}}^e$.
+
+The empirical content comes from sample moments such as
 
 $$
 \widehat{E}(R_i^e f_j)
@@ -1755,113 +2527,497 @@ $$
 The moment $\widehat{E}(R_i^e f_j)$ is an average product. It is large when
 portfolio $i$ tends to have high excess returns in months when factor $j$ is
 high. It is negative when the portfolio tends to move against the factor. In
-matrix form, the code builds these quantities with
+applied work, these moments are useful because they turn co-movement into
+regressors that can be used in a cross-sectional pricing equation.
+
+In matrix form, the code builds these quantities with
 
 $$
-\mathbf{M}
+\mathbf{D}
 =
+\frac{1}{T}
 \mathbf{R}^{\top}\mathbf{F},
 $$
 
 where $\mathbf{R}$ is a $T \times N$ matrix of portfolio excess returns and
 $\mathbf{F}$ is a $T \times K$ matrix of factor returns. The result
-$\mathbf{M}$ is an $N \times K$ matrix: one row for each test portfolio and one
+$\mathbf{D}$ is an $N \times K$ matrix: one row for each test portfolio and one
 column for each factor moment.
 
-The original material computes these return-factor moments and uses them in a
-cross-sectional regression. The code below keeps that logic and writes it
-explicitly. The moment matrix is left on the original unscaled sum used in the
-source material. A common rescaling would change the numerical coefficients and
-preserve the fitted values from this regression.
+The code below implements the FF3 first-stage GMM estimate. All estimation is
+done in decimal returns. Tables and figures convert average returns and pricing
+errors to percent for readability.
 
-```{r sdf-moment-regression}
-sdf_source <- portfolio_factor_data |>
-  select(date, symbol, Re, Mkt_RF, SMB3, HML)
+```{r sdf-gmm-ff3-first-stage}
+symmetric_inverse <- function(matrix, tolerance = 1e-10) {
+  matrix <- (matrix + t(matrix)) / 2
+  eigen_decomp <- eigen(matrix, symmetric = TRUE)
+  cutoff <- tolerance * max(abs(eigen_decomp$values))
+  inverse_values <- ifelse(abs(eigen_decomp$values) > cutoff, 1 / eigen_decomp$values, 0)
+  eigen_decomp$vectors %*% diag(inverse_values, nrow = length(inverse_values)) %*% t(eigen_decomp$vectors)
+}
 
-returns_wide <- sdf_source |>
-  select(date, symbol, Re) |>
-  pivot_wider(names_from = symbol, values_from = Re) |>
-  arrange(date)
+prepare_sdf_gmm_inputs <- function(data, factors) {
+  returns_wide <- data |>
+    select(date, symbol, Re) |>
+    pivot_wider(names_from = symbol, values_from = Re) |>
+    arrange(date)
 
-factors_wide <- sdf_source |>
-  distinct(date, Mkt_RF, SMB3, HML) |>
-  arrange(date)
+  factors_wide <- data |>
+    distinct(date, across(all_of(factors))) |>
+    arrange(date)
 
-common_dates <- intersect(returns_wide$date, factors_wide$date)
+  model_data <- inner_join(returns_wide, factors_wide, by = "date") |>
+    filter(if_all(-date, ~ !is.na(.x)))
 
-returns_matrix <- returns_wide |>
-  filter(date %in% common_dates) |>
-  select(-date) |>
-  as.matrix()
+  asset_names <- setdiff(names(returns_wide), "date")
+  returns_matrix <- model_data |>
+    select(all_of(asset_names)) |>
+    as.matrix()
 
-factor_matrix <- factors_wide |>
-  filter(date %in% common_dates) |>
-  select(Mkt_RF, SMB3, HML) |>
-  as.matrix()
+  factor_matrix <- model_data |>
+    select(all_of(factors)) |>
+    as.matrix()
 
-moment_matrix <- t(returns_matrix) %*% factor_matrix
+  moment_matrix <- crossprod(returns_matrix, factor_matrix) / nrow(returns_matrix)
+  rownames(moment_matrix) <- asset_names
+  colnames(moment_matrix) <- factors
 
-sdf_data <- as_tibble(moment_matrix, rownames = "symbol") |>
-  rename(moment_market = Mkt_RF, moment_size = SMB3, moment_value = HML) |>
-  inner_join(ff3_expected |> select(symbol, ERe_percent), by = "symbol")
+  list(
+    dates = model_data$date,
+    assets = asset_names,
+    factors = factors,
+    returns_matrix = returns_matrix,
+    factor_matrix = factor_matrix,
+    mean_returns = colMeans(returns_matrix),
+    moment_matrix = moment_matrix,
+    months = nrow(returns_matrix),
+    n_assets = ncol(returns_matrix),
+    n_factors = length(factors)
+  )
+}
 
-sdf_fit <- lm(ERe_percent ~ moment_market + moment_size + moment_value, data = sdf_data)
+moment_series_for_b <- function(inputs, b) {
+  sdf_values <- as.numeric(1 - inputs$factor_matrix %*% b)
+  inputs$returns_matrix * sdf_values
+}
+
+fit_sdf_gmm_first_stage <- function(data, factors, model_label) {
+  inputs <- prepare_sdf_gmm_inputs(data, factors)
+  D <- inputs$moment_matrix
+  mean_returns <- inputs$mean_returns
+  dtd_inverse <- symmetric_inverse(crossprod(D))
+  b1 <- as.numeric(dtd_inverse %*% crossprod(D, mean_returns))
+  names(b1) <- factors
+
+  fitted_returns <- as.numeric(D %*% b1)
+  pricing_errors <- mean_returns - fitted_returns
+  moment_series <- moment_series_for_b(inputs, b1)
+  centered_moments <- scale(moment_series, center = TRUE, scale = FALSE)
+  moment_covariance <- crossprod(centered_moments) / inputs$months
+  vcov_b1 <- dtd_inverse %*% t(D) %*% moment_covariance %*% D %*% dtd_inverse / inputs$months
+
+  coefficient_table <- tibble(
+    model = model_label,
+    stage = "First-stage GMM (W = I)",
+    factor = factors,
+    estimate = b1,
+    std_error = sqrt(diag(vcov_b1)),
+    t_statistic = estimate / std_error
+  )
+
+  fit_table <- tibble(
+    model = model_label,
+    stage = "First-stage GMM (W = I)",
+    symbol = inputs$assets,
+    observed_percent = 100 * mean_returns,
+    fitted_percent = 100 * fitted_returns,
+    pricing_error_percent = 100 * pricing_errors
+  ) |>
+    left_join(portfolio_label_tbl, by = "symbol")
+
+  summary_table <- tibble(
+    model = model_label,
+    stage = "First-stage GMM (W = I)",
+    months = inputs$months,
+    n_assets = inputs$n_assets,
+    n_factors = inputs$n_factors,
+    identity_criterion = inputs$months * sum(pricing_errors^2),
+    rmse_percent = sqrt(mean((100 * pricing_errors)^2)),
+    mae_percent = mean(abs(100 * pricing_errors)),
+    max_abs_error_percent = max(abs(100 * pricing_errors))
+  )
+
+  moment_table <- as_tibble(D, rownames = "symbol") |>
+    rename_with(~ paste0("moment_", .x), all_of(factors)) |>
+    inner_join(
+      fit_table |> select(symbol, observed_percent, fitted_percent, pricing_error_percent),
+      by = "symbol"
+    ) |>
+    left_join(portfolio_label_tbl, by = "symbol")
+
+  list(
+    inputs = inputs,
+    b = b1,
+    moment_covariance = moment_covariance,
+    coefficient_table = coefficient_table,
+    fit_table = fit_table,
+    summary_table = summary_table,
+    moment_table = moment_table
+  )
+}
+
+sdf_ff3_first_stage <- fit_sdf_gmm_first_stage(
+  portfolio_factor_data,
+  c("Mkt_RF", "SMB3", "HML"),
+  "FF3"
+)
+
+sdf_data <- sdf_ff3_first_stage$moment_table
+
+sdf_aug <- sdf_ff3_first_stage$fit_table |>
+  transmute(
+    symbol,
+    ERe_percent = observed_percent,
+    .fitted = fitted_percent,
+    .resid = pricing_error_percent
+  )
 
 sdf_data |>
   arrange(symbol) |>
   mutate(across(where(is.numeric), ~ round(.x, 6))) |>
   kable(
-    caption = "Database for the SDF-moment cross-sectional regression.",
+    caption = "FF3 first-stage GMM data: average returns, second moments, and pricing errors.",
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
 
-broom::tidy(sdf_fit) |>
+sdf_ff3_first_stage$coefficient_table |>
   mutate(across(where(is.numeric), ~ round(.x, 6))) |>
   kable(
-    caption = "Cross-sectional regression using return-factor moments.",
+    caption = "FF3 first-stage GMM SDF loadings with identity weighting.",
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
 
-broom::glance(sdf_fit) |>
+sdf_ff3_first_stage$summary_table |>
   mutate(across(where(is.numeric), ~ round(.x, 6))) |>
   kable(
-    caption = "Goodness-of-fit summary for the SDF-moment cross-sectional regression.",
+    caption = "FF3 first-stage GMM fit summary.",
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
-
 ```
 
-The SDF-moment tables follow the same reading order as the beta method. The
-first table contains the return-factor moments used as regressors. The
-coefficient table estimates how those moments map into average excess returns.
-The goodness-of-fit table summarizes the fitted cross-section for this
-moment-based specification.
+The first table is the cross-sectional dataset: one row per portfolio,
+return-factor second moments as regressors, observed average excess return as
+the target, and the resulting pricing error. The coefficient table reports the
+SDF loadings $\widehat{\mathbf{b}}_1$. The summary table reports the
+identity-weighted GMM criterion and descriptive pricing-error measures. This is
+the exact first-stage object in Cochrane's linear SDF-GMM setup: OLS
+cross-sectional fitting with $W=I$.
+
+The three tables should be read in order:
+
+| Table | How to read it | Why it is useful |
+|---|---|---|
+| First-stage data | Compare `observed_percent`, `fitted_percent`, and `pricing_error_percent` portfolio by portfolio. | It shows the actual cross-section being priced. |
+| SDF loadings | Read the sign and size of each $\widehat b_j$ relative to its standard error. | It shows which factor moments receive positive or negative prices. |
+| Fit summary | Compare RMSE, MAE, maximum absolute error, and the identity criterion. | It summarizes the remaining pricing errors in a few auditable numbers. |
+
+The coefficient table is about the discount factor. The fit table is about the
+test assets. Keeping those two readings separate helps avoid a common
+confusion: a factor can have an economically meaningful SDF loading and the
+model can still leave sizable pricing errors for specific portfolios.
+
+The second-stage estimate changes the weighting matrix. Define the moment
+vector for month $t$ as
+
+$$
+\mathbf{h}_t(\mathbf{b})
+=
+\mathbf{R}_t^e
+\left(1-\mathbf{b}^{\top}\mathbf{f}_t\right).
+$$
+
+The first-stage estimate gives a first estimate of the covariance matrix of
+these moments:
+
+$$
+\widehat{\mathbf{S}}_1
+=
+\frac{1}{T}
+\sum_{t=1}^{T}
+\left(
+\mathbf{h}_t(\widehat{\mathbf{b}}_1)
+-
+\mathbf{g}_T(\widehat{\mathbf{b}}_1)
+\right)
+\left(
+\mathbf{h}_t(\widehat{\mathbf{b}}_1)
+-
+\mathbf{g}_T(\widehat{\mathbf{b}}_1)
+\right)^{\top}.
+$$
+
+This covariance matrix measures how the pricing moments move together across
+months. If two portfolios are formed from nearby size-value cells, their
+pricing errors may be highly related. If one portfolio has especially volatile
+moment errors, its raw pricing error is less informative than a stable error of
+the same size. The second stage uses this information when it decides which
+errors should have more influence in the estimation criterion.
+
+The second-stage estimate uses $W=\widehat{\mathbf{S}}_1^{-1}$:
+
+$$
+\widehat{\mathbf{b}}_2
+=
+\left(
+\mathbf{D}^{\top}
+\widehat{\mathbf{S}}_1^{-1}
+\mathbf{D}
+\right)^{-1}
+\mathbf{D}^{\top}
+\widehat{\mathbf{S}}_1^{-1}
+\bar{\mathbf{R}}^e.
+$$
+
+This is the GLS version of the same cross-sectional regression. Pricing errors
+with larger estimated covariance receive different weight from pricing errors
+with smaller estimated covariance. The point is efficiency: the second stage
+uses the covariance structure of the pricing moments, while the first stage
+weights all pricing errors equally.
+
+The change from first stage to second stage has a specific interpretation. The
+target is still the same vector of average excess returns, and the regressors
+are still the same second moments. The weighting matrix changes the metric used
+to judge the errors. As a result, the second-stage fitted returns can move
+closer to some portfolios and farther from others. That movement is expected:
+the second-stage estimate tries to reduce the covariance-weighted error, so a
+smaller weighted criterion may occur even when the unweighted RMSE changes only
+slightly.
+
+```{r sdf-gmm-ff3-second-stage}
+fit_sdf_gmm_second_stage <- function(first_stage_result) {
+  inputs <- first_stage_result$inputs
+  D <- inputs$moment_matrix
+  mean_returns <- inputs$mean_returns
+  W <- symmetric_inverse(first_stage_result$moment_covariance)
+  dwd_inverse <- symmetric_inverse(t(D) %*% W %*% D)
+
+  b2 <- as.numeric(dwd_inverse %*% t(D) %*% W %*% mean_returns)
+  names(b2) <- inputs$factors
+
+  fitted_returns <- as.numeric(D %*% b2)
+  pricing_errors <- mean_returns - fitted_returns
+  vcov_b2 <- dwd_inverse / inputs$months
+
+  coefficient_table <- tibble(
+    model = first_stage_result$coefficient_table$model[1],
+    stage = "Second-stage GMM (W = S^-1)",
+    factor = inputs$factors,
+    estimate = b2,
+    std_error = sqrt(diag(vcov_b2)),
+    t_statistic = estimate / std_error
+  )
+
+  fit_table <- tibble(
+    model = first_stage_result$coefficient_table$model[1],
+    stage = "Second-stage GMM (W = S^-1)",
+    symbol = inputs$assets,
+    observed_percent = 100 * mean_returns,
+    fitted_percent = 100 * fitted_returns,
+    pricing_error_percent = 100 * pricing_errors
+  ) |>
+    left_join(portfolio_label_tbl, by = "symbol")
+
+  summary_table <- tibble(
+    model = first_stage_result$coefficient_table$model[1],
+    stage = "Second-stage GMM (W = S^-1)",
+    months = inputs$months,
+    n_assets = inputs$n_assets,
+    n_factors = inputs$n_factors,
+    weighted_criterion = inputs$months * as.numeric(t(pricing_errors) %*% W %*% pricing_errors),
+    rmse_percent = sqrt(mean((100 * pricing_errors)^2)),
+    mae_percent = mean(abs(100 * pricing_errors)),
+    max_abs_error_percent = max(abs(100 * pricing_errors))
+  )
+
+  list(
+    W = W,
+    b = b2,
+    coefficient_table = coefficient_table,
+    fit_table = fit_table,
+    summary_table = summary_table
+  )
+}
+
+sdf_ff3_second_stage <- fit_sdf_gmm_second_stage(sdf_ff3_first_stage)
+
+sdf_ff3_second_stage$coefficient_table |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "FF3 second-stage GMM SDF loadings with covariance weighting.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+sdf_ff3_second_stage$summary_table |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "FF3 second-stage GMM fit summary.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The first-stage and second-stage coefficient tables should be compared by
+factor. Large changes in $\widehat{\mathbf{b}}$ indicate that the covariance
+weighting changes which pricing errors receive more influence in the
+estimation. The summary tables should be read together as well: the first-stage
+criterion reports the identity-weighted fit, and the second-stage criterion
+reports the covariance-weighted fit.
+
+There are three useful reading questions at this point. First, do the signs of
+the SDF loadings remain stable across stages? Second, does covariance weighting
+materially change the size of the loadings? Third, do the pricing-error
+summaries improve in the metric that each stage is designed to minimize? These
+questions connect the algebra to interpretation: the second stage is a change
+in statistical weighting, so its economic meaning should be assessed through
+the fitted returns and the remaining pricing errors.
+
+For FF3, the market loading remains positive across stages:
+`r round(sdf_ff3_first_stage$b["Mkt_RF"], 2)` in the first stage and
+`r round(sdf_ff3_second_stage$b["Mkt_RF"], 2)` in the second stage. The HML
+loading also remains positive, moving from
+`r round(sdf_ff3_first_stage$b["HML"], 2)` to
+`r round(sdf_ff3_second_stage$b["HML"], 2)`. The size loading changes more,
+from `r round(sdf_ff3_first_stage$b["SMB3"], 2)` to
+`r round(sdf_ff3_second_stage$b["SMB3"], 2)`. That movement tells the reader
+where covariance weighting has the largest effect: the statistical metric
+changes the role assigned to the size moment more than the role assigned to the
+market moment.
+
+The overidentifying-restrictions test uses the pricing errors that remain after
+estimation:
+
+$$
+J
+=
+T
+\mathbf{g}_T(\widehat{\mathbf{b}})^{\top}
+\widehat{\mathbf{S}}_1^{+}
+\mathbf{g}_T(\widehat{\mathbf{b}}),
+$$
+
+where $\widehat{\mathbf{S}}_1^{+}$ is the generalized inverse of the
+first-stage moment covariance matrix. Under the usual large-sample GMM
+conditions, the statistic is compared with
+
+$$
+\chi^2_{N-K},
+$$
+
+where $N$ is the number of test assets and $K$ is the number of SDF factors.
+For FF3, $N=25$ and $K=3$, so the test has 22 degrees of freedom.
+
+The J-test asks a joint question. After estimating $K$ SDF loadings, are the
+$N$ pricing conditions close enough to zero as a group? The degrees of freedom
+are $N-K$ because the model uses $K$ parameters to fit $N$ moment conditions.
+A large p-value means the test provides little statistical evidence against the
+joint restrictions. A small p-value means the remaining pricing
+errors are too large relative to their covariance under the chi-square
+approximation. The test is statistical; the tables and figures that follow
+show the economic location and size of those errors.
+
+```{r sdf-gmm-j-test}
+gmm_pricing_error_vector <- function(first_stage_result, b) {
+  inputs <- first_stage_result$inputs
+  as.numeric(inputs$mean_returns - inputs$moment_matrix %*% b)
+}
+
+gmm_j_test_table <- function(first_stage_result, second_stage_result) {
+  inputs <- first_stage_result$inputs
+  W <- second_stage_result$W
+  df <- inputs$n_assets - inputs$n_factors
+
+  bind_rows(
+    tibble(
+      model = first_stage_result$coefficient_table$model[1],
+      stage = "First-stage GMM (W = I)",
+      pricing_error = list(gmm_pricing_error_vector(first_stage_result, first_stage_result$b))
+    ),
+    tibble(
+      model = second_stage_result$coefficient_table$model[1],
+      stage = "Second-stage GMM (W = S^-1)",
+      pricing_error = list(gmm_pricing_error_vector(first_stage_result, second_stage_result$b))
+    )
+  ) |>
+    mutate(
+      months = inputs$months,
+      n_assets = inputs$n_assets,
+      n_factors = inputs$n_factors,
+      df = df,
+      identity_criterion = map_dbl(pricing_error, ~ inputs$months * sum(.x^2)),
+      j_statistic = map_dbl(pricing_error, ~ inputs$months * as.numeric(t(.x) %*% W %*% .x)),
+      p_value = 1 - pchisq(j_statistic, df = df)
+    ) |>
+    select(-pricing_error)
+}
+
+sdf_ff3_j_tests <- gmm_j_test_table(sdf_ff3_first_stage, sdf_ff3_second_stage)
+
+sdf_ff3_j_tests |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "FF3 SDF-GMM overidentifying-restrictions tests.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The first-stage row reports two useful quantities. The identity criterion is
+the objective minimized by the first-stage OLS cross-sectional estimate. The
+J-statistic uses the estimated moment covariance matrix for the chi-square
+test. The second-stage row uses the same covariance weighting that defines the
+second-stage estimate. A small p-value indicates that the remaining pricing
+errors are large relative to their estimated covariance.
+
+The distinction between the identity criterion and the J-statistic is important.
+The identity criterion is the fitting objective for the first-stage estimate.
+The J-statistic is the formal overidentifying-restrictions test, computed with
+the covariance weighting. Reporting both makes the calculation transparent:
+one number shows the first-stage distance that was minimized, and the other
+number gives the chi-square test of the pricing restrictions.
 
 ```{r}
 #| label: fig-sdf-fit
-#| fig-cap: "SDF-moment fitted returns."
-sdf_aug <- broom::augment(sdf_fit, data = sdf_data)
-
+#| fig-cap: "First-stage SDF-GMM fitted returns."
 sdf_aug |>
   left_join(portfolio_label_tbl, by = "symbol") |>
   ggplot(aes(.fitted, ERe_percent)) +
   geom_abline(slope = 1, intercept = 0, linetype = 2, color = "#D55E00", linewidth = 0.8) +
   geom_text(aes(label = symbol), size = 2.2) +
-  coord_fixed(xlim = c(0.5, 1.65), ylim = c(0.5, 1.65)) +
+  coord_fixed(xlim = c(0.5, 1.4), ylim = c(0.5, 1.4), clip = "off") +
   labs(
-    x = "SDF-moment fitted return (%)",
+    x = "First-stage SDF-GMM fitted return (%)",
     y = "Observed average excess return (%)"
   ) +
   theme_minimal(base_size = 12)
 ```
 
-The SDF fitted-return figure should be compared with the beta-method fitted
-figure. Both plots use the same vertical axis, observed average excess return.
-The horizontal axis changes: the beta method uses fitted returns from estimated
-betas, while the SDF method uses fitted returns from return-factor moments.
+The first-stage SDF-GMM fitted-return figure should be compared with the
+beta-method fitted figure. Both plots use the same vertical axis, observed
+average excess return. The horizontal axis changes: the beta method uses fitted
+returns from estimated betas, while first-stage SDF-GMM uses fitted returns
+from return-factor second moments.
+
+The reading rule is simple. A point on the dashed line means the model-implied
+average return equals the observed average return for that portfolio. A point
+above the line means the observed average return is higher than the fitted
+return, so the pricing error is positive. A point below the line means the
+model assigns too much average return to that portfolio. Labels far from the
+line are the portfolios that should be inspected in the fitted-value table.
 
 ```{r sdf-fitted-table}
 sdf_aug |>
@@ -1869,59 +3025,395 @@ sdf_aug |>
   arrange(symbol) |>
   mutate(across(where(is.numeric), ~ round(.x, 4))) |>
   kable(
-    caption = "Observed and fitted average excess returns from the SDF-moment method.",
+    caption = "Observed and fitted average excess returns from first-stage SDF-GMM.",
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
 ```
 
-The fitted-value table makes the SDF comparison explicit for each portfolio.
-Together with the graph, it lets the reader see which portfolios are matched
-closely and which remain difficult for the moment-based specification.
+The fitted-value table makes the first-stage SDF-GMM comparison explicit for
+each portfolio. Together with the graph, it lets the reader see which
+portfolios are matched closely and which remain difficult for the
+identity-weighted specification.
 
-The beta method and the SDF-moment method use different regressors, but they
-are both asking a cross-sectional asset pricing question: can a small set of
+The beta method and first-stage SDF-GMM use different regressors, but they are
+both asking a cross-sectional asset pricing question: can a small set of
 factor-related quantities explain the average excess returns of the test
 assets?
 
-The SDF-moment method uses products $R_i^e f_j$ as regressors. Each regressor
-measures how a portfolio return co-moves with a factor in the sample.
-The fitted values answer the same practical question as the beta method: given
-the factor information, what average excess return does the model assign to
-each portfolio?
+First-stage SDF-GMM uses products $R_i^e f_j$ as regressors. Each regressor
+measures how a portfolio return co-moves with a factor in the sample. The
+fitted values answer the same practical question as the beta method: given the
+factor information, what average excess return does the model assign to each
+portfolio?
 
-```{r compare-cross-sectional-methods}
-comparison_methods <- cross_section_aug |>
-  transmute(symbol, beta_method = .fitted) |>
-  inner_join(
-    sdf_aug |> transmute(symbol, sdf_moment_method = .fitted),
-    by = "symbol"
-  ) |>
-  inner_join(ff3_expected |> select(symbol, observed = ERe_percent), by = "symbol")
+The same SDF-GMM machinery can be run quickly for the two comparison models in
+the roadmap. The FF3-plus-momentum model adds the momentum factor to the same
+sample. The FF5 model uses the five-factor data and therefore starts later.
 
-comparison_methods |>
-  arrange(symbol) |>
-  slice(c(1:5, (n() - 4):n())) |>
-  mutate(across(where(is.numeric), ~ round(.x, 4))) |>
+FF3 remains the detailed benchmark because it is the clearest bridge from the
+beta-method to SDF-GMM. The momentum and FF5 specifications are used as
+comparisons. Their role is to show how the same GMM logic changes when the
+factor set changes. The comparison is useful, but it should be read with care:
+adding a factor changes the model, and the FF5 data also change the available
+sample window.
+
+```{r sdf-gmm-comparison-models}
+sdf_ff4_first_stage <- fit_sdf_gmm_first_stage(
+  portfolio_factor_data,
+  c("Mkt_RF", "SMB3", "HML", "Mom"),
+  "FF3 plus momentum"
+)
+sdf_ff4_second_stage <- fit_sdf_gmm_second_stage(sdf_ff4_first_stage)
+sdf_ff4_j_tests <- gmm_j_test_table(sdf_ff4_first_stage, sdf_ff4_second_stage)
+
+sdf_ff5_first_stage <- fit_sdf_gmm_first_stage(
+  portfolio_all_factor_data,
+  c("Mkt_RF", "SMB5", "HML", "RMW", "CMA"),
+  "FF5"
+)
+sdf_ff5_second_stage <- fit_sdf_gmm_second_stage(sdf_ff5_first_stage)
+sdf_ff5_j_tests <- gmm_j_test_table(sdf_ff5_first_stage, sdf_ff5_second_stage)
+
+sdf_gmm_model_tests <- bind_rows(
+  sdf_ff3_j_tests,
+  sdf_ff4_j_tests,
+  sdf_ff5_j_tests
+)
+
+sdf_gmm_model_tests |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
   kable(
-    caption = "Fitted average excess returns from the two cross-sectional methods.",
+    caption = "SDF-GMM tests across FF3, FF3 plus momentum, and FF5.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+sdf_gmm_coefficients <- bind_rows(
+  sdf_ff3_first_stage$coefficient_table,
+  sdf_ff3_second_stage$coefficient_table,
+  sdf_ff4_first_stage$coefficient_table,
+  sdf_ff4_second_stage$coefficient_table,
+  sdf_ff5_first_stage$coefficient_table,
+  sdf_ff5_second_stage$coefficient_table
+)
+
+sdf_gmm_coefficients |>
+  mutate(across(where(is.numeric), ~ round(.x, 6))) |>
+  kable(
+    caption = "SDF-GMM loadings across the benchmark and comparison models.",
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
 ```
 
-The final comparison table puts the two fitted values side by side. The reader
-can inspect whether the two approaches agree for a portfolio or whether one
-method assigns a noticeably different fitted average return. This closes the
-empirical loop: time-series betas, cross-sectional beta pricing, and SDF
-moments are now connected to the same 25 test assets.
+The comparison table should be read by model and by stage. Moving from FF3 to
+FF3 plus momentum changes the factor set while keeping the same test assets and
+sample. Moving to FF5 changes both the factor set and the sample window. The
+J-test p-value is the formal overidentifying-restrictions evidence for each
+SDF specification. The coefficient table then shows which SDF loadings drive
+those results.
 
-## Implementation checks
+The numerical message is clear. For FF3, the second-stage J-statistic is
+`r round(sdf_gmm_model_tests$j_statistic[sdf_gmm_model_tests$model == "FF3" & sdf_gmm_model_tests$stage == "Second-stage GMM (W = S^-1)"], 2)`
+with `r unique(sdf_gmm_model_tests$df[sdf_gmm_model_tests$model == "FF3"])`
+degrees of freedom and a p-value of
+`r scales::pvalue(sdf_gmm_model_tests$p_value[sdf_gmm_model_tests$model == "FF3" & sdf_gmm_model_tests$stage == "Second-stage GMM (W = S^-1)"], accuracy = 0.001)`.
+Adding momentum lowers the second-stage J-statistic to
+`r round(sdf_gmm_model_tests$j_statistic[sdf_gmm_model_tests$model == "FF3 plus momentum" & sdf_gmm_model_tests$stage == "Second-stage GMM (W = S^-1)"], 2)`,
+with a p-value of
+`r scales::pvalue(sdf_gmm_model_tests$p_value[sdf_gmm_model_tests$model == "FF3 plus momentum" & sdf_gmm_model_tests$stage == "Second-stage GMM (W = S^-1)"], accuracy = 0.001)`.
+That improvement is economically useful, but the formal test still rejects the
+joint pricing restrictions. FF5 also rejects in its shorter sample, with a
+second-stage p-value of
+`r scales::pvalue(sdf_gmm_model_tests$p_value[sdf_gmm_model_tests$model == "FF5" & sdf_gmm_model_tests$stage == "Second-stage GMM (W = S^-1)"], accuracy = 0.001)`.
+The conclusion is that all three SDF specifications leave statistically
+meaningful joint pricing errors for the 25 size-value portfolios.
+
+The purpose of the comparison is diagnostic. If a richer factor set reduces
+pricing errors and weakens the J-test evidence against the model, then the
+additional factors are helping with this cross-section. If the pricing errors
+remain large or the J-test p-value remains small, then the extra factors have
+limited explanatory power for these test assets in this sample. The coefficient
+table then helps identify whether the added factor receives a meaningful SDF
+loading or enters weakly.
+
+```{r compare-cross-sectional-methods}
+comparison_methods <- bind_rows(
+  cross_section_aug |>
+    transmute(
+      symbol,
+      method = "Beta-method cross-section",
+      observed_percent = ERe_percent,
+      fitted_percent = .fitted,
+      pricing_error_percent = ERe_percent - .fitted
+    ),
+  sdf_ff3_first_stage$fit_table |>
+    transmute(
+      symbol,
+      method = "First-stage SDF-GMM",
+      observed_percent,
+      fitted_percent,
+      pricing_error_percent
+    ),
+  sdf_ff3_second_stage$fit_table |>
+    transmute(
+      symbol,
+      method = "Second-stage SDF-GMM",
+      observed_percent,
+      fitted_percent,
+      pricing_error_percent
+    )
+) |>
+  left_join(portfolio_label_tbl, by = "symbol")
+
+method_error_summary <- comparison_methods |>
+  group_by(method) |>
+  summarise(
+    rmse_percent = sqrt(mean(pricing_error_percent^2)),
+    mae_percent = mean(abs(pricing_error_percent)),
+    max_abs_error_percent = max(abs(pricing_error_percent)),
+    .groups = "drop"
+  )
+
+method_error_summary |>
+  mutate(across(where(is.numeric), ~ round(.x, 4))) |>
+  kable(
+    caption = "Pricing-error summary for the FF3 beta-method and SDF-GMM estimates.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+comparison_methods |>
+  mutate(
+    method = recode(
+      method,
+      "Beta-method cross-section" = "Beta",
+      "First-stage SDF-GMM" = "SDF 1",
+      "Second-stage SDF-GMM" = "SDF 2"
+    )
+  ) |>
+  filter(
+    symbol %in% (
+      comparison_methods |>
+        distinct(symbol) |>
+        arrange(symbol) |>
+        slice(c(1:5, (n() - 4):n())) |>
+        pull(symbol)
+    )
+  ) |>
+  mutate(method = factor(method, levels = c("Beta", "SDF 1", "SDF 2"))) |>
+  select(symbol, method, observed_percent, fitted_percent, pricing_error_percent) |>
+  arrange(symbol, method) |>
+  mutate(across(where(is.numeric), ~ round(.x, 4))) |>
+  kable(
+    caption = "Selected FF3 portfolio comparisons by pricing method.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The FF3 comparison keeps the beta-method in the chapter. It is the
+expected-return beta regression from Cochrane chapter 12. First-stage SDF-GMM
+is the identity-weighted moment regression from Cochrane chapter 13.
+Second-stage SDF-GMM is the covariance-weighted version. The error-summary
+table shows which method leaves smaller pricing errors by RMSE, MAE, and
+maximum absolute error. The selected-portfolio table makes the comparison
+auditable at the portfolio level.
+
+For these FF3 estimates, the beta-method has the lowest RMSE:
+`r round(method_error_summary$rmse_percent[method_error_summary$method == "Beta-method cross-section"], 4)`
+percent per month. First-stage SDF-GMM has RMSE
+`r round(method_error_summary$rmse_percent[method_error_summary$method == "First-stage SDF-GMM"], 4)`,
+and second-stage SDF-GMM has RMSE
+`r round(method_error_summary$rmse_percent[method_error_summary$method == "Second-stage SDF-GMM"], 4)`.
+The MAE comparison is closer, but the same table shows that the SDF versions
+produce larger maximum absolute errors in this sample. The empirical lesson is
+therefore specific: the SDF-GMM framework gives the formal moment test and the
+Cochrane-style weighting logic, while the static beta-method gives the smaller
+unweighted fitted-return errors for the FF3 cross-section used here.
+
+```{r}
+#| label: fig-ff3-method-fitted-comparison
+#| fig-cap: "Observed and fitted average excess returns across FF3 pricing methods."
+method_limits <- range(
+  c(comparison_methods$observed_percent, comparison_methods$fitted_percent),
+  na.rm = TRUE
+) * c(0.95, 1.05)
+
+comparison_methods |>
+  ggplot(aes(fitted_percent, observed_percent)) +
+  geom_abline(slope = 1, intercept = 0, linetype = 2, color = "#D55E00", linewidth = 0.8) +
+  geom_text(aes(label = symbol), size = 2.1) +
+  facet_wrap(~ method) +
+  coord_fixed(xlim = method_limits, ylim = method_limits, clip = "off") +
+  labs(
+    x = "Fitted average excess return (%)",
+    y = "Observed average excess return (%)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(plot.margin = margin(10, 30, 10, 10))
+```
+
+The panel comparison gives the cleanest visual summary of the three methods.
+Each panel uses the same axes. Points closer to the 45-degree line are better
+priced by that method. Differences across panels show how the fitted
+cross-section changes when the model moves from beta pricing to first-stage
+and second-stage SDF-GMM.
+
+The panels should be read as a model comparison with a common scale. A method
+that compresses points away from the 45-degree line underfits the dispersion in
+average returns. A method that places many points above or below the line in a
+similar direction leaves a systematic bias. A method with a few isolated large
+gaps may be capturing the broad pattern while struggling with particular
+size-value cells.
+
+```{r}
+#| label: fig-ff3-pricing-errors-by-portfolio
+#| fig-cap: "Pricing errors by portfolio across FF3 pricing methods."
+portfolio_order <- portfolio_label_tbl |>
+  arrange(Size, Value) |>
+  pull(symbol)
+
+comparison_methods |>
+  mutate(symbol = factor(symbol, levels = portfolio_order)) |>
+  ggplot(aes(symbol, pricing_error_percent, color = method)) +
+  geom_hline(yintercept = 0, color = "gray60", linewidth = 0.5) +
+  geom_point(size = 2.1, position = position_dodge(width = 0.55)) +
+  coord_flip() +
+  labs(
+    x = "Portfolio",
+    y = "Pricing error (%)",
+    color = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The pricing-error plot reads the same information from a different angle. The
+zero line is perfect pricing. Points far from zero identify portfolios that
+remain difficult for a method. The grouped dots also show whether first-stage
+and second-stage SDF-GMM move errors in the same direction or change the
+portfolio-level pattern.
+
+This plot is especially useful after the fitted-return panels. The fitted panels
+show distance from the 45-degree line. The error plot turns that distance into
+signed errors. Positive errors mean observed returns exceed fitted returns;
+negative errors mean fitted returns exceed observed returns. Reading the signs
+portfolio by portfolio helps identify whether a method consistently underprices
+or overprices particular size-value groups.
+
+## Pricing errors by size and value
+
+A factor model can fit the cross-section well on average and still leave a
+visible pattern in the errors. Cochrane emphasizes this diagnostic in tests of
+characteristics: after a model is estimated, the remaining pricing errors
+should be inspected against the characteristics used to form the test assets
+[@cochrane2005asset]. In this chapter the relevant characteristics are size and
+book-to-market.
+
+The pricing error is
+
+$$
+\widehat{\eta}_i
+=
+\bar{R}_i^e
+-
+\widehat{\bar{R}}_i^e.
+$$
+
+A positive value means that the portfolio earned more than the fitted value
+assigned by the model. A negative value means that the fitted value was higher
+than the observed average return. If the positive and negative errors cluster
+by size or value, the model still leaves a characteristic pattern unexplained.
+
+This diagnostic connects the regression evidence back to the portfolio
+construction. The 25 portfolios were formed by sorting stocks into size and
+book-to-market cells. Those characteristics are visible in the labels before
+any model is estimated. A successful factor model should reduce the return
+pattern associated with those labels. After estimation, the heatmap asks a
+simple question: do the remaining errors still line up with the original
+size-value grid?
+
+The answer guides interpretation. A few large errors scattered across the
+grid suggest asset-specific problems or noisy estimates. A block of errors in
+one row or one column suggests that the model has left a size or value pattern
+unexplained. This is why the diagnostic is more informative than a single
+goodness-of-fit number: it shows the location of the model's failures.
+
+```{r pricing-error-characteristics}
+pricing_error_long <- comparison_methods |>
+  transmute(
+    symbol,
+    Size,
+    Value,
+    method,
+    pricing_error = pricing_error_percent
+  )
+
+pricing_error_long |>
+  group_by(method) |>
+  slice_max(abs(pricing_error), n = 5, with_ties = FALSE) |>
+  ungroup() |>
+  arrange(method, desc(abs(pricing_error))) |>
+  mutate(pricing_error = round(pricing_error, 4)) |>
+  kable(
+    caption = "Largest absolute pricing errors by method.",
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+```
+
+The table identifies the portfolios where each method has the largest absolute
+pricing errors. It is a targeted audit: these are the cells that deserve
+attention before saying that a model explains the 25-portfolio cross-section.
+
+```{r}
+#| label: fig-pricing-errors-characteristics
+#| fig-cap: "Pricing errors across the size-value grid."
+pricing_error_long |>
+  ggplot(aes(Value, Size, fill = pricing_error)) +
+  geom_tile(color = "white", linewidth = 0.7) +
+  geom_text(aes(label = scales::number(pricing_error, accuracy = 0.01)), size = 3) +
+  facet_wrap(~ method) +
+  scale_fill_gradient2(
+    low = "#2C7FB8",
+    mid = "white",
+    high = "#D55E00",
+    midpoint = 0,
+    labels = scales::number_format(accuracy = 0.01)
+  ) +
+  labs(
+    x = "Book-to-market portfolio",
+    y = "Size portfolio",
+    fill = "Pricing error (%)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "right")
+```
+
+The heatmap makes the characteristic diagnostic visible. A random-looking mix
+of small positive and negative errors would be favorable for the model. Blocks
+of similar color along the size or value dimension indicate that the model is
+still missing a systematic pattern associated with the portfolio construction.
+This diagnostic is useful because the 25 portfolios were formed precisely to
+make those characteristic patterns visible.
+
+Read one heatmap cell as follows. The row gives the size group, the column gives
+the book-to-market group, and the number inside the cell gives the pricing
+error in monthly percent units. Orange cells have observed average returns
+above the fitted value. Blue cells have fitted values above observed average
+returns. A useful model should make the heatmap visually quiet: small numbers,
+weak color, and absence of a clear row or column pattern. A model that leaves a strong
+color block is telling the reader where its factor structure is incomplete for
+this cross-section.
+
+## Implementation checks and econometric limits
 
 The main implementation risk in factor models is losing the connection between
 units, equations, and samples. These checks keep the workflow auditable:
 
-| Check | Why it matters |
+| Check | Why it is important |
 |---|---|
 | Decimal returns in estimation | Regression coefficients assume returns and factors are in the same units. |
 | Month-end dates | Asset returns and factors must align on the same calendar month. |
@@ -1930,26 +3422,63 @@ units, equations, and samples. These checks keep the workflow auditable:
 | Intercepts | Alphas are pricing errors after controlling for the chosen factors. |
 | Betas | Betas are exposures estimated from time-series regressions. |
 | Cross-section | The second-pass regression tests whether estimated exposures explain average returns. |
+| Pricing errors | Remaining errors should be read against the characteristics used to form the portfolios. |
 
 The chapter deliberately keeps the code close to the equations. The data
 download creates factor and portfolio returns. The time-series regressions
 estimate $\alpha_i$ and $\boldsymbol{\beta}_i$. The fitted expected-return
 equation converts those estimates into model-implied average excess returns.
-The cross-sectional regressions then test whether factor exposures or
-factor-moment quantities explain the 25 portfolio averages.
+The cross-sectional beta regression tests whether factor exposures explain the
+25 portfolio averages. The SDF-GMM blocks test whether return-factor moments
+price the same portfolios under first-stage and second-stage weighting. The
+final characteristic diagnostic asks where the remaining errors are located.
+
+The sequence can be read as a translation table from Cochrane-style notation to
+applied work in R:
+
+| Econometric idea | Question in words | Where the chapter answers it |
+|---|---|---|
+| Factor exposure | How sensitive is each test asset to common risk factors? | Time-series regressions and beta tables. |
+| Expected-return pricing | Do those exposures explain average returns across assets? | Cross-sectional beta-method regression. |
+| SDF moment condition | Can one discount factor make all excess returns average to zero? | First-stage and second-stage SDF-GMM. |
+| Overidentification | Are the remaining moment errors statistically too large? | J-test tables. |
+| Economic diagnosis | Which portfolios remain hard to price, and why might that pattern be meaningful? | Fitted-return plots, error tables, and size-value heatmaps. |
+
+This translation is the main reason for writing the chapter in this style. A
+reader should be able to move from an equation to a code object, from the code
+object to a table or figure, and from the table or figure to an economic
+interpretation.
+
+The same workflow has important econometric limits:
+
+| Limit | Consequence for interpretation |
+|---|---|
+| Static two-pass regression | The chapter estimates one cross-section of average returns. A formal Fama-MacBeth analysis would estimate prices of risk period by period. |
+| Estimated betas | The second-pass regressors are generated from first-pass regressions. Formal inference would account for that extra uncertainty. |
+| Alpha inference | The chapter reads alphas economically and diagnostically. A formal joint test of alphas, such as a GRS-style test, is a natural extension. |
+| SDF-GMM weighting | The chapter implements first-stage identity weighting and second-stage covariance weighting with a zero-lag moment covariance matrix. HAC or iterated GMM would be natural extensions. |
+| J-test | The J-test is reported for the SDF-GMM moments. Its interpretation relies on the large-sample chi-square approximation. |
+| Standard errors | The displayed OLS and GMM tables are useful for orientation. Strong inference in financial returns often requires heteroskedasticity and autocorrelation corrections. |
+| Data source | Downloaded financial data can change because of vendor corrections, ticker history, or file updates. The fixed sample end makes the exercise easier to audit. |
+
+These limits define the chapter's scope: build the bridge from factor-model
+equations to R code, fitted returns, pricing errors, and economic
+interpretation.
 
 ## Conclusion
 
 This chapter extends the book from forecasting and volatility into asset
-pricing econometrics. The object of interest is no longer a forecast of a
-single future observation. The object is an estimated relation between average
-excess returns and systematic risk exposures.
+pricing econometrics. The object of interest is an estimated relation between
+average excess returns and systematic risk exposures.
 
-The empirical logic has three layers. First, factor returns define candidate
+The empirical logic has five layers. First, factor returns define candidate
 sources of systematic risk. Second, time-series regressions estimate each
 asset's exposure to those factors. Third, cross-sectional regressions evaluate
-whether those exposures explain average returns across test assets. This is the
-core bridge from financial theory to econometric implementation.
+whether those exposures explain average returns across test assets. Fourth,
+SDF-GMM writes the same pricing problem as moment restrictions, estimates
+first-stage and second-stage SDF loadings, and tests overidentifying
+restrictions. Fifth, pricing-error diagnostics show where the model still
+leaves structure in the size-value grid.
 
 The Fama-French chapter also illustrates a broader lesson for applied financial
 econometrics: a model is useful only when the equation, data construction,
