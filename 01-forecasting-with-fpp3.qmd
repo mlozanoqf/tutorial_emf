@@ -117,6 +117,25 @@ We can conveniently download the data directly from the FRED API in one line of 
 # Beer, Wine, Distilled Alcoholic Beverages, in Millions USD.
 beer <- tq_get("S4248SM144NCEN", get = "economic.data", 
                from = "2010-01-01", to = "2022-10-31")
+
+if (!is.data.frame(beer) || !all(c("date", "price") %in% names(beer))) {
+  fred_beer <- read.csv(
+    "https://fred.stlouisfed.org/graph/fredgraph.csv?id=S4248SM144NCEN",
+    stringsAsFactors = FALSE
+  )
+
+  beer <- fred_beer %>%
+    transmute(
+      date = as.Date(observation_date),
+      price = as.numeric(S4248SM144NCEN)
+    ) %>%
+    filter(date >= as.Date("2010-01-01"), date <= as.Date("2022-10-31")) %>%
+    filter(!is.na(price))
+}
+
+if (!is.data.frame(beer) || !all(c("date", "price") %in% names(beer))) {
+  stop("The FRED beer sales series could not be loaded as a data frame.")
+}
 ```
 
 The first rows show the structure of the data set. By default the value column is named *price*, although these are sales figures in monetary terms. According to the main FRED reference, these are in millions of dollars and are reported before seasonal adjustment.
