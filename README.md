@@ -1,6 +1,6 @@
-# Applied Financial Econometrics with R
+# Financial Econometrics with R
 
-This repository contains the source files for **Applied Financial Econometrics with R**, a Quarto book by Dr. Martin Lozano. The book connects time-series forecasting tools, volatility modeling, and asset pricing econometrics in R.
+This repository contains the source files for **Financial Econometrics with R**, a Quarto book by Dr. Martin Lozano. The book connects time-series forecasting tools, volatility modeling, and asset pricing econometrics in R.
 
 Published site: <https://mlozanoqf.github.io/tutorial_emf/>
 

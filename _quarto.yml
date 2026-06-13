@@ -3,7 +3,7 @@ project:
   output-dir: _book
 
 book:
-  title: "Applied Financial Econometrics with R"
+  title: "Financial Econometrics with R"
   subtitle: "Forecasting, volatility, and asset-pricing models"
   author: "Dr. Martín Lozano"
   page-navigation: true
@@ -14,10 +14,10 @@ book:
     style: docked
     collapse-level: 1
   page-footer:
-    left: "Applied Financial Econometrics with R"
+    left: "Financial Econometrics with R"
     right: 'Dr. Martín Lozano &middot; <a href="mailto:mlozanoqf@gmail.com">mlozanoqf@gmail.com</a> &middot; <a href="https://mlozanoqf.github.io/">mlozanoqf.github.io</a>'
   chapters:
-    - text: "Applied Financial Econometrics with R"
+    - text: "Contents"
       href: index.qmd
     - text: "Forecasting with fpp3"
       href: 01-forecasting-with-fpp3.qmd
