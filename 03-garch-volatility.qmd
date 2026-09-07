@@ -231,7 +231,7 @@ u_t \mid \mathcal{F}_{t-1}
 \mathcal{N}(0,v_t).
 $$
 
-This assumption gives the log-likelihood contribution
+The source example estimates the model with the proportional criterion
 
 $$
 \ell_t^\ast
@@ -241,14 +241,68 @@ $$
 \frac{u_t^2}{v_t}.
 $$
 
-This is the proportional log-likelihood used in the source example. It omits
-constants and multiplies the normal log-likelihood by a positive factor, so the
-optimizer searches the same parameter region while preserving the original
-reported scale. Since `optim()` minimizes, the R function below returns the
-negative of this criterion. Parameter restrictions are handled inside the
-function. Invalid parameter vectors receive a very large objective value. For a
-more formal treatment of GARCH likelihood, stationarity, and inference, see
-@francq2019garch.
+Summing these contributions gives $\ell^*=\sum_t\ell_t^\ast$. The Gaussian
+log-likelihood for the same observations is
+
+$$
+\ell
+=
+-\frac{1}{2}
+\sum_t
+\left[
+\log(2\pi)
++
+\log(v_t)
++
+\frac{u_t^2}{v_t}
+\right].
+$$
+
+The two criteria are related by
+
+$$
+\ell
+=
+\frac{\ell^\ast}{2}
+-
+\frac{n}{2}\log(2\pi),
+$$
+
+where $n$ is the number of observations included in the likelihood. The
+transformation multiplies the criterion by a positive constant and adds a term
+that does not depend on $(\omega,\alpha,\beta)$. It therefore preserves the
+theoretical maximizer. This observation explains why the source criterion is
+valid for parameter estimation.
+
+Model comparison requires the Gaussian scale. The standard formulas
+
+$$
+AIC=-2\ell+2k,
+\qquad
+BIC=-2\ell+k\log(n)
+$$
+
+combine a likelihood term with a parameter penalty. Replacing $\ell$ directly
+with $\ell^*$ doubles the relative weight assigned to fit while leaving the
+penalty unchanged. The resulting quantities do not have the usual AIC and BIC
+scale. The omitted Gaussian constant is common to models evaluated on the same
+observations, but reporting the complete likelihood keeps the definition
+standard and makes the calculation auditable.
+
+The functions `nll_garch()` and `nll_garch_vt()` retain the source estimation
+criterion. Because `optim()` minimizes, each function returns $-\ell^*$. If
+`nll` denotes that returned value, the conversion is
+
+```r
+loglik_gaussian <- -nll / 2 - n / 2 * log(2 * pi)
+```
+
+The common function below also calculates the Gaussian log-likelihood directly
+from returns and conditional variances. The chapter checks that the direct and
+converted values agree. Parameter restrictions remain inside the objective
+functions, and invalid parameter vectors receive a very large objective value.
+For a more formal treatment of GARCH likelihood, stationarity, and inference,
+see @francq2019garch.
 
 The zero-mean assumption keeps the chapter focused on volatility. In a broader
 empirical application, $u_t$ could be replaced by residuals from a mean model,
@@ -260,6 +314,22 @@ recursion. The same convention is used for both estimators, so the comparison
 remains internally consistent.
 
 ```{r garch-likelihood}
+gaussian_loglik <- function(u, v) {
+  valid <- is.finite(u) & is.finite(v) & v > 0
+
+  if (!any(valid)) {
+    stop("No valid observations are available for the Gaussian likelihood.")
+  }
+
+  list(
+    value = -0.5 * sum(
+      log(2 * pi) + log(v[valid]) + (u[valid]^2) / v[valid]
+    ),
+    n = sum(valid),
+    valid = valid
+  )
+}
+
 nll_garch <- function(par, u) {
   omega <- par[1]
   alpha <- par[2]
@@ -296,8 +366,17 @@ fit_full <- optim(
   u = u,
   method = "L-BFGS-B",
   lower = c(1e-12, 0, 0),
-  upper = c(Inf, 1 - 1e-6, 1 - 1e-6)
+  upper = c(Inf, 1 - 1e-6, 1 - 1e-6),
+  control = list(
+    parscale = c(1e-6, 0.1, 0.1),
+    factr = 1e7,
+    pgtol = 1e-10
+  )
 )
+
+if (fit_full$convergence != 0) {
+  stop("The scaled Full MLE optimization did not converge.")
+}
 
 theta_full <- fit_full$par
 omega_full <- theta_full["omega"]
@@ -305,10 +384,20 @@ alpha_full <- theta_full["alpha"]
 beta_full <- theta_full["beta"]
 
 v_full <- garch_variance(u, omega_full, alpha_full, beta_full)
-valid_full <- !is.na(v_full) & v_full > 0
+likelihood_full <- gaussian_loglik(u, v_full)
+valid_full <- likelihood_full$valid
+n_full <- likelihood_full$n
+loglik_full <- likelihood_full$value
+nll_full <- nll_garch(theta_full, u)
+loglik_full_from_conversion <-
+  -nll_full / 2 - n_full / 2 * log(2 * pi)
 
-loglik_full <- -nll_garch(theta_full, u)
-n_full <- sum(valid_full)
+stopifnot(isTRUE(all.equal(
+  loglik_full,
+  loglik_full_from_conversion,
+  tolerance = 1e-10
+)))
+
 k_full <- 3
 aic_full <- -2 * loglik_full + 2 * k_full
 bic_full <- -2 * loglik_full + log(n_full) * k_full
@@ -343,12 +432,20 @@ full_summary <- tibble(
 
 full_summary |>
   kable(
-    caption = "Full maximum likelihood GARCH(1,1) estimates.",
+    caption = "Full maximum likelihood GARCH(1,1) estimates with Gaussian log-likelihood.",
     digits = 6,
+    col.names = c("Metric", "Value"),
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
 ```
+
+The parameters have very different numerical scales: $\omega$ is near
+$10^{-6}$, whereas $\alpha$ and $\beta$ are near tenths. The `parscale` values
+tell `L-BFGS-B` to take steps appropriate to each coordinate's magnitude. The
+optimization ends with convergence code `r fit_full$convergence`. This scaling
+affects the numerical search. After estimation, `gaussian_loglik()` evaluates
+the fitted variances on the Gaussian scale required for `logLik`, AIC, and BIC.
 
 The parameter $\alpha$ measures the immediate response to a new shock. The
 parameter $\beta$ measures persistence. Their sum measures how slowly
@@ -406,15 +503,50 @@ fit_vt <- optim(
   upper = c(1 - 1e-6, 1 - 1e-6)
 )
 
+if (fit_vt$convergence != 0) {
+  stop("The variance targeting optimization did not converge.")
+}
+
 alpha_vt <- fit_vt$par["alpha"]
 beta_vt <- fit_vt$par["beta"]
 omega_vt <- long_run_variance * (1 - alpha_vt - beta_vt)
 
 v_vt <- garch_variance(u, omega_vt, alpha_vt, beta_vt)
-valid_vt <- !is.na(v_vt) & v_vt > 0
+likelihood_vt <- gaussian_loglik(u, v_vt)
+valid_vt <- likelihood_vt$valid
+n_vt <- likelihood_vt$n
+loglik_vt <- likelihood_vt$value
+nll_vt <- nll_garch_vt(fit_vt$par, u, long_run_variance)
+loglik_vt_from_conversion <-
+  -nll_vt / 2 - n_vt / 2 * log(2 * pi)
 
-loglik_vt <- -nll_garch_vt(fit_vt$par, u, long_run_variance)
-n_vt <- sum(valid_vt)
+stopifnot(isTRUE(all.equal(
+  loglik_vt,
+  loglik_vt_from_conversion,
+  tolerance = 1e-10
+)))
+
+theta_vt_in_full <- c(
+  omega = unname(omega_vt),
+  alpha = unname(alpha_vt),
+  beta = unname(beta_vt)
+)
+nll_vt_from_full <- nll_garch(theta_vt_in_full, u)
+
+stopifnot(isTRUE(all.equal(
+  nll_vt,
+  nll_vt_from_full,
+  tolerance = 1e-10
+)))
+
+if (!identical(which(valid_full), which(valid_vt))) {
+  stop("Full MLE and variance targeting use different likelihood observations.")
+}
+
+if (loglik_full + 1e-8 < loglik_vt) {
+  stop("Full MLE has a lower Gaussian log-likelihood than variance targeting.")
+}
+
 k_vt <- 2
 aic_vt <- -2 * loglik_vt + 2 * k_vt
 bic_vt <- -2 * loglik_vt + log(n_vt) * k_vt
@@ -449,8 +581,9 @@ vt_summary <- tibble(
 
 vt_summary |>
   kable(
-    caption = "Variance targeting GARCH(1,1) estimates.",
+    caption = "Variance targeting GARCH(1,1) estimates with Gaussian log-likelihood.",
     digits = 6,
+    col.names = c("Metric", "Value"),
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
@@ -461,16 +594,24 @@ optimized parameters and anchors the long-run variance level. That can improve
 numerical stability and communication, provided that the chosen long-run
 variance is appropriate for the sample.
 
+The main AIC and BIC comparison uses $k=2$ for variance targeting because only
+$\alpha$ and $\beta$ enter the numerical optimization. This convention treats
+the sample-variance value $V_L$ as fixed when the two fitted models are compared.
+The conditioning statement is important: $V_L$ is calculated from this sample;
+it is not known from an external source. A later sensitivity check shows how the
+comparison changes if the plug-in estimate is counted as an additional fitted
+quantity.
+
 ## Objective surface and estimator comparison
 
 Variance targeting leaves only two optimized parameters, so the objective
 function can be visualized on the $(\alpha,\beta)$ plane. This plot connects
 the code to the estimation logic: `optim()` searches over pairs
 $(\alpha,\beta)$, evaluates the criterion, and returns the pair with the lowest
-objective value. The contour labels use the equivalent proportional
-log-likelihood scale, where larger values correspond to lower objective values.
-The axis limits keep the same window as the source example, so the solution
-remains visible in the relevant region.
+objective value. The surface is converted to the Gaussian log-likelihood scale
+used by the tables. This affine transformation preserves the contour geometry
+and the location of the optimum. The axis limits keep the same window as the
+source example, so the solution remains visible in the relevant region.
 
 ```{r}
 #| label: fig-garch-vt-contour
@@ -486,8 +627,11 @@ objective_surface <- outer(alpha_grid, beta_grid, Vectorize(function(alpha, beta
   nll_garch_vt(c(alpha, beta), u = u, long_run_variance = long_run_variance)
 }))
 
-loglik_surface <- -objective_surface
-contour_levels <- c(10700, 10750, 10800, 10820, 10830, 10835)
+proportional_levels <- c(10700, 10750, 10800, 10820, 10830, 10835)
+loglik_surface <-
+  -objective_surface / 2 - n_vt / 2 * log(2 * pi)
+contour_levels <-
+  proportional_levels / 2 - n_vt / 2 * log(2 * pi)
 
 contour_lines <- grDevices::contourLines(
   x = beta_grid,
@@ -523,7 +667,7 @@ contour_label_tbl <- label_candidates |>
   group_by(log_likelihood) |>
   slice_min(abs(beta - label_beta_target), n = 1, with_ties = FALSE) |>
   ungroup() |>
-  mutate(label = scales::number(log_likelihood, accuracy = 1, big.mark = ""))
+  mutate(label = scales::number(log_likelihood, accuracy = 0.1, big.mark = ""))
 
 solution_tbl <- tibble(
   beta = beta_vt,
@@ -553,17 +697,16 @@ contour_tbl |>
   labs(
     x = expression(beta),
     y = expression(alpha),
-    caption = "Contour labels show proportional log-likelihood values; higher values imply a lower objective."
+    caption = "Contour labels show Gaussian log-likelihood values; higher values indicate better fit."
   ) +
   theme_minimal(base_size = 12) +
   theme(legend.position = "none")
 ```
 
-The red point marks the solution returned by `optim()`. The labels on the
-contours make the surface easier to read: moving toward higher log-likelihood
-values moves toward the criterion that `optim()` minimizes. Long and flat
-contours would suggest that several combinations of $\alpha$ and $\beta$
-produce similar criterion values.
+The red point marks the solution returned by `optim()`. Moving toward higher
+Gaussian log-likelihood values corresponds to moving toward lower values of the
+criterion minimized by `optim()`. Long and flat contours would suggest that
+several combinations of $\alpha$ and $\beta$ produce similar likelihood values.
 
 The two estimators use the same GARCH recursion. The difference is how much
 structure they impose on $\omega$.
@@ -580,28 +723,119 @@ comparison_tbl |>
   kable(
     caption = "Full MLE and variance targeting comparison.",
     digits = 6,
+    col.names = c("Metric", "Full MLE", "Variance targeting"),
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+optimization_audit_tbl <- tibble(
+  model = c("Full MLE", "Variance targeting"),
+  convergence_code = c(fit_full$convergence, fit_vt$convergence),
+  proportional_criterion = c(-fit_full$value, -fit_vt$value),
+  gaussian_logLik = c(loglik_full, loglik_vt)
+)
+
+optimization_audit_tbl |>
+  kable(
+    caption = "Optimization and likelihood audit.",
+    digits = 6,
+    col.names = c(
+      "Model",
+      "Convergence code",
+      "Proportional criterion",
+      "Gaussian logLik"
+    ),
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+aic_vt_k3 <- -2 * loglik_vt + 2 * 3
+bic_vt_k3 <- -2 * loglik_vt + log(n_vt) * 3
+
+parameter_count_tbl <- tibble(
+  specification = c(
+    "Full MLE",
+    "Variance targeting: conditional count",
+    "Variance targeting: count sample-based V_L"
+  ),
+  quantities_counted = c(
+    "omega, alpha, beta",
+    "alpha, beta",
+    "V_L, alpha, beta"
+  ),
+  k = c(3, 2, 3),
+  AIC = c(aic_full, aic_vt, aic_vt_k3),
+  BIC = c(bic_full, bic_vt, bic_vt_k3)
+)
+
+parameter_count_tbl |>
+  kable(
+    caption = "AIC and BIC under two parameter counts for variance targeting.",
+    digits = 6,
+    col.names = c(
+      "Specification",
+      "Quantities counted",
+      "k",
+      "AIC",
+      "BIC"
+    ),
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
 ```
 
-The log-likelihood column uses the same proportional criterion as the source
-example. AIC and BIC are therefore read on the scale of that convention. They add a
-penalty for the number of estimated parameters: Full MLE uses three parameters,
-while variance targeting optimizes two parameters and treats $V_L$ as a fixed
-plug-in anchor. With that convention, the comparison is about fit and parsimony
-together. This style of comparison is common in applied financial time-series
-work, where likelihood fit, parameter plausibility, and residual diagnostics
-are read together [@tsay2010analysis; @ruppert2011statistics].
+The comparison table reports the Gaussian log-likelihood for both
+estimators. Both calculations use `r n_full` observations, and the direct
+Gaussian evaluation agrees with the conversion from the proportional criterion.
+Full MLE reaches a Gaussian log-likelihood of
+`r scales::number(loglik_full, accuracy = 0.001)`, compared with
+`r scales::number(loglik_vt, accuracy = 0.001)` for variance targeting. The
+Full MLE value is higher by
+`r scales::number(loglik_full - loglik_vt, accuracy = 0.001)`, which is small
+but has the correct ordering: the restricted variance targeting vector is
+admissible in the unrestricted model, so the maximized unrestricted likelihood
+cannot be lower.
+
+The Full MLE optimization uses parameter scaling because $\omega$, $\alpha$,
+and $\beta$ have very different numerical magnitudes. Both optimizations end
+with convergence code zero. The Full MLE estimate has persistence
+`r scales::number(ab_full, accuracy = 0.001)` and a half-life of
+`r scales::number(half_life_full, accuracy = 0.1)` trading days. Variance
+targeting produces persistence of
+`r scales::number(ab_vt, accuracy = 0.001)` and a half-life of
+`r scales::number(half_life_vt, accuracy = 0.1)` trading days.
+
+The optimization functions minimize a negative proportional criterion because
+the omitted Gaussian constant and factor do not alter the maximizing parameter
+vector. Once the parameters have been estimated, `gaussian_loglik()` evaluates
+the complete Gaussian log-likelihood used in AIC and BIC.
+
+In these information criteria, $k$ is the number of estimated quantities that
+enter the penalty. It is unrelated to the order $(1,1)$ in the GARCH model.
+Full MLE estimates $(\omega,\alpha,\beta)$ directly, so it has $k=3$. Variance
+targeting optimizes only $(\alpha,\beta)$ and obtains
+$\omega=V_L(1-\alpha-\beta)$. Treating the sample estimate of $V_L$ as fixed
+during this second step gives the conditional count $k=2$. Counting $V_L$ as
+an estimated quantity gives $k=3$, which recognizes that it was calculated
+from the same return sample.
+
+The two counts change only the complexity penalty assigned to variance
+targeting. They do not change its parameter estimates, Gaussian
+log-likelihood, conditional variances, or forecasts. Under the conditional
+$k=2$ convention, variance targeting has the lower AIC and BIC. When $V_L$ is
+counted and both specifications use $k=3$, Full MLE has the lower AIC and BIC
+because its Gaussian log-likelihood is slightly higher. The difference is only
+`r scales::number(2 * (loglik_full - loglik_vt), accuracy = 0.001)` points for
+each criterion. Such a small gap provides little empirical evidence for a
+substantive difference in fit. The table reports both conventions so that the
+model comparison does not depend on an unstated treatment of $V_L$.
 
 The main economic reading comes from $\alpha$, $\beta$, and
-$\alpha+\beta$. Similar values across the two estimators indicate that the
-long-run variance restriction does not radically change the shock reaction and
-persistence estimates in this sample. The larger difference is in
-$\alpha+\beta$: Full MLE is closer to the persistence boundary, while variance
-targeting gives a shorter half-life. That comparison helps students see that
-both estimators share the same recursion, yet the restriction on $\omega$
-changes how persistence and long-run variance are balanced.
+$\alpha+\beta$. The verified estimates are close: Full MLE has a slightly lower
+persistence and shorter half-life than variance targeting. Both estimators
+still describe strongly persistent conditional variance, and both use the same
+GARCH recursion. The restriction on $\omega$ changes how the long-run variance
+is imposed, while the fitted short-run shock response remains similar.
 
 ## Conditional volatility through time and forecasts
 
@@ -821,6 +1055,8 @@ most important checks are:
 | Scale consistency | Returns should stay in decimal units during estimation. Percent units can be used for plots. |
 | Parameter restrictions | $\omega>0$, $\alpha\ge0$, $\beta\ge0$, and $\alpha+\beta<1$ keep the model interpretable. |
 | Starting values | Different feasible starting values should lead to similar estimates in a stable problem. |
+| Likelihood scale | The proportional source criterion can estimate the parameters, while AIC and BIC require the Gaussian log-likelihood scale. |
+| Convergence | A reported optimum should have a successful convergence code and should dominate every admissible restricted solution. |
 | Diagnostics | AIC and BIC should be read together with parameter plausibility and residual checks. |
 
 These checks are part of the model workflow. They protect the correspondence
@@ -839,6 +1075,17 @@ $(\omega,\alpha,\beta)$ freely. Variance targeting estimates $(\alpha,\beta)$
 and constructs $\omega$ from a long-run variance condition. The comparison
 therefore teaches a broader modeling lesson: estimation is also a choice about
 which restrictions are reasonable for the question.
+
+The reported log-likelihood is evaluated with every term in the Gaussian
+expression. With the conditional count $k=2$, AIC and BIC favor variance
+targeting. Counting the sample-based estimate of $V_L$ gives variance targeting
+$k=3$ and makes Full MLE the narrow preference. The difference is negligible,
+so the evidence supports treating the two fits as practically comparable.
+Both optimization routines converge, and the unrestricted Full MLE
+log-likelihood is slightly higher than the restricted variance targeting
+log-likelihood, as required. The conditional variances, volatility forecasts,
+and residual diagnostics shown in this chapter are constructed from the
+variance targeting estimates.
 
 The volatility forecast is the central forecasting object in this chapter. It
 summarizes expected future risk; directional return forecasting is outside the
