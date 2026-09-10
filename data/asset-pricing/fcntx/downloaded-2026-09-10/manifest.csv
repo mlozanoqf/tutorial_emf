@@ -1,0 +1,2 @@
+source,provider,requested_from,requested_to,downloaded_at_utc,first_observation,last_observation,observations,archive_csv,csv_md5
+FCNTX,Yahoo Finance via tidyquant::tq_get,1980-01-01,2020-12-31,2026-09-10 07:32:58 UTC,1980-01-02,2020-12-30,10339,data/asset-pricing/fcntx/downloaded-2026-09-10/FCNTX_daily_prices.csv,96e95d9d2329e10455a1adfd4d1729dc

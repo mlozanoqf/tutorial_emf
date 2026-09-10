@@ -48,7 +48,9 @@ The empirical examples use one mutual fund and the 25 Fama-French size-value
 portfolios as test assets. The risk factors are the market excess return, size,
 value, momentum, profitability, and investment factors from the Kenneth French
 Data Library. The chapter downloads the data during execution and fixes the
-sample end at 2020-12-31 so the empirical window is reproducible.
+sample end at 2020-12-31. This fixes the empirical window. The source files can
+still revise historical observations, so the chapter records the data version
+and download date used in each execution.
 
 The central object is an excess return:
 
@@ -139,10 +141,17 @@ Kenneth French Data Library [@kennethFrenchDataLibrary]. The individual test
 asset example uses the Fidelity Contrafund ticker `FCNTX` downloaded with
 `tidyquant`. All returns are converted from percentages to decimal units during
 estimation. Percent units are used only when a table or graph is meant for
-interpretation.
+interpretation. The online downloads remain the computational source. Each run
+also saves a dated, versioned copy inside `data/asset-pricing` together with a
+manifest containing the URL, declared CRSP version, download time, and file
+hashes. This archive makes the exact data vintage auditable without replacing
+the online workflow.
 
 ```{r asset-pricing-data}
 sample_end <- as.Date("2020-12-31")
+download_date <- Sys.Date()
+data_archive_root <- file.path("data", "asset-pricing")
+dir.create(data_archive_root, recursive = TRUE, showWarnings = FALSE)
 
 ff_urls <- list(
   ff3 = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_CSV.zip",
@@ -151,7 +160,7 @@ ff_urls <- list(
   portfolios_25 = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/25_Portfolios_5x5_CSV.zip"
 )
 
-download_ff_csv <- function(url, skip) {
+download_ff_csv <- function(url, skip, source_id) {
   zip_file <- tempfile(fileext = ".zip")
   unzip_dir <- tempfile()
   dir.create(unzip_dir)
@@ -187,7 +196,56 @@ download_ff_csv <- function(url, skip) {
     stop("No CSV file found in downloaded archive: ", url, call. = FALSE)
   }
 
-  readr::read_csv(csv_file[[1]], skip = skip, show_col_types = FALSE, progress = FALSE)
+  csv_file <- csv_file[[1]]
+  header_lines <- readLines(csv_file, n = 20, warn = FALSE)
+  version_lines <- grep("CRSP database", header_lines, value = TRUE, fixed = TRUE)
+  declared_version <- if (length(version_lines)) version_lines[[1]] else NA_character_
+  version_match <- regexpr("[0-9]{6}", declared_version)
+  crsp_version <- if (!is.na(declared_version) && version_match[[1]] > 0) {
+    regmatches(declared_version, version_match)
+  } else {
+    "unknown"
+  }
+
+  snapshot_dir <- file.path(
+    data_archive_root,
+    paste0("crsp-", crsp_version),
+    paste0("downloaded-", format(download_date, "%Y-%m-%d"))
+  )
+  dir.create(snapshot_dir, recursive = TRUE, showWarnings = FALSE)
+
+  snapshot_zip <- file.path(snapshot_dir, paste0(source_id, ".zip"))
+  snapshot_csv <- file.path(snapshot_dir, paste0(source_id, ".csv"))
+
+  copied <- c(
+    file.copy(zip_file, snapshot_zip, overwrite = TRUE),
+    file.copy(csv_file, snapshot_csv, overwrite = TRUE)
+  )
+
+  if (!all(copied)) {
+    stop("Could not archive the downloaded source files for: ", source_id, call. = FALSE)
+  }
+
+  list(
+    data = readr::read_csv(
+      csv_file,
+      skip = skip,
+      show_col_types = FALSE,
+      progress = FALSE
+    ),
+    metadata = tibble(
+      source = source_id,
+      url = url,
+      downloaded_at_utc = format(Sys.time(), tz = "UTC", usetz = TRUE),
+      crsp_version = crsp_version,
+      declared_version = declared_version,
+      archive_zip = gsub("\\\\", "/", snapshot_zip),
+      archive_csv = gsub("\\\\", "/", snapshot_csv),
+      zip_md5 = unname(tools::md5sum(snapshot_zip)),
+      csv_md5 = unname(tools::md5sum(snapshot_csv)),
+      snapshot_dir = snapshot_dir
+    )
+  )
 }
 
 parse_ff_monthly <- function(raw_data) {
@@ -216,19 +274,48 @@ first_last_rows <- function(data, n = 3) {
   data[idx, , drop = FALSE]
 }
 
-ff3 <- download_ff_csv(ff_urls$ff3, skip = 3) |>
+ff3_download <- download_ff_csv(ff_urls$ff3, skip = 3, source_id = "ff3")
+momentum_download <- download_ff_csv(
+  ff_urls$momentum,
+  skip = 13,
+  source_id = "momentum"
+)
+ff5_download <- download_ff_csv(ff_urls$ff5, skip = 3, source_id = "ff5")
+portfolios_25_download <- download_ff_csv(
+  ff_urls$portfolios_25,
+  skip = 15,
+  source_id = "portfolios_25"
+)
+
+ff_source_manifest <- bind_rows(
+  ff3_download$metadata,
+  momentum_download$metadata,
+  ff5_download$metadata,
+  portfolios_25_download$metadata
+)
+
+ff_source_manifest |>
+  group_split(snapshot_dir) |>
+  walk(function(manifest_part) {
+    readr::write_csv(
+      manifest_part |> select(-snapshot_dir),
+      file.path(unique(manifest_part$snapshot_dir), "manifest.csv")
+    )
+  })
+
+ff3 <- ff3_download$data |>
   parse_ff_monthly() |>
   filter(date <= sample_end)
 
-momentum <- download_ff_csv(ff_urls$momentum, skip = 13) |>
+momentum <- momentum_download$data |>
   parse_ff_monthly() |>
   filter(date <= sample_end)
 
-ff5 <- download_ff_csv(ff_urls$ff5, skip = 3) |>
+ff5 <- ff5_download$data |>
   parse_ff_monthly() |>
   filter(date <= sample_end, !is.na(RMW), !is.na(CMA))
 
-portfolios_25 <- download_ff_csv(ff_urls$portfolios_25, skip = 15) |>
+portfolios_25 <- portfolios_25_download$data |>
   parse_ff_monthly() |>
   filter(date <= sample_end)
 
@@ -252,6 +339,33 @@ factor_windows <- bind_rows(
   portfolios_25 |> summarise(source = "25 size-value portfolios", start = min(date), end = max(date), months = n())
 )
 
+data_version_controls <- tibble(
+  observation = c(
+    "SMALL LoBM, January 1927",
+    "SMB, January 1927",
+    "HML, July 1963",
+    "RMW, February 1980"
+  ),
+  actual_percent = c(
+    100 * portfolios_25$`SMALL LoBM`[portfolios_25$date == as.Date("1927-01-31")],
+    100 * ff3$SMB[ff3$date == as.Date("1927-01-31")],
+    100 * ff3$HML[ff3$date == as.Date("1963-07-31")],
+    100 * ff5$RMW[ff5$date == as.Date("1980-02-29")]
+  ),
+  crsp_202607_reference_percent = c(0.4484, -0.47, -0.84, 0.07)
+) |>
+  mutate(
+    difference = actual_percent - crsp_202607_reference_percent,
+    matches_reference = abs(difference) < 1e-10
+  )
+
+if (
+  all(ff_source_manifest$crsp_version == "202607") &&
+    !all(data_version_controls$matches_reference)
+) {
+  stop("The downloaded CRSP 202607 observations do not match the reference controls.")
+}
+
 ```
 
 The code keeps the data in decimal form. For example, a monthly return of
@@ -263,6 +377,39 @@ data objects. These checks verify dates, decimal units, and column names before
 any model is estimated.
 
 ```{r data-sample-tables}
+ff_source_manifest |>
+  transmute(
+    source,
+    crsp_version,
+    downloaded_at_utc,
+    archived_csv = basename(archive_csv)
+  ) |>
+  kable(
+    caption = "Version and provenance of the downloaded Fama-French files.",
+    col.names = c("Source", "CRSP version", "Downloaded (UTC)", "Archived CSV"),
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
+data_version_controls |>
+  mutate(
+    actual_percent = round(actual_percent, 4),
+    crsp_202607_reference_percent = round(crsp_202607_reference_percent, 4),
+    difference = round(difference, 8)
+  ) |>
+  kable(
+    caption = "Selected observations used to identify the CRSP data vintage.",
+    col.names = c(
+      "Observation",
+      "Downloaded value (%)",
+      "CRSP 202607 reference (%)",
+      "Difference",
+      "Match"
+    ),
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
 factor_windows |>
   mutate(across(c(start, end), as.character)) |>
   kable(
@@ -298,14 +445,23 @@ first_last_rows(portfolios_25) |>
   kable_styling(latex_options = "HOLD_position")
 ```
 
-These tables are a data audit. The window table shows which raw files can be
-used over which dates. The joined FF3-momentum table then shows the actual
-intersection used when the model includes momentum, so every displayed column
-has an observed value for the same month. The first and last rows also confirm
-that the factor files and the portfolio file are monthly series, expressed in
-decimal units, and aligned on month-end dates. The selected corner portfolios
-already hint at the empirical structure used later: small growth, small value,
-big growth, and big value are the extreme cells of the size-value grid.
+The four source files used in this execution declare CRSP version
+`r paste(unique(ff_source_manifest$crsp_version), collapse = ", ")`. They were
+downloaded on `r format(download_date, "%B %d, %Y")`, while every estimation
+sample still ends on `r format(sample_end, "%B %d, %Y")`.
+
+These tables are a data audit. The version table records the vintage declared
+inside each source file and the date on which it was downloaded. The selected
+observations provide an independent numerical fingerprint of that vintage. A
+displayed value of $-0.84\%$, for example, is stored as $-0.0084$ during
+estimation. The window table shows which raw files can be used over which dates.
+The joined FF3-momentum table then shows the actual intersection used when the
+model includes momentum, so every displayed column has an observed value for
+the same month. The first and last rows also confirm that the factor files and
+the portfolio file are monthly series, expressed in decimal units, and aligned
+on month-end dates. The selected corner portfolios already hint at the
+empirical structure used later: small growth, small value, big growth, and big
+value are the extreme cells of the size-value grid.
 
 ## Excess returns and factor notation
 
@@ -811,6 +967,35 @@ fund_prices <- tq_get(
   get = "stock.prices"
 )
 
+fund_downloaded_at_utc <- format(Sys.time(), tz = "UTC", usetz = TRUE)
+fund_snapshot_dir <- file.path(
+  data_archive_root,
+  "fcntx",
+  paste0("downloaded-", format(download_date, "%Y-%m-%d"))
+)
+dir.create(fund_snapshot_dir, recursive = TRUE, showWarnings = FALSE)
+
+fund_snapshot_csv <- file.path(fund_snapshot_dir, "FCNTX_daily_prices.csv")
+readr::write_csv(fund_prices, fund_snapshot_csv)
+
+fund_source_manifest <- tibble(
+  source = ticker,
+  provider = "Yahoo Finance via tidyquant::tq_get",
+  requested_from = as.Date("1980-01-01"),
+  requested_to = sample_end,
+  downloaded_at_utc = fund_downloaded_at_utc,
+  first_observation = min(fund_prices$date),
+  last_observation = max(fund_prices$date),
+  observations = nrow(fund_prices),
+  archive_csv = gsub("\\\\", "/", fund_snapshot_csv),
+  csv_md5 = unname(tools::md5sum(fund_snapshot_csv))
+)
+
+readr::write_csv(
+  fund_source_manifest,
+  file.path(fund_snapshot_dir, "manifest.csv")
+)
+
 fund_returns <- fund_prices |>
   group_by(symbol) |>
   tq_transmute(
@@ -872,6 +1057,44 @@ portfolio_all_factor_data <- portfolio_long |>
   select(date, symbol, returns, Re, Mkt_RF, SMB3, HML, Mom, SMB5, RMW, CMA) |>
   left_join(portfolio_label_tbl, by = "symbol")
 
+model_sample_controls <- tibble(
+  model = c("FF3", "FF3 plus momentum", "FF5"),
+  start = c(
+    min(portfolio_factor_data$date),
+    min(portfolio_factor_data$date),
+    min(portfolio_all_factor_data$date)
+  ),
+  end = c(
+    max(portfolio_factor_data$date),
+    max(portfolio_factor_data$date),
+    max(portfolio_all_factor_data$date)
+  ),
+  months = c(
+    n_distinct(portfolio_factor_data$date),
+    n_distinct(portfolio_factor_data$date),
+    n_distinct(portfolio_all_factor_data$date)
+  ),
+  portfolios = c(
+    n_distinct(portfolio_factor_data$symbol),
+    n_distinct(portfolio_factor_data$symbol),
+    n_distinct(portfolio_all_factor_data$symbol)
+  ),
+  expected_start = as.Date(c("1927-01-31", "1927-01-31", "1963-07-31")),
+  expected_end = sample_end,
+  expected_months = c(1128, 1128, 690),
+  expected_portfolios = 25
+) |>
+  mutate(
+    matches_reference = start == expected_start &
+      end == expected_end &
+      months == expected_months &
+      portfolios == expected_portfolios
+  )
+
+if (!all(model_sample_controls$matches_reference)) {
+  stop("The model samples do not match the required windows and portfolio counts.")
+}
+
 fund_factors |>
   select(symbol, date, returns, Re, Mkt_RF, SMB3, HML, Mom) |>
   slice(c(1:3, (n() - 2):n())) |>
@@ -881,13 +1104,26 @@ fund_factors |>
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
+
+model_sample_controls |>
+  select(model, start, end, months, portfolios, matches_reference) |>
+  mutate(across(c(start, end), as.character)) |>
+  kable(
+    caption = "Estimation samples used by the asset-pricing models.",
+    col.names = c("Model", "Start", "End", "Months", "Portfolios", "Match"),
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
 ```
 
 This table is the first bridge between an individual asset and the factor data.
 The column `returns` is the raw FCNTX return, while `Re` subtracts the risk-free
 rate. The regression will use `Re` as the dependent variable and factor returns
 as explanatory variables, so this joined table is the dataset for the first
-asset-pricing exercise.
+asset-pricing exercise. The sample-control table confirms that FF3 and FF3 plus
+momentum use 1,128 months from January 1927 through December 2020, while FF5
+uses 690 months from July 1963 through December 2020. All three models use the
+same 25 test portfolios within their respective windows.
 
 The single-asset exercise checks the data before estimating the regression. The
 price table verifies the adjusted series used to compute returns. The return
@@ -897,6 +1133,30 @@ order shows exactly how a price series becomes the dependent variable in the
 CAPM regression.
 
 ```{r fcntx-data-checks}
+fund_source_manifest |>
+  select(
+    source,
+    provider,
+    downloaded_at_utc,
+    first_observation,
+    last_observation,
+    observations
+  ) |>
+  mutate(across(c(first_observation, last_observation), as.character)) |>
+  kable(
+    caption = "Provenance of the downloaded FCNTX price series.",
+    col.names = c(
+      "Source",
+      "Provider",
+      "Downloaded (UTC)",
+      "First observation",
+      "Last observation",
+      "Rows"
+    ),
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
+
 first_last_rows(fund_prices) |>
   select(symbol, date, adjusted) |>
   kable(
@@ -942,10 +1202,12 @@ first_last_rows(portfolio_all_factor_data) |>
   kable_styling(latex_options = "HOLD_position")
 ```
 
-The sequence of data checks has a simple logic. First, prices become monthly
-returns. Second, raw returns become excess returns. Third, each excess return is
-matched to factor returns for the same month. The 25-portfolio checks repeat
-the same process for many test assets at once.
+The sequence of data checks has a simple logic. The provenance table identifies
+the provider, retrieval time, and observed FCNTX window associated with this
+execution. First, prices become monthly returns. Second, raw returns become
+excess returns. Third, each excess return is matched to factor returns for the
+same month. The 25-portfolio checks repeat the same process for many test assets
+at once.
 
 ```{r fcntx-factor-performance}
 fund_factor_returns <- fund_factors |>
@@ -1176,6 +1438,14 @@ portfolio_surface_data <- portfolio_means |>
   ) |>
   select(ME, BM, raw_return_percent)
 
+walk(
+  unique(ff_source_manifest$snapshot_dir),
+  ~ readr::write_csv(
+    portfolio_surface_data,
+    file.path(.x, "portfolio-surface-data.csv")
+  )
+)
+
 portfolio_surface_data |>
   mutate(
     ME = factor(
@@ -1203,6 +1473,17 @@ The surface table gives the numeric values behind the rendered image. It is the
 same information in tabular form: rows move from small to big firms, columns
 move from low to high book-to-market firms, and each entry is the average
 monthly raw return in percent for that cell.
+
+The current data retain a clear value pattern. Among the smallest portfolios,
+the mean monthly return rises from
+`r scales::number(portfolio_surface_data$raw_return_percent[portfolio_surface_data$ME == 1 & portfolio_surface_data$BM == 1], accuracy = 0.0001)`
+percent for the low book-to-market portfolio to
+`r scales::number(portfolio_surface_data$raw_return_percent[portfolio_surface_data$ME == 1 & portfolio_surface_data$BM == 5], accuracy = 0.0001)`
+percent for the high book-to-market portfolio. The high book-to-market mean
+exceeds the low book-to-market mean in every size row, and the difference is
+largest among small firms. The surface reaches its highest point in the
+small-value corner, which gives the later factor regressions a visible economic
+pattern to explain.
 
 ```{r}
 #| label: fig-ff25-surface-original
@@ -1334,8 +1615,9 @@ $$
 
 ```{r fcntx-capm}
 fund_capm <- fit_factor_model(fund_factors, Re ~ Mkt_RF)
+fund_capm_tidy <- tidy_factor_model(fund_capm)
 
-tidy_factor_model(fund_capm) |>
+fund_capm_tidy |>
   mutate(across(where(is.numeric), ~ round(.x, 6))) |>
   kable(
     caption = "CAPM time-series regression for FCNTX.",
@@ -1351,6 +1633,20 @@ return after controlling for market exposure. A positive intercept means that
 FCNTX earned more, on average, than the CAPM would assign from its market beta
 over this sample. A negative intercept means that the market exposure assigns
 more average excess return than the fund actually earned.
+
+In this sample, the estimated market beta is
+`r round(fund_capm_tidy$estimate[fund_capm_tidy$term == "Mkt_RF"], 3)`. A one
+percentage-point change in the monthly market excess return is therefore
+associated with an approximately
+`r round(fund_capm_tidy$estimate[fund_capm_tidy$term == "Mkt_RF"], 3)`
+percentage-point change in FCNTX's monthly excess return. The estimated monthly
+alpha is
+`r scales::number(100 * fund_capm_tidy$estimate[fund_capm_tidy$term == "(Intercept)"], accuracy = 0.001)`
+percent, with a p-value of
+`r scales::pvalue(fund_capm_tidy$p.value[fund_capm_tidy$term == "(Intercept)"], accuracy = 0.001)`.
+The point estimate is positive, while its sampling uncertainty is large enough
+that the data do not distinguish it from zero at conventional significance
+levels. The market beta, by contrast, is estimated precisely.
 
 The fitted value is the model-implied excess return for each month:
 
@@ -1469,13 +1765,15 @@ time-series regression, residuals should have little predictable structure
 across lags. Large bars would indicate persistence in the unexplained component.
 
 ```{r fcntx-residual-tests}
-fund_capm_aug |>
+fund_residual_tests <- fund_capm_aug |>
   group_by(symbol) |>
   summarise(
     ljung_box_p_value = Box.test(.resid, lag = 10, type = "Ljung-Box", fitdf = 2)$p.value,
     box_pierce_p_value = Box.test(.resid, lag = 10, type = "Box-Pierce", fitdf = 2)$p.value,
     .groups = "drop"
-  ) |>
+  )
+
+fund_residual_tests |>
   mutate(across(where(is.numeric), ~ round(.x, 6))) |>
   kable(
     caption = "Residual autocorrelation checks for the FCNTX CAPM regression.",
@@ -1487,6 +1785,15 @@ fund_capm_aug |>
 The Ljung-Box and Box-Pierce p-values formalize the residual-autocorrelation
 check. They summarize whether residual autocorrelation is large enough to be a
 statistical concern at the chosen lag.
+
+Here the Ljung-Box p-value is
+`r scales::pvalue(fund_residual_tests$ljung_box_p_value, accuracy = 0.001)` and
+the Box-Pierce p-value is
+`r scales::pvalue(fund_residual_tests$box_pierce_p_value, accuracy = 0.001)`.
+Both tests provide little evidence of residual autocorrelation through lag 10.
+This result supports the time-series specification as a useful first-pass
+description of FCNTX, while the alpha estimate remains the relevant pricing
+diagnostic.
 
 For the 25 portfolios, the CAPM estimates 25 market betas:
 
@@ -3081,6 +3388,56 @@ sdf_gmm_model_tests <- bind_rows(
   sdf_ff5_j_tests
 )
 
+result_controls <- tibble(
+  result = c(
+    "FF3 second-stage J",
+    "FF3 plus momentum second-stage J",
+    "FF5 second-stage J",
+    "FF3 first-stage RMSE (%)",
+    "FF3 second-stage RMSE (%)"
+  ),
+  computed_value = c(
+    sdf_ff3_j_tests |>
+      filter(stage == "Second-stage GMM (W = S^-1)") |>
+      pull(j_statistic),
+    sdf_ff4_j_tests |>
+      filter(stage == "Second-stage GMM (W = S^-1)") |>
+      pull(j_statistic),
+    sdf_ff5_j_tests |>
+      filter(stage == "Second-stage GMM (W = S^-1)") |>
+      pull(j_statistic),
+    sdf_ff3_first_stage$summary_table$rmse_percent,
+    sdf_ff3_second_stage$summary_table$rmse_percent
+  ),
+  crsp_202607_reference = c(
+    78.4866414921,
+    43.6321246477,
+    54.5289493954,
+    0.162878828072,
+    0.185349349145
+  )
+) |>
+  mutate(
+    difference = computed_value - crsp_202607_reference,
+    matches_reference = abs(difference) < 1e-7
+  )
+
+if (
+  all(ff_source_manifest$crsp_version == "202607") &&
+    !all(result_controls$matches_reference)
+) {
+  stop("The CRSP 202607 estimation results do not match the reference controls.")
+}
+
+result_snapshot_dirs <- unique(ff_source_manifest$snapshot_dir)
+walk(
+  result_snapshot_dirs,
+  ~ readr::write_csv(
+    result_controls,
+    file.path(.x, "result-controls.csv")
+  )
+)
+
 sdf_gmm_model_tests |>
   mutate(across(where(is.numeric), ~ round(.x, 6))) |>
   kable(
@@ -3105,14 +3462,32 @@ sdf_gmm_coefficients |>
     row.names = FALSE
   ) |>
   kable_styling(latex_options = "HOLD_position")
+
+result_controls |>
+  mutate(across(c(computed_value, crsp_202607_reference, difference), ~ round(.x, 10))) |>
+  kable(
+    caption = "Numerical verification of selected CRSP 202607 estimation results.",
+    col.names = c(
+      "Result",
+      "Computed value",
+      "CRSP 202607 reference",
+      "Difference",
+      "Match"
+    ),
+    row.names = FALSE
+  ) |>
+  kable_styling(latex_options = "HOLD_position")
 ```
 
-The comparison table should be read by model and by stage. Moving from FF3 to
+The comparison tables should be read by model and by stage. Moving from FF3 to
 FF3 plus momentum changes the factor set while keeping the same test assets and
 sample. Moving to FF5 changes both the factor set and the sample window. The
 J-test p-value is the formal overidentifying-restrictions evidence for each
 SDF specification. The coefficient table then shows which SDF loadings drive
-those results.
+those results. The numerical-verification table compares values computed during
+this execution with independent controls for CRSP 202607. These reference
+values audit the calculations; the reported estimates continue to come from the
+model objects created by the code.
 
 The numerical message is clear. For FF3, the second-stage J-statistic is
 `r round(sdf_gmm_model_tests$j_statistic[sdf_gmm_model_tests$model == "FF3" & sdf_gmm_model_tests$stage == "Second-stage GMM (W = S^-1)"], 2)`
@@ -3351,11 +3726,18 @@ pricing_error_long <- comparison_methods |>
     pricing_error = pricing_error_percent
   )
 
-pricing_error_long |>
+largest_pricing_errors <- pricing_error_long |>
   group_by(method) |>
   slice_max(abs(pricing_error), n = 5, with_ties = FALSE) |>
   ungroup() |>
-  arrange(method, desc(abs(pricing_error))) |>
+  arrange(method, desc(abs(pricing_error)))
+
+largest_by_method <- pricing_error_long |>
+  group_by(method) |>
+  slice_max(abs(pricing_error), n = 1, with_ties = FALSE) |>
+  ungroup()
+
+largest_pricing_errors |>
   mutate(pricing_error = round(pricing_error, 4)) |>
   kable(
     caption = "Largest absolute pricing errors by method.",
@@ -3368,10 +3750,37 @@ The table identifies the portfolios where each method has the largest absolute
 pricing errors. It is a targeted audit: these are the cells that deserve
 attention before saying that a model explains the 25-portfolio cross-section.
 
+The location and sign of the largest errors sharpen that comparison. For the
+beta-method, the largest error occurs in
+`r largest_by_method$symbol[largest_by_method$method == "Beta-method cross-section"]`
+and equals
+`r scales::number(largest_by_method$pricing_error[largest_by_method$method == "Beta-method cross-section"], accuracy = 0.0001)`
+percentage points per month. For first-stage and second-stage SDF-GMM, the
+largest errors both occur in the small low-book-to-market portfolio and equal
+`r scales::number(largest_by_method$pricing_error[largest_by_method$method == "First-stage SDF-GMM"], accuracy = 0.0001)`
+and
+`r scales::number(largest_by_method$pricing_error[largest_by_method$method == "Second-stage SDF-GMM"], accuracy = 0.0001)`
+percentage points. The negative signs mean that both SDF specifications assign
+this small-growth portfolio a higher average excess return than the return
+observed in the sample. The shared location reveals a systematic weak point in
+the SDF fits rather than an isolated visual discrepancy.
+
 ```{r}
 #| label: fig-pricing-errors-characteristics
 #| fig-cap: "Pricing errors across the size-value grid."
 pricing_error_long |>
+  mutate(
+    method = recode(
+      method,
+      "Beta-method cross-section" = "Beta method",
+      "First-stage SDF-GMM" = "SDF-GMM stage 1",
+      "Second-stage SDF-GMM" = "SDF-GMM stage 2"
+    ),
+    method = factor(
+      method,
+      levels = c("Beta method", "SDF-GMM stage 1", "SDF-GMM stage 2")
+    )
+  ) |>
   ggplot(aes(Value, Size, fill = pricing_error)) +
   geom_tile(color = "white", linewidth = 0.7) +
   geom_text(aes(label = scales::number(pricing_error, accuracy = 0.01)), size = 3) +
@@ -3389,7 +3798,10 @@ pricing_error_long |>
     fill = "Pricing error (%)"
   ) +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "right")
+  theme(
+    legend.position = "right",
+    strip.text = element_text(size = 10)
+  )
 ```
 
 The heatmap makes the characteristic diagnostic visible. A random-looking mix
@@ -3459,7 +3871,7 @@ The same workflow has important econometric limits:
 | SDF-GMM weighting | The chapter implements first-stage identity weighting and second-stage covariance weighting with a zero-lag moment covariance matrix. HAC or iterated GMM would be natural extensions. |
 | J-test | The J-test is reported for the SDF-GMM moments. Its interpretation relies on the large-sample chi-square approximation. |
 | Standard errors | The displayed OLS and GMM tables are useful for orientation. Strong inference in financial returns often requires heteroskedasticity and autocorrelation corrections. |
-| Data source | Downloaded financial data can change because of vendor corrections, ticker history, or file updates. The fixed sample end makes the exercise easier to audit. |
+| Data source | Downloaded financial data can change because of vendor corrections, ticker history, or file updates. The fixed sample end controls the estimation window, while the versioned snapshots and manifests identify the exact observations used in an execution. |
 
 These limits define the chapter's scope: build the bridge from factor-model
 equations to R code, fitted returns, pricing errors, and economic
