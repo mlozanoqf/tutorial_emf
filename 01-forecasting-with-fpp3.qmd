@@ -1,4 +1,8 @@
-﻿# Forecasting with <tt>`fpp3`</tt>
+---
+number-sections: true
+---
+
+# Forecasting with <tt>`fpp3`</tt>
 
 
 
