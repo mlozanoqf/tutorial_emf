@@ -16,20 +16,23 @@ library(scales)
 
 ## Volatility as a forecasting problem
 
-The previous chapters forecast the level of a monthly sales series. Here the
-forecast target changes. We work with daily financial returns and forecast
-**conditional variance**, the variance expected for the next period using the
-information available today. The implementation is adapted from the original
-pedagogical GARCH material in @lozano2025garchvideo and rewritten here as a
-Quarto book chapter focused on applied forecasting.
+An investor observing a quiet market today may expect relatively small price
+movements tomorrow. After several turbulent sessions, the same investor may
+revise that assessment even without changing the expected direction of the
+market. This chapter develops a model for that changing assessment of risk.
+Where the previous chapters forecast the level of a monthly sales series,
+we now ask how much a daily financial return is likely to vary, given what
+has already happened in the market. The implementation builds on the GARCH
+example in @lozano2025garchvideo and the risk-management applications discussed
+by @hull2022options and @mcneil2015quantitative.
 
-In financial time series, large movements tend to cluster. Calm periods can
-last for many days, and turbulent periods can also persist. A single
-unconditional standard deviation summarizes the full sample with one number.
-A GARCH model produces a time series of conditional volatility, which is useful
-precisely because risk changes through time. This risk-management motivation is
-standard in financial engineering and quantitative risk management; see
-@hull2022options and @mcneil2015quantitative.
+The starting observation is that large financial returns tend to occur close
+together in time. A turbulent session is often followed by further large
+movements, while quiet periods can persist for many days. A standard deviation
+calculated from the entire sample averages over both kinds of period. To
+describe the risk faced on a particular date, we instead allow variance to
+change as new returns are observed. A GARCH model provides a rule for making
+these updates and carrying them forward into a forecast.
 
 Let $u_t$ be the daily return and let $\mathcal{F}_{t-1}$ denote the
 information available at the end of day $t-1$. The object of interest is
@@ -37,13 +40,15 @@ information available at the end of day $t-1$. The object of interest is
 $$
 v_t
 =
-\operatorname{Var}(u_t \mid \mathcal{F}_{t-1}),
+\operatorname{Var}(u_t \mid \mathcal{F}_{t-1}).
 $$
 
-where $v_t=\sigma_t^2$ is the conditional variance. The corresponding
-conditional volatility is $\sigma_t=\sqrt{v_t}$.
-
-We build the model manually so the bridge remains visible:
+The conditioning information in this expression fixes the timing of the
+question: $v_t$ is the variance assigned to day $t$ using information available
+at the end of day $t-1$. Its square root, $\sigma_t=\sqrt{v_t}$, is the
+conditional volatility, expressed in the same units as the return. By
+constructing the model step by step, we can follow how the data lead to these
+daily risk estimates and eventually to a forecast:
 
 $$
 \text{returns}
@@ -57,10 +62,36 @@ $$
 \text{volatility forecast}.
 $$
 
+The first arrow begins with a measurement choice. We convert index levels to
+returns so that a price movement is measured relative to the amount invested.
+Those returns become inputs to the GARCH recursion, which calculates today's
+variance from yesterday's squared return and variance. At first, however, the
+parameters of that rule are unknown. Different choices produce different
+variance paths, and we need a way to decide which path best accounts for the
+observations. The likelihood supplies that comparison by measuring how
+plausible the observed returns are under each proposed path. Estimation
+therefore moves repeatedly between the recursion and the likelihood until
+the numerical search finds the best-fitting parameters.
+
+Once those parameters have been selected, the recursion gives a fitted
+variance for each date; taking square roots produces the estimated volatility
+series in the diagram. Extending this series into the future requires one
+further change. Historical updates can use returns that have already occurred,
+whereas future updates depend on shocks that have yet to arrive. Replacing
+their squared values by the expectations implied by the model gives the
+forecast. The distinction between observed shocks and expected future shocks
+will explain both the shape of that forecast and how it changes when new data
+become available. Before developing the updating rule, we need to construct
+the returns on which it operates.
+
 ## Returns and data preparation
 
-The empirical example uses the S&P 500 index from 2015-07-10 to 2020-07-10.
-Let $S_t$ be the closing index level. The simple daily return is
+Our application uses the S&P 500 index, with prices requested from 2015-07-10
+to a download cutoff of 2020-07-10. Because the index level changes over time,
+a movement of a given number of points can represent very different changes
+in the value of an investment. We account for this by dividing the change
+in the closing level, $S_t-S_{t-1}$, by the preceding close, $S_{t-1}$.
+The resulting simple daily return is
 
 $$
 u_t
@@ -70,9 +101,24 @@ u_t
 \frac{S_t}{S_{t-1}}-1.
 $$
 
-Returns are more appropriate than prices for daily volatility analysis because
-they measure relative changes. The square $u_t^2$ measures the size of the
-shock regardless of sign.
+For example, a rise of 10 points from 100 to 110 gives a 10% return, while
+the same rise from 1,000 to 1,010 gives a 1% return. The absolute changes are
+identical, but the first movement is ten times as large relative to the
+starting value. Measuring returns therefore lets us compare risk across
+assets with different prices and across periods in which the same index
+trades at different levels. Throughout the calculations, we express these
+returns as decimals, so that 0.01 consistently represents 1%.
+
+Working with returns also brings the statistical measurement closer to the
+financial question. Price levels often trend and retain the accumulated
+effects of past shocks; their dispersion over a long sample can consequently
+reflect years of growth as well as short-run uncertainty. Daily returns
+isolate the relative movements whose variability we want to forecast. This
+transformation still leaves an important feature to explain: the size of
+those movements can change markedly from one period to another. GARCH models
+that changing conditional variance. Whether the returns are stationary and
+whether this particular model captures their behavior remain questions to
+assess from the data.
 
 ```{r get-garch-data}
 sp500 <- tq_get("^GSPC", from = "2015-07-10", to = "2020-07-10") |>
@@ -87,6 +133,8 @@ sp500 |>
   slice(c(1:6, (n() - 1):n())) |>
   kable(
     caption = "S&P 500 prices and simple daily returns.",
+    col.names = c("Date", "S&P 500 level", "\\(u_t\\)"),
+    escape = FALSE,
     digits = 8,
     format.args = list(scientific = FALSE),
     row.names = FALSE
@@ -94,8 +142,13 @@ sp500 |>
   kable_styling(latex_options = "HOLD_position")
 ```
 
-The first return is missing because the first row has no previous closing
-price. We estimate the model after removing that first missing value.
+The table contains prices from `r min(sp500$date)` through
+`r max(sp500$date)`. Its first row has no return because calculating a change
+requires a preceding close. We remove that initial missing value when
+constructing the return vector, while retaining the original prices for the
+calculation tables below. The resulting return sample will serve throughout
+as our training data. Later, we will evaluate forecasts using subsequent
+observations that have played no part in estimating the parameters.
 
 ```{r prepare-garch-returns}
 returns <- sp500 |>
@@ -106,9 +159,11 @@ u <- returns$return
 long_run_variance <- stats::var(u, na.rm = TRUE)
 ```
 
-The following plot shows why a conditional volatility model is useful. Large
-absolute returns appear in clusters, especially around the 2020 market stress
-episode.
+Plotting these returns reveals why a single measure of dispersion would be
+an incomplete description of risk. Around the 2020 market stress episode,
+large positive and negative movements appear close together, in contrast to
+the much smaller movements observed during quieter periods. An updating rule
+for variance should be able to respond to this clustering.
 
 ```{r}
 #| label: fig-garch-returns
@@ -117,18 +172,19 @@ returns |>
   ggplot(aes(date, return)) +
   geom_hline(yintercept = 0, color = "gray60", linewidth = 0.4) +
   geom_line(color = "black", linewidth = 0.5) +
-  labs(x = "Date", y = "Daily return") +
+  labs(x = "Date", y = expression("Daily Return " * u[t])) +
   scale_y_continuous(labels = scales::percent) +
   theme_minimal(base_size = 12)
 ```
 
 ## The GARCH(1,1) model
 
-The GARCH(1,1) model of @bollerslev1986garch extends the ARCH idea of
-@engle1982arch by allowing conditional variance to depend on a recent shock and
-on its own previous value. Broader treatments of financial time series and
-GARCH modeling are given in @tsay2010analysis, @ruppert2011statistics, and
-@francq2019garch.
+To describe the clustering visible in the return plot, we let a large movement
+raise the variance assigned to the following day and allow some of that
+increase to carry forward. The GARCH(1,1) model of @bollerslev1986garch
+implements both ideas in one equation. It extends the ARCH model of
+@engle1982arch by including the preceding conditional variance alongside the
+preceding squared shock:
 
 $$
 v_t
@@ -140,7 +196,8 @@ v_t
 \beta v_{t-1}.
 $$
 
-The model has three parameters:
+The intercept and the weights on these two sources of information are the
+three parameters we will estimate:
 
 | Parameter | Interpretation |
 |---|---|
@@ -148,7 +205,30 @@ The model has three parameters:
 | $\alpha$ | Reaction to the most recent squared return. |
 | $\beta$ | Persistence from the previous conditional variance. |
 
-The usual restrictions are
+The use of a squared return follows from the question we are asking. A large
+gain and a large loss both indicate substantial variation, even though their
+directions differ. Under the zero-conditional-mean assumption used here,
+$u_t$ is also the unexpected return, or shock, and $u_t^2$ measures its
+magnitude without retaining its sign. Returns of 2% and -2%, for instance,
+both give $u_t^2=0.0004$, four times the squared value of a 1% return.
+Through $\alpha u_{t-1}^2$, a large movement in either direction can therefore
+raise the next variance estimate. A single squared return is a noisy indication
+of risk, however, so the equation also draws on the previous variance instead
+of relying entirely on that one observation. The equal response to positive
+and negative shocks of the same size is a feature of this symmetric model.
+
+The preceding variance enters through $\beta v_{t-1}$, allowing the model to
+retain some of its earlier assessment of risk. This provides one source of
+persistence, but the squared-return term adds another: when variance is high,
+larger squared returns are also expected, and these feed back into subsequent
+updates. Taking expectations over future shocks combines the two effects
+into $\alpha+\beta$. If this sum is close to one, an increase in variance
+is expected to fade slowly. Along an observed path, further shocks can
+interrupt that decline, so persistence describes expected propagation rather
+than a smooth recovery that must occur after every turbulent day.
+
+For this updating rule to produce meaningful variances and a finite long-run
+level, we impose the restrictions
 
 $$
 \omega>0,
@@ -160,11 +240,22 @@ $$
 \alpha+\beta<1.
 $$
 
-The last restriction gives a finite long-run variance. The sum
-$\alpha+\beta$ is especially important: it measures volatility persistence. If
-the sum is close to one, shocks fade slowly.
+The first three conditions protect the sign of the calculated variance. With
+a positive intercept and nonnegative weights, the terms in the recursion
+cannot combine to produce a negative value. Allowing $\omega<0$ would remove
+that protection on a quiet day, when the other contributions are small;
+allowing $\alpha<0$ would make a sufficiently large squared shock push the
+next variance below zero. A negative $\beta$ would create a similar problem
+when the preceding variance is large. We permit either weight to equal zero,
+which simply removes its channel, but require the intercept to remain strictly
+positive. With $\alpha+\beta<1$, setting the intercept to zero would imply
+a degenerate zero long-run variance.
 
-The long-run variance implied by a stationary GARCH(1,1) is
+Positivity alone does not determine whether the process settles around a
+finite average level. To examine that question, take unconditional
+expectations in the recursion. Under the zero-mean assumption, the average
+squared return equals the average conditional variance, denoted by $\bar v$.
+The equation then becomes $\bar v=\omega+(\alpha+\beta)\bar v$, which gives
 
 $$
 \bar{v}
@@ -172,28 +263,48 @@ $$
 \frac{\omega}{1-\alpha-\beta}.
 $$
 
-This identity will be used later for variance targeting and for multi-step
-volatility forecasts.
+This expression explains the restriction on the sum of the weights. For
+$\omega>0$, a positive, finite long-run variance requires $\alpha+\beta<1$.
+At a sum of one, expected variance fails to return to a finite level, and
+above one its expected dynamics are explosive. The finite-second-moment
+condition is the one needed for our variance-targeting estimator and
+mean-reverting forecasts below. Strict stationarity is a distinct, more
+general issue; treatments of that distinction and of financial time-series
+modeling more broadly can be found in @francq2019garch, @tsay2010analysis,
+and @ruppert2011statistics.
 
 ## Conditional variance recursion
 
-The model is recursive. To compute $v_t$, the code needs $u_{t-1}^2$ and
-$v_{t-1}$. The first conditional variance must therefore be initialized. To
-preserve the source example, we use the shifted initialization from the original
-Hull-style material: the first available squared return initializes the second
-variance value. The first return is therefore used to start the recursion, and
-the likelihood is evaluated from the observations with valid conditional
-variance.
+The equation gives us a rule for one day, but applying it to the sample
+requires a sequence of calculations. Once we have obtained $v_t$ from
+$u_{t-1}^2$ and $v_{t-1}$, that new variance becomes an input to the
+calculation of $v_{t+1}$. We combine it with $u_t^2$ and continue forward
+in the same way. This dependence of each calculation on the preceding result
+is what makes the model recursive.
 
-The mapping from notation to R is direct:
+To begin the sequence, we need a variance value that the data do not directly
+provide. We use the first available squared return to initialize the variance
+for the following return date. Counting from the first row of prices makes
+the timing clear: day 1 supplies the initial close, day 2 supplies the first
+return, and day 3 receives the initialized variance $v_3=u_2^2$. The full
+GARCH update can then begin on day 4, using the return and initialized variance
+from day 3. Because a return and a positive variance are available together
+from day 3 onward, those are also the observations that enter the likelihood.
 
-| Mathematical object | R object |
-|---|---|
-| $u_t$ | `u[t]` |
-| $v_t$ | `v[t]` |
-| $\omega$ | `omega` |
-| $\alpha$ | `alpha` |
-| $\beta$ | `beta` |
+The R function implements this sequence using the following objects:
+
+| Mathematical object | R object | Description |
+|---|---|---|
+| $u_t$ | `u[t]` | Daily return, also the shock under the zero-mean assumption. |
+| $v_t$ | `v[t]` | Conditional variance assigned to that return date. |
+| $\omega$ | `omega` | Positive intercept in the variance recursion. |
+| $\alpha$ | `alpha` | Weight on the preceding squared return. |
+| $\beta$ | `beta` | Weight on the preceding conditional variance. |
+
+In this mapping, `t` indexes the return vector after the first missing return
+has been removed. Its first element corresponds to price-row day 2. The
+calculation tables below retain the original price-row day numbers so that
+the initial missing values remain visible.
 
 ```{r garch-recursion}
 garch_variance <- function(u, omega, alpha, beta) {
@@ -214,24 +325,47 @@ garch_variance <- function(u, omega, alpha, beta) {
 }
 ```
 
-The body of the loop mirrors the equation. The code uses `u[t - 1]^2` for the
-shock term and `v[t - 1]` for the lagged conditional variance. The shifted
-initialization makes the alignment explicit: `u[1]^2` initializes `v[2]`, and
-the recursive GARCH update begins at `t = 3`.
+The function first fills a variance vector with missing values and sets
+`v[2]` equal to `u[1]^2`. The loop can then begin at `t = 3`, using
+`u[t - 1]^2` and `v[t - 1]` in exactly the order required by the equation.
+These indices refer to the shortened return vector, so this first loop
+iteration corresponds to day 4 in the original price data. We now have a
+function that produces a complete variance path for any admissible parameter
+vector. The remaining question is how to choose that vector from the data.
 
 ## Maximum likelihood estimation
 
-After defining the recursion, we need a statistical criterion for estimating
-the parameters. For this teaching example, returns are assumed to be
-conditionally normal with zero conditional mean:
+Suppose we try a parameter vector that assigns very low variance to a period
+of large returns. Those observations would be difficult to explain under the
+proposed model. Raising the variance would make them more plausible, but a
+rule that assigns high variance on every date would also fit quiet periods
+poorly. Maximum likelihood formalizes this comparison by evaluating how much
+probability density the model assigns near each observed return, conditional
+on the information preceding it. We use density because returns are continuous:
+the probability of any one exact value is zero, while the probability of a
+small interval around it depends on the density there.
+
+To make this comparison numerical, we need a distribution whose spread is
+determined by the GARCH variance. We assume
 
 $$
 u_t \mid \mathcal{F}_{t-1}
 \sim
-\mathcal{N}(0,v_t).
+\mathcal{N}(0,v_t),
 $$
 
-The source example estimates the model with the proportional criterion
+so that a small $v_t$ concentrates the normal density around zero and a larger
+$v_t$ spreads it over a wider range of possible returns. The zero mean lets
+us focus on this changing spread; in an application with a separate mean
+model, such as a constant or an ARMA equation, its residuals would take the
+place of $u_t$ in the variance calculation.
+
+Multiplying the conditional densities over the sample gives the likelihood
+of the observed sequence, conditional on our initialization. We work with its
+logarithm because it turns this product into a sum without changing which
+parameter vector is preferred. This also avoids the numerical difficulty
+of multiplying many small densities. For estimation, it is convenient to
+begin with the following proportional daily contribution:
 
 $$
 \ell_t^\ast
@@ -241,8 +375,17 @@ $$
 \frac{u_t^2}{v_t}.
 $$
 
-Summing these contributions gives $\ell^*=\sum_t\ell_t^\ast$. The Gaussian
-log-likelihood for the same observations is
+The trade-off described above is visible in the two terms. If a large return
+occurs when $v_t$ is small, the ratio $u_t^2/v_t$ becomes large and reduces
+the contribution through its negative sign. Increasing $v_t$ eases that
+penalty, but also lowers $-\log(v_t)$, so making every variance arbitrarily
+large cannot solve the fitting problem. The optimizer must balance these
+effects across the sample using one common set of GARCH parameters.
+
+Adding the daily contributions produces $\ell^*=\sum_t\ell_t^\ast$.
+The asterisk reminds us that this score has been simplified for estimation.
+To report the complete Gaussian log-likelihood, we restore the normal-density
+constant and the factor of one half:
 
 $$
 \ell
@@ -258,23 +401,28 @@ $$
 \right].
 $$
 
-The two criteria are related by
+Both expressions use the same variance path and the same dates. Their
+dependence on $(\omega,\alpha,\beta)$ comes through the variances generated
+by the recursion; the additional constant contains no unknown parameter.
+Consequently, if $n$ is the number of included observations, we can obtain
+the full Gaussian total directly from the proportional total:
 
 $$
 \ell
 =
 \frac{\ell^\ast}{2}
 -
-\frac{n}{2}\log(2\pi),
+\frac{n}{2}\log(2\pi).
 $$
 
-where $n$ is the number of observations included in the likelihood. The
-transformation multiplies the criterion by a positive constant and adds a term
-that does not depend on $(\omega,\alpha,\beta)$. It therefore preserves the
-theoretical maximizer. This observation explains why the source criterion is
-valid for parameter estimation.
+Dividing every candidate score by two and subtracting the same constant
+preserves its ordering. The parameters that maximize $\ell^*$ therefore also
+maximize $\ell$, even though the reported totals differ. Either total can be
+positive because a density can exceed one; the relevant comparison is which
+parameter vector gives the higher value on the same data and scale.
 
-Model comparison requires the Gaussian scale. The standard formulas
+That equivalence is enough for parameter estimation, but information criteria
+combine the likelihood with a penalty whose scale is fixed. The formulas
 
 $$
 AIC=-2\ell+2k,
@@ -282,36 +430,36 @@ AIC=-2\ell+2k,
 BIC=-2\ell+k\log(n)
 $$
 
-combine a likelihood term with a parameter penalty. Replacing $\ell$ directly
-with $\ell^*$ doubles the relative weight assigned to fit while leaving the
-penalty unchanged. The resulting quantities do not have the usual AIC and BIC
-scale. The omitted Gaussian constant is common to models evaluated on the same
-observations, but reporting the complete likelihood keeps the definition
-standard and makes the calculation auditable.
+use $k$ to count the estimated quantities entering the penalty. Substituting
+$\ell^*$ for $\ell$ would double the relative weight assigned to fit while
+leaving that penalty unchanged. We therefore use the complete Gaussian value
+for both criteria. Although its constant cancels in comparisons on identical
+observations, retaining it also makes the reported likelihood conform to
+the usual definition.
 
-The functions `nll_garch()` and `nll_garch_vt()` retain the source estimation
-criterion. Because `optim()` minimizes, each function returns $-\ell^*$. If
-`nll` denotes that returned value, the conversion is
+The code reflects this distinction. The estimation functions `nll_garch()`
+and `nll_garch_vt()` return $-\ell^*$ because R's `optim()` searches for a
+minimum. After estimation, a returned value called `nll` can be put on the
+Gaussian scale using
 
 ```r
 loglik_gaussian <- -nll / 2 - n / 2 * log(2 * pi)
 ```
 
-The common function below also calculates the Gaussian log-likelihood directly
-from returns and conditional variances. The chapter checks that the direct and
-converted values agree. Parameter restrictions remain inside the objective
-functions, and invalid parameter vectors receive a very large objective value.
-For a more formal treatment of GARCH likelihood, stationarity, and inference,
-see @francq2019garch.
+We also calculate the Gaussian likelihood directly from the returns and
+fitted variances in `gaussian_loglik()`. Agreement between that calculation
+and the conversion provides a check on the implementation. Both use only
+dates with valid variances, since the shifted initialization leaves the
+first return without an associated variance value. Keeping this convention
+identical for the two estimators ensures that differences in fit come from
+their parameters rather than their observation sets.
 
-The zero-mean assumption keeps the chapter focused on volatility. In a broader
-empirical application, $u_t$ could be replaced by residuals from a mean model,
-such as a constant-mean or ARMA specification.
-
-Because the shifted recursion leaves the first variance value undefined, the
-likelihood below is conditional on the valid variance values produced by the
-recursion. The same convention is used for both estimators, so the comparison
-remains internally consistent.
+During the search, a vector that violates the parameter restrictions receives
+a very large objective value. This keeps such a vector from being accepted
+as a better fit simply because the variance calculation has become invalid.
+The resulting conditional-likelihood procedure is developed more formally
+in @francq2019garch; here we can trace each of its steps in the two functions
+below.
 
 ```{r garch-likelihood}
 gaussian_loglik <- function(u, v) {
@@ -352,10 +500,32 @@ nll_garch <- function(par, u) {
 
 ## Full MLE results
 
-Full maximum likelihood estimates the three GARCH parameters
-$(\omega,\alpha,\beta)$. We keep the original numerical strategy: `L-BFGS-B`
-handles simple lower and upper bounds, and the objective function penalizes
-parameter vectors that violate $\alpha+\beta<1$.
+We first allow the likelihood to choose all three parameters jointly.
+Returning to the model equation makes clear what is being estimated:
+
+$$
+v_t=\omega+\alpha u_{t-1}^2+\beta v_{t-1}.
+$$
+
+For each trial choice of $(\omega,\alpha,\beta)$, the recursion produces a
+variance path and the likelihood assigns it a score. We use L-BFGS-B to search
+for the vector with the lowest negative score. Its name refers to the
+limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm with bound constraints.
+As a quasi-Newton method, it learns about the objective's curvature from
+changes in its slope and uses that information to choose the next search
+direction. It keeps a limited record of recent steps, avoiding the need to
+construct an exact second-derivative matrix at every iteration. In our call
+to `optim()`, the slopes themselves are approximated numerically because we
+do not supply a derivative function.
+
+Its bound constraints are useful here because the parameters cannot take
+arbitrary values. We specify a positive lower bound for $\omega$ and
+nonnegative lower bounds for $\alpha$ and $\beta$. However, a separate bound
+on each coefficient still permits some combinations with
+$\alpha+\beta\ge1$, so the penalty in the objective handles that joint
+restriction. The reported convergence code tells us whether the search met
+its stopping rule. We will assess the solution further by checking its
+admissibility and comparing its likelihood with the variance-targeting fit.
 
 ```{r fit-full-garch}
 start <- c(omega = 4e-6, alpha = 0.2, beta = 0.7)
@@ -440,17 +610,117 @@ full_summary |>
   kable_styling(latex_options = "HOLD_position")
 ```
 
-The parameters have very different numerical scales: $\omega$ is near
-$10^{-6}$, whereas $\alpha$ and $\beta$ are near tenths. The `parscale` values
-tell `L-BFGS-B` to take steps appropriate to each coordinate's magnitude. The
-optimization ends with convergence code `r fit_full$convergence`. This scaling
-affects the numerical search. After estimation, `gaussian_loglik()` evaluates
-the fitted variances on the Gaussian scale required for `logLik`, AIC, and BIC.
+The estimates in the table also explain the scaling used in the optimization
+call. The intercept is of order $10^{-6}$, while the two weights are of order
+tenths, so a numerically sensible step in one coordinate can be far too large
+or too small in another. The `parscale` argument allows the search to account
+for these different magnitudes. It ends with convergence code
+`r fit_full$convergence`, and `gaussian_loglik()` then evaluates the fitted
+path on the scale used for `logLik`, AIC, and BIC. Inserting the coefficients
+back into the model gives the daily updating rule
 
-The parameter $\alpha$ measures the immediate response to a new shock. The
-parameter $\beta$ measures persistence. Their sum measures how slowly
-conditional variance returns toward its long-run level. The half-life translates
-that persistence into trading days:
+$$
+\hat v_t=
+`r sprintf("%.10f", omega_full)`
++ `r sprintf("%.8f", alpha_full)`\,u_{t-1}^2
++ `r sprintf("%.8f", beta_full)`\,\hat v_{t-1}.
+$$
+
+We can now follow this rule through the first few observations. In the table
+below, day $i$ counts from the first price in `sp500`, so the return on day 2
+is `u[1]` and the initialized variance on day 3 is `v_full[2]`. The dashes
+show where an earlier observation is still missing. Once both the current
+return and its variance are available, they give the daily contribution in
+the last column, $\ell_i^*=-\log(\hat v_i)-u_i^2/\hat v_i$. Adding these
+contributions over all defined rows, including those omitted from the display,
+reproduces the total score optimized above. Returns are shown in decimals,
+with variances in the corresponding squared units.
+
+In the numerical substitutions below, equality signs describe the calculation
+carried out at full precision. Displayed inputs and results are rounded, so
+recalculating from the printed digits may differ in the last decimal places.
+
+```{r garch-daily-calculation}
+garch_calculation <- function(prices, variances) {
+  daily <- prices |>
+    mutate(day = row_number(), variance = c(NA_real_, variances)) |>
+    select(date, day, price, return, variance)
+  daily$contribution <- NA_real_
+  valid <- is.finite(daily$return) & is.finite(daily$variance) & daily$variance > 0
+  daily$contribution[valid] <- -log(daily$variance[valid]) -
+    daily$return[valid]^2 / daily$variance[valid]
+  daily
+}
+
+compact_garch_calculation <- function(daily) {
+  display <- daily |>
+    mutate(
+      date = as.character(date), day = as.character(day),
+      price = sprintf("%.2f", price),
+      return = ifelse(is.na(return), "--", sprintf("%.10f", return)),
+      variance = ifelse(is.na(variance), "--", sprintf("%.10f", variance)),
+      contribution = ifelse(is.na(contribution), "--", sprintf("%.6f", contribution))
+    )
+  omitted <- as_tibble(setNames(rep(list("..."), ncol(display)), names(display)))
+  bind_rows(head(display, 6), omitted, tail(display, 2))
+}
+
+full_daily <- garch_calculation(sp500, v_full)
+stopifnot(isTRUE(all.equal(
+  sum(full_daily$contribution, na.rm = TRUE), -nll_full, tolerance = 1e-10
+)))
+compact_garch_calculation(full_daily) |>
+  kable(
+    caption = "Daily GARCH(1,1) variance and likelihood calculations: full maximum likelihood.",
+    col.names = c("Date", "Day", "S&P 500", "\\(u_i\\)", "\\(\\hat v_i\\)", "\\(\\ell_i^*\\)"),
+    escape = FALSE, row.names = FALSE, align = c("l", rep("r", 5))
+  ) |>
+  kable_styling(full_width = FALSE, latex_options = "HOLD_position")
+```
+
+Day 3 is initialized as
+$\hat v_3=u_2^2=(`r sprintf("%.10f", full_daily$return[2])`)^{2}
+= `r sprintf("%.10f", full_daily$variance[3])`$.
+The parameters first enter the variance calculation on day 4. Reading the
+preceding return and variance from the table gives
+
+$$
+\begin{aligned}
+\hat v_4
+&=\hat\omega+\hat\alpha u_3^2+\hat\beta\hat v_3\\
+&=`r sprintf("%.10f", omega_full)`
++`r sprintf("%.8f", alpha_full)`(`r sprintf("%.10f", full_daily$return[3])`)^2\\
+&\quad+`r sprintf("%.8f", beta_full)`(`r sprintf("%.10f", full_daily$variance[3])`)\\
+&= `r sprintf("%.10f", full_daily$variance[4])`.
+\end{aligned}
+$$
+
+We then carry this newly calculated variance forward one day:
+
+$$
+\begin{aligned}
+\hat v_5
+&=\hat\omega+\hat\alpha u_4^2+\hat\beta\hat v_4\\
+&=`r sprintf("%.10f", omega_full)`
++`r sprintf("%.8f", alpha_full)`(`r sprintf("%.10f", full_daily$return[4])`)^2\\
+&\quad+`r sprintf("%.8f", beta_full)`(`r sprintf("%.10f", full_daily$variance[4])`)\\
+&= `r sprintf("%.10f", full_daily$variance[5])`.
+\end{aligned}
+$$
+
+The resulting values reproduce the fifth column for days 4 and 5, subject
+to the rounding used in the displayed substitutions; R retains full precision
+throughout. Notice that each update uses only the preceding row. The current
+return enters afterwards, when we evaluate the likelihood contribution for
+the variance already assigned to that date. This is how the same calculation
+can serve both estimation and forecasting without using a return before it
+has been observed.
+
+The estimated weights tell us how long the effect of a large movement is
+expected to remain. While $\alpha$ determines the immediate response and
+$\beta$ carries forward the preceding variance, their sum governs the
+expected decay toward the long-run level. To express that persistence in
+trading days, we calculate the half-life:
 
 $$
 \text{half-life}
@@ -458,10 +728,29 @@ $$
 \frac{\log(0.5)}{\log(\alpha+\beta)}.
 $$
 
+With an estimated persistence of `r round(ab_full, 4)`, it takes approximately
+`r round(half_life_full, 1)` trading days for an initial excess variance to
+fall by half in expectation. For instance, a variance initially 0.00010 above
+its long-run level would be expected to lie about 0.00005 above it after one
+half-life. The quantity being halved is the deviation from the long-run
+variance; total volatility is obtained by taking the square root of the full
+variance at each date. New shocks can alter the actual path, but the half-life
+still gives a useful financial reading of the fitted dynamics: a longer
+half-life means that an episode of high risk continues to influence forecasts
+for longer. We next examine how these dynamics change when estimation is
+anchored to a specified long-run variance.
+
 ## Variance targeting
 
-Variance targeting changes how $\omega$ is identified. The method fixes a
-long-run variance level $V_L$ and uses the stationary GARCH identity
+The first estimator allowed all three parameters to adjust to the likelihood.
+Variance targeting retains the same GARCH(1,1) equation,
+
+$$
+v_t=\omega+\alpha u_{t-1}^2+\beta v_{t-1},
+$$
+
+but ties its long-run variance to a value $V_L$ chosen before optimizing the
+weights. The stationary-variance identity then determines the intercept:
 
 $$
 \omega
@@ -469,9 +758,12 @@ $$
 V_L(1-\alpha-\beta).
 $$
 
-In this chapter, $V_L$ is the sample variance of returns. The estimation problem
-then has two free parameters, $(\alpha,\beta)$, and $\omega$ is calculated from
-the long-run variance condition.
+We use the training sample variance of returns for $V_L$. For each proposed
+pair $(\alpha,\beta)$, the equation above supplies $\omega$, after which the
+same recursion and likelihood can be evaluated. The search therefore has two
+free coordinates. Its reduction in dimension comes from anchoring the model's
+long-run level to the sample estimate, while allowing the likelihood to choose
+how quickly the variance responds and how persistent those responses are.
 
 ```{r fit-vt-garch}
 nll_garch_vt <- function(par, u, long_run_variance) {
@@ -589,29 +881,116 @@ vt_summary |>
   kable_styling(latex_options = "HOLD_position")
 ```
 
-Variance targeting is a modeling restriction. It reduces the number of
-optimized parameters and anchors the long-run variance level. That can improve
-numerical stability and communication, provided that the chosen long-run
-variance is appropriate for the sample.
+With $V_L=`r sprintf("%.10f", long_run_variance)`$, the optimized weights
+imply $\hat\omega=V_L(1-\hat\alpha-\hat\beta)
+=`r sprintf("%.10f", omega_vt)`$. Although the table reports three
+coefficients, only $\alpha$ and $\beta$ have been chosen directly by the
+optimizer. Their values and the long-run input together give the fitted rule
 
-The main AIC and BIC comparison uses $k=2$ for variance targeting because only
-$\alpha$ and $\beta$ enter the numerical optimization. This convention treats
-the sample-variance value $V_L$ as fixed when the two fitted models are compared.
-The conditioning statement is important: $V_L$ is calculated from this sample;
-it is not known from an external source. A later sensitivity check shows how the
-comparison changes if the plug-in estimate is counted as an additional fitted
-quantity.
+$$
+\hat v_t=
+`r sprintf("%.10f", omega_vt)`
++ `r sprintf("%.8f", alpha_vt)`\,u_{t-1}^2
++ `r sprintf("%.8f", beta_vt)`\,\hat v_{t-1}.
+$$
+
+Applying this rule to the same price and return sequence lets us see where
+the two procedures begin to differ. Their initialized variance on day 3 is
+identical, since it depends only on the first available return. Differences
+first appear on day 4, when the fitted coefficients enter the recursive
+update. Keeping the dates and initialization fixed makes the following table
+directly comparable with its full maximum likelihood counterpart.
+
+```{r vt-daily-calculation}
+vt_daily <- garch_calculation(sp500, v_vt)
+stopifnot(isTRUE(all.equal(
+  sum(vt_daily$contribution, na.rm = TRUE), -nll_vt, tolerance = 1e-10
+)))
+compact_garch_calculation(vt_daily) |>
+  kable(
+    caption = "Daily GARCH(1,1) variance and likelihood calculations: variance targeting.",
+    col.names = c("Date", "Day", "S&P 500", "\\(u_i\\)", "\\(\\hat v_i\\)", "\\(\\ell_i^*\\)"),
+    escape = FALSE, row.names = FALSE, align = c("l", rep("r", 5))
+  ) |>
+  kable_styling(full_width = FALSE, latex_options = "HOLD_position")
+```
+
+Using the variance-targeting coefficients, the first recursive update is
+
+$$
+\begin{aligned}
+\hat v_4
+&=\hat\omega+\hat\alpha u_3^2+\hat\beta\hat v_3\\
+&=`r sprintf("%.10f", omega_vt)`
++`r sprintf("%.8f", alpha_vt)`(`r sprintf("%.10f", vt_daily$return[3])`)^2\\
+&\quad+`r sprintf("%.8f", beta_vt)`(`r sprintf("%.10f", vt_daily$variance[3])`)\\
+&= `r sprintf("%.10f", vt_daily$variance[4])`.
+\end{aligned}
+$$
+
+For day 5, we use the return on day 4 and the variance just obtained:
+
+$$
+\begin{aligned}
+\hat v_5
+&=\hat\omega+\hat\alpha u_4^2+\hat\beta\hat v_4\\
+&=`r sprintf("%.10f", omega_vt)`
++`r sprintf("%.8f", alpha_vt)`(`r sprintf("%.10f", vt_daily$return[4])`)^2\\
+&\quad+`r sprintf("%.8f", beta_vt)`(`r sprintf("%.10f", vt_daily$variance[4])`)\\
+&= `r sprintf("%.10f", vt_daily$variance[5])`.
+\end{aligned}
+$$
+
+These substitutions reproduce the fifth column, up to display rounding,
+using exactly the same timing as the full MLE calculation. What has changed
+is the restriction on the long-run level. Fixing that level makes the
+estimation problem smaller and can improve numerical stability, provided
+that the sample variance is a reasonable anchor for the period under study.
+The comparison below examines how much fit is lost by imposing this restriction.
+
+It also requires us to state how the estimated quantities are counted in
+AIC and BIC. Our main calculation treats $V_L$ as fixed during optimization
+and uses $k=2$ for the two fitted weights. Yet $V_L$ itself was obtained from
+the training sample, so we also report a count of three that includes this
+sample-based input. Showing both conventions allows us to separate the
+empirical difference in fit from the choice of complexity penalty.
+
+Before comparing the objectives, it is useful to place the two daily variance
+paths alongside the same observed returns. The table below keeps the dates,
+day numbers, and price levels used in the individual calculation tables,
+and places the two estimates of $\hat v_i$ in adjacent columns. Their shared
+initialization makes day 3 identical. From day 4 onward, the small differences
+reflect the fitted coefficients, since both procedures receive exactly the
+same return history. These columns report conditional variances; taking
+their square roots would give conditional volatilities.
+
+```{r compare-daily-garch}
+daily_comparison <- compact_garch_calculation(full_daily) |>
+  select(date, day, price, return, variance_full = variance) |>
+  mutate(variance_targeting = compact_garch_calculation(vt_daily)$variance)
+
+stopifnot(identical(full_daily$date, vt_daily$date))
+daily_comparison |>
+  kable(
+    caption = "Daily GARCH(1,1) conditional variances: full maximum likelihood and variance targeting.",
+    col.names = c("Date", "Day", "S&P 500", "\\(u_i\\)",
+                  "\\(\\hat v_i\\) (Full MLE)", "\\(\\hat v_i\\) (Variance targeting)"),
+    escape = FALSE, row.names = FALSE, align = c("l", rep("r", 5))
+  ) |>
+  kable_styling(full_width = FALSE, latex_options = "HOLD_position")
+```
 
 ## Objective surface and estimator comparison
 
-Variance targeting leaves only two optimized parameters, so the objective
-function can be visualized on the $(\alpha,\beta)$ plane. This plot connects
-the code to the estimation logic: `optim()` searches over pairs
-$(\alpha,\beta)$, evaluates the criterion, and returns the pair with the lowest
-objective value. The surface is converted to the Gaussian log-likelihood scale
-used by the tables. This affine transformation preserves the contour geometry
-and the location of the optimum. The axis limits keep the same window as the
-source example, so the solution remains visible in the relevant region.
+Having reduced the optimization to two free parameters, we can visualize
+the search itself. Each point in the $(\alpha,\beta)$ plane determines an
+intercept through variance targeting and hence a complete variance path and
+likelihood value. The contours join pairs giving the same fit, while the
+marked solution identifies the pair returned by `optim()`. We plot the
+Gaussian log-likelihood so that the contour labels use the same scale as
+the reported results. Converting from the proportional score preserves both
+the contour shapes and the optimum's location; the selected axis limits let
+us examine their behavior near that solution.
 
 ```{r}
 #| label: fig-garch-vt-contour
@@ -703,13 +1082,12 @@ contour_tbl |>
   theme(legend.position = "none")
 ```
 
-The red point marks the solution returned by `optim()`. Moving toward higher
-Gaussian log-likelihood values corresponds to moving toward lower values of the
-criterion minimized by `optim()`. Long and flat contours would suggest that
-several combinations of $\alpha$ and $\beta$ produce similar likelihood values.
-
-The two estimators use the same GARCH recursion. The difference is how much
-structure they impose on $\omega$.
+As the contour labels increase toward the red point, the fit improves and
+the negative score minimized by `optim()` decreases. The shape also helps
+us understand the search: a long, flat contour would indicate that some
+changes in $\alpha$ can be offset by changes in $\beta$ with little loss
+of fit. To assess the cost of anchoring the long-run variance, we now compare
+this solution with the one obtained when $\omega$ is estimated freely.
 
 ```{r compare-garch}
 comparison_tbl <- bind_rows(
@@ -784,67 +1162,62 @@ parameter_count_tbl |>
   kable_styling(latex_options = "HOLD_position")
 ```
 
-The comparison table reports the Gaussian log-likelihood for both
-estimators. Both calculations use `r n_full` observations, and the direct
-Gaussian evaluation agrees with the conversion from the proportional criterion.
-Full MLE reaches a Gaussian log-likelihood of
+The two likelihoods are evaluated on the same `r n_full` observations,
+so their difference measures fit on a common basis. Full MLE reaches
 `r scales::number(loglik_full, accuracy = 0.001)`, compared with
 `r scales::number(loglik_vt, accuracy = 0.001)` for variance targeting. The
-Full MLE value is higher by
-`r scales::number(loglik_full - loglik_vt, accuracy = 0.001)`, which is small
-but has the correct ordering: the restricted variance targeting vector is
-admissible in the unrestricted model, so the maximized unrestricted likelihood
-cannot be lower.
+gain from estimating the intercept freely is therefore
+`r scales::number(loglik_full - loglik_vt, accuracy = 0.001)`. The ordering
+also provides a numerical check: the variance-targeting parameter vector is
+available to the unrestricted model, so the unrestricted maximum cannot be
+lower. Both searches report convergence code zero, and the direct Gaussian
+evaluation agrees with the conversion from the proportional score. Together,
+these checks support reading the small difference as a feature of the fitted
+models rather than a mismatch in calculations.
 
-The Full MLE optimization uses parameter scaling because $\omega$, $\alpha$,
-and $\beta$ have very different numerical magnitudes. Both optimizations end
-with convergence code zero. The Full MLE estimate has persistence
-`r scales::number(ab_full, accuracy = 0.001)` and a half-life of
-`r scales::number(half_life_full, accuracy = 0.1)` trading days. Variance
-targeting produces persistence of
-`r scales::number(ab_vt, accuracy = 0.001)` and a half-life of
-`r scales::number(half_life_vt, accuracy = 0.1)` trading days.
+The similarity in fit carries over to the economic interpretation. Full MLE
+has persistence `r scales::number(ab_full, accuracy = 0.001)` and a half-life
+of `r scales::number(half_life_full, accuracy = 0.1)` trading days, compared
+with `r scales::number(ab_vt, accuracy = 0.001)` and
+`r scales::number(half_life_vt, accuracy = 0.1)` days under variance targeting.
+Both therefore describe a persistent response to volatility shocks, with
+the freely estimated model allowing that response to decay slightly faster.
+Anchoring the long-run variance changes the fit modestly without changing
+this broad reading of the dynamics.
 
-The optimization functions minimize a negative proportional criterion because
-the omitted Gaussian constant and factor do not alter the maximizing parameter
-vector. Once the parameters have been estimated, `gaussian_loglik()` evaluates
-the complete Gaussian log-likelihood used in AIC and BIC.
+The AIC and BIC comparison adds a penalty for the estimated quantities, which
+is where the treatment of $V_L$ enters. Full MLE estimates three coefficients
+directly and therefore has $k=3$. Variance targeting optimizes two weights
+and obtains $\omega=V_L(1-\alpha-\beta)$, giving $k=2$ when the long-run
+input is treated as fixed during that step. Including the fact that $V_L$
+was itself estimated from these returns gives a count of three instead.
+In either case, $k$ counts quantities entering the penalty; it is unrelated
+to the lag orders denoted by $(1,1)$.
 
-In these information criteria, $k$ is the number of estimated quantities that
-enter the penalty. It is unrelated to the order $(1,1)$ in the GARCH model.
-Full MLE estimates $(\omega,\alpha,\beta)$ directly, so it has $k=3$. Variance
-targeting optimizes only $(\alpha,\beta)$ and obtains
-$\omega=V_L(1-\alpha-\beta)$. Treating the sample estimate of $V_L$ as fixed
-during this second step gives the conditional count $k=2$. Counting $V_L$ as
-an estimated quantity gives $k=3$, which recognizes that it was calculated
-from the same return sample.
+Under the conditional count of two, the smaller penalty gives variance
+targeting the lower AIC and BIC. Counting $V_L$ puts both fits at $k=3$,
+so Full MLE's slightly higher likelihood then gives it the lower criteria,
+by `r scales::number(2 * (loglik_full - loglik_vt), accuracy = 0.001)` points
+each. Changing the count leaves the fitted coefficients, likelihood,
+variance paths, and forecasts untouched: the switch in preference comes
+entirely from the penalty. Reporting both conventions makes that dependence
+visible and puts the very small equal-count difference in perspective.
 
-The two counts change only the complexity penalty assigned to variance
-targeting. They do not change its parameter estimates, Gaussian
-log-likelihood, conditional variances, or forecasts. Under the conditional
-$k=2$ convention, variance targeting has the lower AIC and BIC. When $V_L$ is
-counted and both specifications use $k=3$, Full MLE has the lower AIC and BIC
-because its Gaussian log-likelihood is slightly higher. The difference is only
-`r scales::number(2 * (loglik_full - loglik_vt), accuracy = 0.001)` points for
-each criterion. Such a small gap provides little empirical evidence for a
-substantive difference in fit. The table reports both conventions so that the
-model comparison does not depend on an unstated treatment of $V_L$.
+The information criteria thus give little reason to expect substantially
+different descriptions of historical risk. To see what the estimates imply
+in financial terms, we turn from the parameter comparison to the volatility
+paths and forecasts they generate.
 
-The main economic reading comes from $\alpha$, $\beta$, and
-$\alpha+\beta$. The verified estimates are close: Full MLE has a slightly lower
-persistence and shorter half-life than variance targeting. Both estimators
-still describe strongly persistent conditional variance, and both use the same
-GARCH recursion. The restriction on $\omega$ changes how the long-run variance
-is imposed, while the fitted short-run shock response remains similar.
+## Conditional volatility through time and forecasts {#sec-garch-forecast}
 
-## Conditional volatility through time and forecasts
-
-The most useful output is the conditional volatility series. We use the
-variance targeting estimates for the plot because they are parsimonious and
-produce the long-run level explicitly. The same reconstruction can be done with
-the Full MLE estimates. Conditional volatility links this chapter to risk
-measurement, scenario analysis, and derivatives applications
-[@hull2022options; @mcneil2015quantitative].
+Taking the square root of each fitted variance translates the updating rule
+into a daily measure of risk that can be read alongside the returns. We use
+the variance-targeting fit for this illustration because its long-run level
+is anchored explicitly to the sample variance, giving a natural reference
+for the plot. The full MLE path can be reconstructed in the same way. Such
+time-varying risk measures underpin the risk-management, scenario-analysis,
+and derivatives applications discussed by @hull2022options and
+@mcneil2015quantitative.
 
 ```{r build-volatility-series}
 volatility_tbl <- returns |>
@@ -859,6 +1232,8 @@ volatility_tbl |>
   slice(c(1:6, (n() - 1):n())) |>
   kable(
     caption = "Conditional variance and volatility from variance targeting.",
+    col.names = c("Date", "\\(u_t\\)", "\\(\\hat v_t\\)", "\\(\\sqrt{\\hat v_t}\\)"),
+    escape = FALSE,
     digits = 8,
     format.args = list(scientific = FALSE),
     row.names = FALSE
@@ -868,7 +1243,7 @@ volatility_tbl |>
 
 ```{r}
 #| label: fig-garch-volatility
-#| fig-cap: "S&P 500 conditional daily volatility from GARCH(1,1)."
+#| fig-cap: "S&P 500 conditional daily volatility from GARCH(1,1) estimated by variance targeting."
 volatility_tbl |>
   ggplot(aes(date, 100 * volatility_vt)) +
   geom_line(color = "#1B4E8A", linewidth = 0.6) +
@@ -886,13 +1261,27 @@ volatility_tbl |>
   theme_minimal(base_size = 12)
 ```
 
-The model assigns more volatility to turbulent periods and less volatility to
-calm periods. That is the practical contribution of GARCH relative to a single
-sample standard deviation.
+The horizontal line averages over the full sample, whereas the fitted series
+responds to the changing size of the observed returns. Its sharp increase
+during the 2020 market stress episode shows how the recursion translates
+successive large movements into a higher assessment of risk. During quieter
+periods, smaller squared returns gradually bring that assessment down.
 
-After reconstructing the historical conditional volatility path, the final step
-is an explicit volatility forecast. Let $T$ be the last observed day. The
-one-step-ahead forecast is
+To move from filtering the historical data to forecasting, first recall
+the GARCH updating rule at an ordinary date $t$:
+
+$$
+v_t=\omega+\alpha u_{t-1}^2+\beta v_{t-1}.
+$$
+
+The variance assigned to day $t$ uses the return and variance from day
+$t-1$. At the final observation, $T$, advancing this same rule by one period
+means replacing $t$ by $T+1$: the preceding return becomes $u_T$ and the
+preceding variance becomes $v_T$. With fitted parameters, we already have
+the return and the fitted variance needed for this update. Writing its
+result as $\hat v_{T+1\mid T}$ makes the information date explicit: this
+is tomorrow's variance forecast using information through today. Thus the
+first forecast requires no assumption about a future realized shock:
 
 $$
 \hat{v}_{T+1\mid T}
@@ -904,9 +1293,11 @@ $$
 \beta v_T.
 $$
 
-For horizons beyond one day, the expected future squared shock is the future
-conditional variance. The GARCH(1,1) forecast therefore reverts toward the
-long-run variance:
+The next step introduces uncertainty because $u_{T+1}$ has not yet been
+observed. Under the zero-mean model, its expected square equals its conditional
+variance. Using that expectation in the recursion combines the two weights
+into $\alpha+\beta$, and repeating the argument gives the forecast at
+any horizon $h$:
 
 $$
 \hat{v}_{T+h\mid T}
@@ -919,6 +1310,12 @@ $$
 \right),
 \qquad h \ge 1.
 $$
+
+This expression begins at the one-step forecast and reduces its deviation
+from the long-run variance, $\bar v$, by a factor of $\alpha+\beta$ for each
+additional trading day. In the calculation below, the parameters and final
+variance are replaced by their fitted values. Taking square roots then puts
+the forecasts on the same volatility scale as the historical plot.
 
 ```{r garch-volatility-forecast}
 last_return <- tail(u, 1)
@@ -939,7 +1336,9 @@ forecast_tbl <- tibble(
 
 forecast_tbl |>
   kable(
-    caption = "Twenty-day conditional volatility forecast.",
+    caption = "Twenty-day conditional variance and volatility forecasts from variance targeting.",
+    col.names = c("Horizon", "\\(\\hat v_{T+h\\mid T}\\)", "\\(\\sqrt{\\hat v_{T+h\\mid T}}\\)"),
+    escape = FALSE,
     digits = 8,
     format.args = list(scientific = FALSE),
     row.names = FALSE
@@ -949,33 +1348,153 @@ forecast_tbl |>
 
 ```{r}
 #| label: fig-garch-volatility-forecast
-#| fig-cap: "Twenty-day GARCH conditional volatility forecast."
-forecast_tbl |>
-  ggplot(aes(horizon, 100 * volatility_forecast)) +
-  geom_line(color = "#1B4E8A", linewidth = 0.8) +
-  geom_point(color = "#1B4E8A", size = 2) +
+#| fig-cap: "Historical GARCH volatility and its twenty-trading-day forecast from variance targeting: full history and an enlarged view from January 2020. Shading shows a pointwise 95% simulated interval for future conditional volatility."
+#| fig-width: 9
+#| fig-height: 8
+set.seed(20260923)
+simulation_count <- 50000L
+simulated_variance <- matrix(NA_real_, nrow = horizon, ncol = simulation_count)
+simulated_variance[1, ] <- v_next
+for (h in 2:horizon) {
+  simulated_return <- sqrt(simulated_variance[h - 1, ]) * rnorm(simulation_count)
+  simulated_variance[h, ] <- omega_vt + alpha_vt * simulated_return^2 +
+    beta_vt * simulated_variance[h - 1, ]
+}
+forecast_interval <- forecast_tbl |>
+  mutate(
+    lower = apply(sqrt(simulated_variance), 1, quantile, probs = 0.025),
+    upper = apply(sqrt(simulated_variance), 1, quantile, probs = 0.975),
+    trading_day = nrow(returns) + horizon
+  )
+
+# Trading-day positions avoid inventing future prices or calendar observations.
+history_plot <- volatility_tbl |>
+  mutate(trading_day = row_number())
+forecast_line <- bind_rows(
+  tibble(trading_day = nrow(returns), volatility_forecast = sqrt(last_variance)),
+  forecast_interval |> select(trading_day, volatility_forecast)
+)
+year_ticks <- history_plot |>
+  group_by(year = format(date, "%Y")) |>
+  slice_head(n = 1) |>
+  ungroup()
+
+zoom_history <- history_plot |> filter(date >= as.Date("2020-01-01"))
+month_ticks <- zoom_history |>
+  group_by(month = format(date, "%Y-%m")) |>
+  slice_head(n = 1) |>
+  ungroup()
+panel_levels <- c("Full history", "From January 2020")
+history_panels <- bind_rows(
+  history_plot |> mutate(panel = panel_levels[1]),
+  zoom_history |> mutate(panel = panel_levels[2])
+) |>
+  mutate(panel = factor(panel, levels = panel_levels))
+interval_panels <- bind_rows(lapply(panel_levels, function(view) {
+  forecast_interval |> mutate(panel = factor(view, levels = panel_levels))
+}))
+line_panels <- bind_rows(lapply(panel_levels, function(view) {
+  forecast_line |> mutate(panel = factor(view, levels = panel_levels))
+}))
+forecast_end <- nrow(returns) + horizon
+
+ggplot() +
+  geom_line(
+    data = history_panels,
+    aes(trading_day, 100 * volatility_vt, color = "Historical"), linewidth = 0.6
+  ) +
+  geom_ribbon(
+    data = interval_panels,
+    aes(trading_day, ymin = 100 * lower, ymax = 100 * upper),
+    fill = "#CC7A00", alpha = 0.20
+  ) +
+  geom_line(
+    data = line_panels,
+    aes(trading_day, 100 * volatility_forecast, color = "Forecast"), linewidth = 0.9
+  ) +
+  geom_vline(xintercept = nrow(returns), linetype = 3, color = "gray50") +
   geom_hline(
     yintercept = 100 * sqrt(long_run_vt),
-    color = "#B22222",
-    linetype = 2
+    color = "#B22222", linetype = 2
   ) +
+  scale_color_manual(values = c("Historical" = "#1B4E8A", "Forecast" = "#CC7A00")) +
+  scale_x_continuous(
+    breaks = function(limits) {
+      ticks <- if (diff(limits) > 500) year_ticks$trading_day else month_ticks$trading_day
+      c(ticks, forecast_end)
+    },
+    labels = function(ticks) {
+      date_labels <- if (diff(range(ticks)) > 500) "%Y" else "%b"
+      labels <- format(history_plot$date[match(ticks, history_plot$trading_day)], date_labels)
+      labels[ticks == forecast_end] <- "T + 20"
+      labels
+    }
+  ) +
+  facet_wrap(~ panel, ncol = 1, scales = "free_x") +
   labs(
-    x = "Forecast horizon in trading days",
-    y = "Daily volatility forecast",
-    caption = "Dashed line: variance targeting long-run volatility."
+    x = "Trading-day sequence (T is the final training date)",
+    y = "Daily volatility", color = NULL,
+    caption = "Dashed horizontal line: long-run volatility. Dotted vertical line: forecast origin."
   ) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 0.1, scale = 1)) +
-  theme_minimal(base_size = 12)
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "right")
 ```
 
-This is a risk forecast. Its target is the expected size of future return
-variation under the estimated GARCH dynamics; directional return forecasting is
-outside this chapter's target.
+The upper panel places the forecast in the full historical record, while
+the lower panel enlarges the period from January 2020 onward so that the
+orange segment and its shaded interval can be examined. Both panels use
+the same vertical scale and the same values; only the horizontal window
+changes. Observations are spaced by trading day, with years or months marking
+their position and $T+20$ indicating the final forecast horizon.
 
-## Residual diagnostics
+In the enlarged view, the smooth forecast is easier to distinguish from the
+irregular historical path. Each historical update incorporates a newly
+observed shock, so the fitted volatility rises and falls as market movements
+change. At $T$, all later shocks are still unknown. Averaging over them leaves
+the regular decay toward the long-run variance described by the forecast
+equation. Because the last fitted variance is already relatively close to
+that level, the projected volatility changes only gradually over these
+20 days. Its smoothness reflects the information available when it is made.
 
-After estimating a volatility model, we check whether the standardized
-residuals look closer to white noise. The standardized residual is
+The plotted line takes the square root of expected future variance, giving
+the standard deviation of the future daily return conditional on information
+at $T$ under the zero-mean model. That choice keeps the forecast on the same
+percentage scale as historical volatility. It also identifies precisely what
+is being plotted: taking an expectation and taking a square root in the
+opposite order would generally give a different quantity.
+
+The smooth line leaves open how much conditional volatility could vary as
+future shocks arrive. To explore that question, we simulate 50,000 possible
+paths using the fitted parameters and independent standard-normal shocks,
+following the approach in @archForecasting. On each path, a shock is multiplied
+by its conditional standard deviation to generate a return, which then feeds
+into the next variance update. Collecting the resulting volatilities at a
+given horizon lets us locate their 2.5th and 97.5th percentiles. Repeating
+this across horizons produces the shaded pointwise 95% interval. The seed
+fixes the simulation draws for reproducibility and plays no role in fitting
+or selecting the model.
+
+Every path begins with the same one-step variance because the final training
+return and variance are already known. The interval consequently has zero
+width at that step. Once simulated shocks enter subsequent updates, the
+paths separate and their distribution can become asymmetric, which is why
+we construct the band from percentiles. Since the coefficients are held
+fixed, it represents uncertainty from future shocks under the fitted model
+and excludes uncertainty about the coefficient estimates. Its 95% coverage
+applies separately at each horizon; it neither describes an interval for
+returns nor guarantees coverage of a whole volatility path. These distinctions
+will also be important when we compare the forecast with what happens after
+the training period.
+
+## Standardized Residual Diagnostics {#sec-garch-diagnostics}
+
+Before evaluating the forecasts, we can use the training sample to check
+whether the fitted model has accounted for the dependence that motivated it.
+The return plot showed periods of unusually large movements; if the variance
+updates capture that behavior, returns measured relative to their fitted risk
+should exhibit less clustering. This suggests dividing each observed return
+by the conditional standard deviation assigned to it:
 
 $$
 z_t
@@ -983,29 +1502,62 @@ z_t
 \frac{u_t}{\sqrt{\hat{v}_t}}.
 $$
 
-If GARCH captures the main volatility clustering, the squared standardized
-residuals should have less autocorrelation than the squared raw returns.
+Here $u_t$ is the residual from our zero-conditional-mean equation, and
+division by $\sqrt{\hat v_t}$ removes its estimated time-varying scale.
+A value of $z_t=2$ means that the return was two fitted standard deviations
+above zero; $z_t=-2$ means two below. A movement during a quiet period can
+therefore be judged on the same basis as one during a turbulent period.
+This construction uses the return because the data contain no observed
+"true conditional volatility" from which we could subtract the fitted
+volatility. Under the correctly specified model with known parameters,
+the standardized shocks would have conditional mean zero and variance one,
+and the additional normality assumption would make them standard normal.
+
+Standardization gives us two related ways to examine what the model has left
+unexplained. If $z_t$ remains autocorrelated, earlier returns still contain
+linear information about later ones, which can point to a weakness in the
+zero-mean specification. If its square remains autocorrelated, large
+standardized movements still tend to follow other large movements, suggesting
+that the variance equation has left some clustering behind. Examining both
+series separates these mean and variance concerns, which could easily be
+confused by looking only at the original returns.
+
+For each series, we use the Ljung-Box statistic to assess the first 20
+autocorrelations jointly. A small p-value gives evidence against their being
+zero, complementing the individual lag patterns in the plots. We apply the
+same calculation on the same valid dates to both estimators, using
+`Box.test()` with `fitdf = 0`. The reported p-values should be read as
+approximate diagnostics: the usual chi-squared reference distribution does
+not fully account for estimating a GARCH model, and formal residual inference
+may require a model-specific adjustment or bootstrap. Even favorable results
+would address only the dependence examined here, leaving normality,
+independence, and forecasting performance to separate assessments.
 
 ```{r garch-diagnostics}
-diag_tbl <- volatility_tbl |>
-  filter(!is.na(variance_vt), variance_vt > 0) |>
+diag_tbl <- bind_rows(
+  tibble(date = returns$date, return = u, variance = v_full, model = "Full MLE"),
+  tibble(date = returns$date, return = u, variance = v_vt, model = "Variance targeting")
+) |>
+  filter(is.finite(variance), variance > 0) |>
   mutate(
-    z = return / sqrt(variance_vt),
-    z_squared = z^2
-  )
+    z = return / sqrt(variance), z_squared = z^2,
+    model = factor(model, levels = c("Full MLE", "Variance targeting"))
+  ) |>
+  pivot_longer(c(z, z_squared), names_to = "series", values_to = "value")
 
-lb_z <- stats::Box.test(diag_tbl$z, lag = 20, type = "Ljung-Box")
-lb_z_squared <- stats::Box.test(diag_tbl$z_squared, lag = 20, type = "Ljung-Box")
-
-diag_tests <- tibble(
-  test = c("Ljung-Box on z_t", "Ljung-Box on z_t squared"),
-  statistic = c(as.numeric(lb_z$statistic), as.numeric(lb_z_squared$statistic)),
-  p_value = c(lb_z$p.value, lb_z_squared$p.value)
-)
+diag_tests <- diag_tbl |>
+  group_by(model, series) |>
+  group_modify(function(.x, .y) {
+    test <- stats::Box.test(.x$value, lag = 20, type = "Ljung-Box", fitdf = 0)
+    tibble(statistic = unname(test$statistic), p_value = test$p.value)
+  }) |>
+  ungroup()
 
 diag_tests |>
+  mutate(series = ifelse(series == "z", "\\(z_t\\)", "\\(z_t^2\\)")) |>
   kable(
-    caption = "Residual diagnostic tests.",
+    caption = "Ljung-Box diagnostics at 20 lags for both GARCH estimators (approximate p-values).",
+    col.names = c("Estimator", "Series", "Statistic", "p-value"), escape = FALSE,
     digits = 4,
     row.names = FALSE
   ) |>
@@ -1014,91 +1566,648 @@ diag_tests |>
 
 ```{r}
 #| label: fig-garch-residual-acf
-#| fig-cap: "ACF of squared standardized residuals."
-acf_squared <- stats::acf(
-  diag_tbl$z_squared,
-  plot = FALSE,
-  lag.max = 20,
-  na.action = na.pass
-)
-
-acf_tbl <- tibble(
-  lag = as.numeric(acf_squared$lag[-1]),
-  acf = as.numeric(acf_squared$acf[-1])
-)
+#| fig-cap: "Autocorrelations of standardized residuals and their squares for both estimators. Dashed lines are approximate pointwise white-noise reference limits."
+#| fig-height: 6
+acf_tbl <- diag_tbl |>
+  group_by(model, series) |>
+  group_modify(function(.x, .y) {
+    ac <- stats::acf(.x$value, plot = FALSE, lag.max = 20)
+    tibble(lag = as.numeric(ac$lag[-1]), acf = as.numeric(ac$acf[-1]),
+           limit = 1.96 / sqrt(nrow(.x)))
+  }) |>
+  ungroup() |>
+  mutate(series = factor(series, levels = c("z", "z_squared"),
+                         labels = c("Standardized returns", "Squared standardized returns")))
 
 acf_tbl |>
   ggplot(aes(lag, acf)) +
   geom_col(width = 0.08, fill = "#1B4E8A") +
-  geom_hline(
-    yintercept = c(-1.96 / sqrt(nrow(diag_tbl)), 1.96 / sqrt(nrow(diag_tbl))),
-    linetype = 2,
-    color = "#B22222"
-  ) +
+  geom_hline(data = distinct(acf_tbl, model, series, limit),
+             aes(yintercept = limit), linetype = 2, color = "#B22222") +
+  geom_hline(data = distinct(acf_tbl, model, series, limit),
+             aes(yintercept = -limit), linetype = 2, color = "#B22222") +
+  facet_grid(series ~ model) +
+  scale_x_continuous(breaks = c(1, 5, 10, 15, 20)) +
   labs(x = "Lag", y = "ACF") +
-  theme_minimal(base_size = 12)
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.spacing.x = grid::unit(1.2, "cm"),
+    panel.spacing.y = grid::unit(0.6, "cm"),
+    panel.border = element_rect(color = "grey65", fill = NA, linewidth = 0.5),
+    strip.background = element_rect(fill = "grey95", color = NA)
+  )
 ```
 
-The diagnostic is a model audit. A small p-value for the squared standardized
-residuals would suggest remaining volatility structure. An ACF with smaller
-remaining spikes supports the interpretation that the GARCH recursion absorbed
-much of the conditional heteroskedasticity.
+The columns place the two estimators side by side, while the rows distinguish
+standardized returns from their squares. Their similar patterns agree with
+the similar parameter estimates found earlier. Some individual spikes cross
+the dashed pointwise reference limits, which can happen by chance when many
+lags are examined. The joint Ljung-Box checks help put those crossings in
+context: all four approximate p-values exceed 0.05, with the smallest equal
+to `r sprintf("%.3f", min(diag_tests$p_value))`. At this 20-lag horizon,
+neither estimator leaves clear evidence of the linear dependence being tested
+in standardized returns or their squares.
+
+These results support the fitted dynamics on the training sample, but we
+still need to examine predictions on later observations. The dashed lines
+here assess sampling variation in autocorrelations; the band in
+@sec-garch-forecast describes possible future conditional volatilities.
+Neither calculation, by itself, tells us how accurate a variance forecast
+will be when confronted with new returns.
+
+## Out-of-sample forecast evaluation {#sec-garch-evaluation}
+
+So far, the observed returns have served both to estimate the parameters and
+to assess the residuals produced by that fit. A forecast faces a further
+test: it must describe observations that were unavailable when it was made.
+We create that separation by stopping estimation at the existing final
+training date, `r max(sp500$date)`, and evaluating forecasts against the
+next 20 S&P 500 returns. The additional data enter only this evaluation;
+all earlier estimates and calculations continue to use the original sample.
+
+The practical question is what each estimator would have predicted before
+each test return became available, and how those predictions compare with
+the movements subsequently observed. We examine three forecasting policies
+for each estimator. The first commits to all twenty forecasts at the end
+of training. The second updates tomorrow's forecast each day using the
+latest return while retaining the original coefficients. The third also
+re-estimates the coefficients before issuing each daily forecast. Keeping
+these policies distinct lets us separate the contribution of fresh return
+information from the additional effect of learning new parameter values.
+
+We obtain the next 20 closing observations from the same provider and
+calculate the first test return relative to the final training close. This
+retains the price change across the boundary while keeping its return
+entirely in the test period. The first two policies hold both parameter
+vectors and the variance-targeting input $V_L$ at their original training
+values. The third uses an expanding estimation sample: a test return can
+enter estimation only after its date has passed. Thus the return being
+predicted remains excluded from the information used for that prediction,
+even when earlier test returns have become available for re-estimation.
+
+```{r garch-test-data}
+training_end <- max(sp500$date)
+test_prices <- tq_get(
+  "^GSPC", from = as.character(training_end + 1),
+  to = as.character(training_end + 60)
+) |>
+  select(date, close) |>
+  rename(price = close) |>
+  arrange(date) |>
+  filter(date > training_end) |>
+  slice_head(n = 20)
+
+stopifnot(
+  nrow(test_prices) == 20L, !anyDuplicated(test_prices$date),
+  all(is.finite(test_prices$price)), all(test_prices$price > 0),
+  all(diff(test_prices$date) > 0)
+)
+test_returns <- test_prices |>
+  mutate(
+    return = price / lag(price, default = tail(sp500$price, 1)) - 1,
+    horizon = row_number(), squared_return = return^2
+  )
+
+tibble(
+  sample = c("Training returns", "Test returns"),
+  first_date = c(min(returns$date), min(test_returns$date)),
+  last_date = c(max(returns$date), max(test_returns$date)),
+  observations = c(nrow(returns), nrow(test_returns))
+) |>
+  kable(caption = "Chronological separation of training and test returns.",
+        col.names = c("Sample", "First date", "Last date", "Returns"), row.names = FALSE) |>
+  kable_styling(full_width = FALSE, latex_options = "HOLD_position")
+```
+
+The dates in the table show the resulting split. The test runs from
+`r min(test_returns$date)` through `r max(test_returns$date)`, covering
+20 trading observations rather than 20 calendar days. Its boundary follows
+the last price actually included in training, so the download cutoff cannot
+silently shift a return from one sample to the other.
+
+We begin by asking how the arrival of these returns changes the model's
+assessment of risk. Keep the 20 forecasts originally made at $T$ unchanged,
+and alongside them calculate a second path that incorporates each test
+return once it has been observed. Denoting this updated path by
+$\tilde v_{T+h}$ distinguishes it from the fixed-origin forecast
+$\hat v_{T+h\mid T}$. For either fitted parameter vector, the update is
+
+$$
+\begin{aligned}
+\tilde v_{T+1}&=\hat v_{T+1\mid T},\\
+\tilde v_{T+h}&=\hat\omega+\hat\alpha u_{T+h-1}^{2}
++\hat\beta\tilde v_{T+h-1},\qquad h=2,\ldots,20.
+\end{aligned}
+$$
+
+For the first test day, both paths use the final training return and variance,
+so their values coincide. For the second day, the updated path can use the
+first test return, whereas the original forecast must still use its expectation
+at $T$. The same distinction continues through the window. Although we
+reconstruct the updated path after observing the data, every update uses
+returns only through the preceding day. It is therefore also the sequence
+of one-step forecasts that could have been issued as the test unfolded,
+without changing the coefficients. Comparing it with the fixed-origin path
+shows the effect of new information within the model; both paths remain
+model-based estimates of an unobserved variance.
+
+This timing also explains why the two lines can separate substantially.
+For the second test day, subtracting the original forecast from the updated
+variance gives
+
+$$
+\tilde v_{T+2}-\hat v_{T+2\mid T}
+=\hat\alpha\left(u_{T+1}^2-\hat v_{T+1\mid T}\right).
+$$
+
+The original forecast used the expected squared return for day $T+1$.
+Once that return is observed, the update replaces the expectation by its
+realized square. A smaller squared return therefore lowers the next day's
+updated variance relative to the original forecast; a larger one raises it.
+On subsequent days, the model also carries forward the variance changes
+caused by earlier surprises. A sequence of relatively quiet returns can
+therefore pull the updated path well below the original forecast even
+though the coefficients remain unchanged. Conversely, the fixed-origin
+path keeps moving toward its fitted long-run level because it receives no
+new information. This distinction applies separately to both estimators.
+
+```{r garch-test-paths}
+test_garch_paths <- function(omega, alpha, beta, last_variance, model) {
+  h <- test_returns$horizon
+  first_variance <- omega + alpha * tail(u, 1)^2 + beta * last_variance
+  long_run <- omega / (1 - alpha - beta)
+  fixed_origin <- long_run + (alpha + beta)^(h - 1) * (first_variance - long_run)
+  filtered <- numeric(length(h))
+  filtered[1] <- first_variance
+  for (i in 2:length(h)) {
+    filtered[i] <- omega + alpha * test_returns$return[i - 1]^2 + beta * filtered[i - 1]
+  }
+  test_returns |>
+    mutate(model = model, fixed_origin = as.numeric(fixed_origin), filtered = filtered)
+}
+
+test_paths <- bind_rows(
+  test_garch_paths(omega_full, alpha_full, beta_full, tail(v_full, 1), "Full MLE"),
+  test_garch_paths(omega_vt, alpha_vt, beta_vt, tail(v_vt, 1), "Variance targeting")
+) |>
+  mutate(model = factor(model, levels = c("Full MLE", "Variance targeting")))
+
+stopifnot(isTRUE(all.equal(
+  test_paths$fixed_origin[test_paths$model == "Variance targeting"],
+  as.numeric(forecast_variance), tolerance = 1e-12
+)))
+```
+
+```{r}
+#| label: fig-garch-test-paths
+#| fig-cap: "Fixed-origin GARCH volatility forecasts and daily updated conditional volatilities during the test period. Both paths are shown as daily percentages, as in Section 3.9. Parameters remain fixed at their training estimates."
+test_paths |>
+  pivot_longer(c(fixed_origin, filtered), names_to = "path", values_to = "variance") |>
+  mutate(path = factor(path, levels = c("fixed_origin", "filtered"),
+                       labels = c("Forecast at T", "Updated with observed returns"))) |>
+  ggplot(aes(date, 100 * sqrt(variance), color = path)) +
+  geom_line(linewidth = 0.8) +
+  facet_wrap(~ model) +
+  scale_color_manual(values = c("#CC7A00", "#1B4E8A")) +
+  scale_x_date(date_breaks = "1 week", date_labels = "%b %d") +
+  scale_y_continuous(labels = scales::label_percent(accuracy = 0.01, scale = 1)) +
+  labs(x = "Test date", y = "Daily volatility", color = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+The orange line in each panel preserves what could be forecast at $T$,
+while the blue line shows how that estimator responds to the returns as
+they arrive. For continuity with @sec-garch-forecast, both paths are shown
+as daily volatility percentages: we take the square root of each variance
+and multiply by 100. A value of 1% therefore has the same meaning in these
+figures. The shorter test window permits a closer view of the movement,
+so its axis limits differ from those of the full historical plot while
+the units remain the same. This display transformation leaves the underlying
+variance forecasts and all subsequent loss calculations unchanged.
+Within each panel, the divergence between the lines comes entirely from
+the information update; their similarity across panels reflects how close
+the two estimated models are.
+
+By the last test day, the updated daily volatility is approximately
+`r sprintf("%.3f", 100 * sqrt(tail(test_paths$filtered[test_paths$model == "Full MLE"], 1)))`%
+for Full MLE and
+`r sprintf("%.3f", 100 * sqrt(tail(test_paths$filtered[test_paths$model == "Variance targeting"], 1)))`%
+for variance targeting. The original forecasts for
+that day remain at
+`r sprintf("%.3f", 100 * sqrt(tail(test_paths$fixed_origin[test_paths$model == "Full MLE"], 1)))`%
+and
+`r sprintf("%.3f", 100 * sqrt(tail(test_paths$fixed_origin[test_paths$model == "Variance targeting"], 1)))`%.
+The returns observed over the window thus lead both models to a lower
+end-of-period assessment of risk. This illustrates their reaction to new
+information, but evaluating forecast accuracy requires a separate observable
+outcome. Using the filtered path itself as the outcome would merely compare
+two outputs of the same fitted model.
+
+The third policy adds parameter re-estimation to this daily information
+update. Before predicting day $t$, we extend the estimation sample through
+$t-1$, fit the model, and reconstruct its variance path with those newly
+estimated coefficients. Denote the coefficients by
+$\hat\omega_{t-1}$, $\hat\alpha_{t-1}$, and $\hat\beta_{t-1}$, where the
+subscript identifies the last observation available for estimation. The
+resulting one-day forecast is
+
+$$
+\hat v_{t\mid t-1}^{\mathrm{refit}}
+=\hat\omega_{t-1}+\hat\alpha_{t-1}u_{t-1}^2
++\hat\beta_{t-1}\hat v_{t-1}^{\mathrm{refit}}.
+$$
+
+Here $\hat v_{t-1}^{\mathrm{refit}}$ is the final filtered variance obtained
+by running the recursion over the expanded sample with the new coefficients.
+Reconstructing this path keeps the variance state consistent with the model
+just estimated. For variance targeting, we also recalculate $V_L$ from the
+expanded sample and derive the new intercept from that value. Full MLE
+continues to estimate all three coefficients jointly. Neither procedure
+uses the return on day $t$ until after forecasting that day.
+
+These policies answer different operational questions. The original
+twenty-day forecast describes what can be planned at the initial date,
+before any test returns arrive. Daily updating describes a risk assessment
+that can be revised as the market evolves while keeping a previously
+calibrated model. Daily re-estimation also allows the calibration to change,
+at the cost of repeating the optimization and introducing estimation
+variation. Comparing the first two policies measures the benefit of fresh
+information in this window; comparing the last two isolates the additional
+effect of re-estimating the model on an expanding sample.
+
+```{r garch-daily-refits}
+daily_refits <- list()
+for (h in seq_len(nrow(test_returns))) {
+  past <- c(u, head(test_returns$return, h - 1L))
+  if (h == 1L) {
+    pf <- unname(theta_full)
+    pv <- c(unname(omega_vt), unname(alpha_vt), unname(beta_vt))
+  } else {
+    full_fit <- optim(c(4e-6, 0.2, 0.7), nll_garch, u = past,
+      method = "L-BFGS-B", lower = c(1e-12, 0, 0),
+      upper = c(Inf, 1 - 1e-6, 1 - 1e-6),
+      control = list(parscale = c(1e-6, 0.1, 0.1), factr = 1e7, pgtol = 1e-10))
+    target <- var(past)
+    vt_fit <- optim(c(0.2, 0.7), nll_garch_vt, u = past,
+      long_run_variance = target, method = "L-BFGS-B",
+      lower = c(0, 0), upper = c(1 - 1e-6, 1 - 1e-6))
+    # Retry an unsuccessful search using the previous fit and finer numerical steps.
+    if (vt_fit$convergence != 0) {
+      vt_fit <- optim(unname(pv[2:3]), nll_garch_vt, u = past,
+        long_run_variance = target, method = "L-BFGS-B",
+        lower = c(0, 0), upper = c(1 - 1e-6, 1 - 1e-6),
+        control = list(parscale = c(0.1, 0.1), ndeps = c(1e-5, 1e-5), maxit = 2000))
+    }
+    stopifnot(full_fit$convergence == 0, vt_fit$convergence == 0)
+    pf <- unname(full_fit$par)
+    pv <- c(target * (1 - sum(vt_fit$par)), unname(vt_fit$par))
+    stopifnot(nll_garch(pf, past) <= nll_garch(pv, past) + 1e-6)
+  }
+  for (model in c("Full MLE", "Variance targeting")) {
+    p <- if (model == "Full MLE") pf else pv
+    stopifnot(all(p >= 0), p[1] > 0, sum(p[2:3]) < 1)
+    last_v <- tail(garch_variance(past, p[1], p[2], p[3]), 1)
+    prediction <- p[1] + p[2] * tail(past, 1)^2 + p[3] * last_v
+    daily_refits[[length(daily_refits) + 1L]] <- tibble(
+      date = test_returns$date[h], model = model, forecast = prediction,
+      squared_return = test_returns$squared_return[h],
+      policy = "Daily re-estimation", training_n = length(past),
+      omega = p[1], alpha = p[2], beta = p[3])
+  }
+}
+daily_refits <- bind_rows(daily_refits)
+
+forecast_comparison <- test_paths |>
+  select(date, model, squared_return, fixed_origin, filtered) |>
+  pivot_longer(c(fixed_origin, filtered), names_to = "policy", values_to = "forecast") |>
+  mutate(policy = ifelse(policy == "fixed_origin", "Original 20-day forecast", "Daily update, fixed parameters")) |>
+  bind_rows(daily_refits |> select(date, model, squared_return, policy, forecast)) |>
+  mutate(policy = factor(policy, levels = c("Original 20-day forecast",
+    "Daily update, fixed parameters", "Daily re-estimation")))
+
+stopifnot(all(is.finite(forecast_comparison$forecast)), all(forecast_comparison$forecast > 0))
+first_day_check <- forecast_comparison |>
+  filter(date == min(date)) |>
+  group_by(model) |>
+  summarise(gap = max(forecast) - min(forecast), .groups = "drop")
+stopifnot(all(first_day_check$gap < 1e-12))
+```
+
+The expression `head(test_returns$return, h - 1L)` is the chronological
+safeguard in this calculation: before test day $h$, only the preceding
+$h-1$ test returns can be appended to training. On the first test day,
+all three policies consequently give the same forecast for each estimator.
+Later re-estimations retain the original initialization rule and check
+convergence, parameter restrictions, and likelihood ordering. If the initial
+variance-targeting search fails to converge, the code retries from the
+previous day's estimate with finer numerical steps; an unsuccessful retry
+stops the calculation. These numerical checks concern estimation, without
+using test losses to select parameter values.
+
+To evaluate all three policies, we turn to the squared return $u_{T+h}^2$. Under the
+zero-conditional-mean assumption, its conditional expectation equals the
+day's latent variance, making it a useful observable proxy. Any one squared
+return can nevertheless lie far above or below that variance. A quiet
+realization is possible on a risky day, just as a large movement can occur
+on a day assigned relatively low risk. We must consequently choose a loss
+function suited to a noisy proxy and interpret averages over only 20
+observations cautiously. The role of that choice is examined in
+@patton2011volatility.
+
+For this second comparison, the next figure uses variance units because
+the observable outcome is a squared return. Both the forecast variance and
+the squared return are multiplied by 10,000 to express them in squared
+percentage points. For example, a daily volatility of 1% corresponds to a
+variance of 1 squared percentage point; a volatility of 2% corresponds to
+4 squared percentage points. Each panel shows the variance forecast issued
+under each policy and plots the squared
+return actually observed on each test date. All six panels use the same
+observed returns, so differences in forecast performance arise from the
+forecast lines. The variation of the points around those lines also shows
+why a single squared return provides such an imprecise assessment of that
+day's underlying risk.
+
+```{r}
+#| label: fig-garch-test-proxy
+#| fig-cap: "Three forecasting policies compared with observed squared returns. Columns distinguish the policies; rows distinguish full MLE and variance targeting. All panels use the same test dates and variance scale."
+#| fig-width: 12
+#| fig-height: 7
+forecast_comparison |>
+  ggplot(aes(date)) +
+  geom_line(aes(y = 10000 * forecast, color = "Variance forecast"), linewidth = 0.8) +
+  geom_line(aes(y = 10000 * squared_return, color = "Observed squared return"), linewidth = 0.35) +
+  geom_point(aes(y = 10000 * squared_return, color = "Observed squared return"), size = 1.5) +
+  facet_grid(model ~ policy) +
+  scale_color_manual(values = c("Variance forecast" = "#CC7A00", "Observed squared return" = "#1B4E8A")) +
+  scale_x_date(date_breaks = "2 weeks", date_labels = "%b %d") +
+  labs(x = "Test date", y = "Daily variance (squared percentage points)", color = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom", panel.spacing = grid::unit(0.7, "cm"),
+        strip.text.x = element_text(size = 10),
+        panel.border = element_rect(color = "grey65", fill = NA, linewidth = 0.5))
+```
+
+The squared returns vary much more abruptly than the forecast paths because
+each point records one realized daily movement, whereas each forecast
+describes an expected squared movement using the information available
+when that forecast was issued.
+The updated variances underlying the preceding volatility figure smooth
+these movements because the recursion combines the previous squared return
+with the previous variance. They also respond with a one-day lag: a return
+observed today enters tomorrow's conditional variance. These differences
+in timing and meaning account for the different shapes of the figures.
+The loss calculations below aggregate the discrepancies in this second
+comparison on the same test dates. Each forecast is aligned with the return
+it was issued to predict; the observed series is connected by a thin line
+to make its chronological sequence easier to follow.
+
+For each estimator and policy, let $f_h$ be its variance forecast for test
+day $T+h$, issued using the information allowed by that policy, and let
+$q_h=u_{T+h}^2$ be the subsequently observed proxy. We score their discrepancy
+using two average losses, QLIKE and mean squared error:
+
+$$
+\begin{aligned}
+\mathrm{QLIKE}&=\frac{1}{20}\sum_{h=1}^{20}
+  \left[\log(f_h)+\frac{q_h}{f_h}\right],\\
+\mathrm{MSE}&=\frac{1}{20}\sum_{h=1}^{20}(q_h-f_h)^2.
+\end{aligned}
+$$
+
+The form of QLIKE should look familiar from the likelihood calculation.
+Assigning a large variance raises $\log(f_h)$, while assigning too little
+variance to a large observed squared return raises $q_h/f_h$. Their sum
+balances the two costs, now judging forecasts already issued rather than
+choosing parameters to fit the sample. Terms depending only on the proxy
+can be omitted because they would add the same amount to each model's loss
+on the same dates. This version also remains defined when a return is zero.
+Its value can be negative, so performance is read by comparing which loss
+is lower, regardless of the sign.
+
+MSE supplies a more direct distance measure by squaring the gap between the
+forecast variance and the squared return. It gives substantial weight to
+large discrepancies and has units equal to the fourth power of decimal
+returns. To make the small values readable, the table multiplies MSE by
+$10^8$, equivalent to calculating it from variances in squared percentage
+points. Under a conditionally unbiased proxy and the required moment
+conditions, both criteria have useful expected-ranking properties
+[@patton2011volatility]. Their use makes the comparison appropriate for this
+target, while the noise in a short test sample remains.
+
+```{r garch-test-losses}
+evaluation_summary <- test_paths |>
+  group_by(model) |>
+  summarise(
+    observations = n(),
+    qlike = mean(log(fixed_origin) + squared_return / fixed_origin),
+    mse = mean((squared_return - fixed_origin)^2),
+    mean_forecast = mean(fixed_origin),
+    mean_proxy = mean(squared_return),
+    .groups = "drop"
+  )
+
+policy_scores <- forecast_comparison |>
+  group_by(model, policy) |>
+  summarise(observations = n(),
+    qlike = mean(log(forecast) + squared_return / forecast),
+    mse = mean((squared_return - forecast)^2), .groups = "drop")
+
+policy_scores |>
+  transmute(model, policy, qlike, mse_scaled = 1e8 * mse) |>
+  kable(caption = "Forecast losses across the three policies: the same twenty test dates for each estimator and policy.",
+        col.names = c("Estimator", "Forecasting policy", "QLIKE", "\\(\\mathrm{MSE}\\times10^8\\)"),
+        digits = c(0, 0, 6, 6), escape = FALSE, row.names = FALSE) |>
+  kable_styling(full_width = FALSE, latex_options = "HOLD_position")
+
+qlike_best <- as.character(evaluation_summary$model[which.min(evaluation_summary$qlike)])
+mse_best <- as.character(evaluation_summary$model[which.min(evaluation_summary$mse)])
+loss_reading <- if (qlike_best == mse_best) {
+  paste(qlike_best, "has the lower loss under both QLIKE and MSE")
+} else {
+  paste(qlike_best, "has the lower QLIKE, while", mse_best, "has the lower MSE")
+}
+
+update_gains <- policy_scores |>
+  select(model, policy, mse) |>
+  pivot_wider(names_from = policy, values_from = mse) |>
+  mutate(reduction = 100 * (1 - `Daily update, fixed parameters` / `Original 20-day forecast`))
+```
+
+For the original twenty-day forecasts, `r loss_reading`. The QLIKE values are
+`r sprintf("%.6f", evaluation_summary$qlike[1])` for Full MLE and
+`r sprintf("%.6f", evaluation_summary$qlike[2])` for variance targeting;
+the corresponding scaled MSE values are
+`r sprintf("%.6f", 1e8 * evaluation_summary$mse[1])` and
+`r sprintf("%.6f", 1e8 * evaluation_summary$mse[2])`.
+To understand this ordering, compare the risk forecasts with the size of the
+observed movements. The average squared return is
+`r sprintf("%.3f", 1e4 * evaluation_summary$mean_proxy[1])` in
+squared-percentage-point units, compared with average variance forecasts of
+`r sprintf("%.3f", 1e4 * evaluation_summary$mean_forecast[1])` and
+`r sprintf("%.3f", 1e4 * evaluation_summary$mean_forecast[2])`.
+Both models therefore assign more variance on average than the observed
+proxy in this window. Full MLE projects slightly less variance, and its
+forecasts yield smaller discrepancies under both loss functions. That is
+the empirical result for these dates; it gives no basis for claiming a
+statistically significant or lasting advantage over variance targeting.
+
+The larger improvement in the table comes from updating the forecasts
+each day. Relative to the original twenty-day path, daily updating with
+fixed parameters reduces MSE by
+`r sprintf("%.1f", update_gains$reduction[update_gains$model == "Full MLE"])`%
+for full MLE and
+`r sprintf("%.1f", update_gains$reduction[update_gains$model == "Variance targeting"])`%
+for variance targeting. QLIKE also falls for both estimators. In the middle
+column of the figure, the forecasts move downward as the quieter returns
+arrive, bringing them closer to the subsequent squared returns on average.
+Some large discrepancies remain because the forecast describes conditional
+variance, while each squared return records just one draw from that day's
+return distribution. The improvement is measured over all twenty dates;
+it does not imply that every individual forecast becomes more accurate.
+
+Daily re-estimation changes the picture very little beyond that update.
+The last two columns are almost indistinguishable, and their losses are
+very close. Full MLE improves slightly under both criteria when re-estimated;
+variance targeting has a marginally lower MSE but a marginally higher
+QLIKE. There is consequently little evidence here of an additional practical
+benefit from re-estimating every day. The original estimation sample already
+contains `r length(u)` returns. Before the final test forecast, it has grown
+by only 19 returns, or `r sprintf("%.1f", 100 * 19 / length(u))`% of its
+original size. The twentieth test return becomes available only after the
+last forecast has been issued. These few additions change the fitted
+coefficients little in this sample, whereas the daily variance recursion
+responds directly to each latest squared return. This explains why most
+of the adaptation comes from updating the variance state. A shorter
+estimation window or a different market episode could yield a more
+substantial effect from re-estimation.
+
+The comparison therefore separates two decisions: whether forecasts can
+incorporate new observations, and whether the model is recalibrated when
+they do. Its interpretation must respect the information advantage of the
+daily policies. The original policy makes forecasts at horizons one through
+twenty from one date; the daily policies make twenty successive one-step
+forecasts. Lower daily-policy losses describe the benefit of that forecasting
+practice in this window, rather than a contest between procedures supplied
+with identical information. Within each policy, full MLE and variance
+targeting use the same information dates and can be compared directly.
+
+A broader assessment would repeat this design over additional test windows
+and market conditions. Twenty daily outcomes provide limited evidence,
+especially with a noisy variance proxy. The favorable residual checks,
+the small in-sample likelihood difference, and the test losses answer
+related questions about remaining dependence, fit, and predictive accuracy.
+Together they give a fuller assessment than either visual agreement or a
+single loss ranking alone.
 
 ## Common implementation mistakes
 
-A manual GARCH implementation is useful because it makes mistakes visible. The
-most important checks are:
+Several implementation errors can produce plausible-looking results while
+breaking the link between the model and the forecast. An especially easy
+one is to use $u_t^2$ in the calculation of $v_t$. That would let the model
+use the very return whose variance it is supposed to predict. Working through
+the first rows of the daily calculation table helps expose the mistake:
+the update must use $u_{t-1}^2$ and $v_{t-1}$, and the initialized value must
+appear before the first recursive update. The price-row numbers also need
+to remain distinct from the indices of the return vector after its first
+missing observation has been removed.
 
-| Check | Why it is important |
-|---|---|
-| Lag alignment | The recursion must use $u_{t-1}^2$ and $v_{t-1}$ to compute $v_t$. |
-| Scale consistency | Returns should stay in decimal units during estimation. Percent units can be used for plots. |
-| Parameter restrictions | $\omega>0$, $\alpha\ge0$, $\beta\ge0$, and $\alpha+\beta<1$ keep the model interpretable. |
-| Starting values | Different feasible starting values should lead to similar estimates in a stable problem. |
-| Likelihood scale | The proportional source criterion can estimate the parameters, while AIC and BIC require the Gaussian log-likelihood scale. |
-| Convergence | A reported optimum should have a successful convergence code and should dominate every admissible restricted solution. |
-| Diagnostics | AIC and BIC should be read together with parameter plausibility and residual checks. |
+A similarly unobtrusive error is to mix returns expressed as percentages
+with variances calculated from decimal returns. Multiplying a return by
+100 multiplies its variance by 10,000, so the mismatch changes the likelihood
+as well as the apparent magnitude of risk. Keeping decimal units throughout
+estimation and converting only for presentation makes it easier to check
+that the squared returns and conditional variances are on the same scale.
 
-These checks are part of the model workflow. They protect the correspondence
-between the equation, the code, and the reported result.
+Even with correct timing and units, the optimizer's output needs scrutiny.
+The parameter vector must satisfy $\omega>0$, $\alpha\ge0$, $\beta\ge0$,
+and $\alpha+\beta<1$ for the positive, finite-long-run-variance model used
+here. The coordinate bounds do not enforce the final joint restriction,
+which is why it is also checked inside the objective. Numerical convergence
+then needs to be interpreted alongside the attained likelihood. Trying
+several feasible starting vectors should give similar estimates in a stable
+problem, and scaling the parameters helps avoid search difficulties caused
+by their different magnitudes. An additional check is available in this
+application: the unrestricted likelihood should be at least as high as the
+likelihood at any admissible variance-targeting solution. A successful
+convergence code alone would not reveal a violation of that ordering.
+
+Once a fit has passed these checks, a comparison can still be misleading
+if the reported statistic uses the wrong likelihood scale or observation
+set. The proportional score is sufficient for estimating parameters, but
+`gaussian_loglik()` supplies the complete value required by AIC and BIC.
+Both models must be evaluated on the same valid dates, with the treatment
+of the sample-based long-run variance made explicit in the parameter count.
+Otherwise an apparent preference can arise from the reporting convention
+rather than a substantive difference between models.
+
+The interpretation needs the same care as the calculation. Information
+criteria describe a penalized fit and should be considered together with
+parameter plausibility and residual behavior. A claim about forecasting
+performance additionally requires later observations that were excluded
+from fitting. In that assessment, keeping the filtered GARCH path separate
+from the observed squared-return proxy prevents a comparison between model
+outputs from being mistaken for validation against data. These are the
+connections that allow the numerical results to answer the financial
+question posed at the start of the chapter.
 
 ## Conclusion and extensions
 
-This chapter built a GARCH(1,1) volatility forecasting workflow from first
-principles. The data are daily S&P 500 returns. The model updates conditional
-variance with the most recent squared return and the previous conditional
-variance. The likelihood turns that recursion into an estimable criterion, and
-the estimated parameters produce a conditional volatility series.
+We began with the observation that the size of daily S&P 500 movements changes
+over time. GARCH gives that observation a quantitative form by allowing the
+latest squared return to revise a variance estimate that also retains part
+of its preceding value. Following the recursion through the daily tables
+showed how this rule connects the data to the likelihood. Maximizing that
+likelihood then provided the coefficients needed to reconstruct historical
+volatility and project risk beyond the end of the sample.
 
-Full MLE and variance targeting use the same recursion. Full MLE estimates
-$(\omega,\alpha,\beta)$ freely. Variance targeting estimates $(\alpha,\beta)$
-and constructs $\omega$ from a long-run variance condition. The comparison
-therefore teaches a broader modeling lesson: estimation is also a choice about
-which restrictions are reasonable for the question.
+The two estimators illustrate how a restriction can simplify this process
+without greatly changing its empirical description. Full MLE chooses
+$(\omega,\alpha,\beta)$ jointly, while variance targeting estimates the
+two weights and derives the intercept from a sample-based long-run variance.
+Both optimizations converge, and the freely estimated model attains the
+slightly higher Gaussian likelihood that its larger feasible set permits.
+Their persistent variance dynamics and similar standardized-residual
+diagnostics support broadly comparable readings of historical risk. The
+AIC/BIC preference depends on how the sample-based input is counted:
+variance targeting is favored under the conditional count $k=2$, while
+counting $V_L$ gives $k=3$ and a narrow preference for Full MLE. Given the
+small difference, this comparison provides little evidence of a substantial
+gap in fit.
 
-The reported log-likelihood is evaluated with every term in the Gaussian
-expression. With the conditional count $k=2$, AIC and BIC favor variance
-targeting. Counting the sample-based estimate of $V_L$ gives variance targeting
-$k=3$ and makes Full MLE the narrow preference. The difference is negligible,
-so the evidence supports treating the two fits as practically comparable.
-Both optimization routines converge, and the unrestricted Full MLE
-log-likelihood is slightly higher than the restricted variance targeting
-log-likelihood, as required. The conditional variances, volatility forecasts,
-and residual diagnostics shown in this chapter are constructed from the
-variance targeting estimates.
+Forecasting carries the same recursion forward with a change in information.
+Historical variance responds to observed shocks; a forecast averages over
+shocks still to come, which explains its smoother approach to the long-run
+level. The simulated band around the variance-targeting forecast shows how
+future conditional volatility can nevertheless evolve along quite different
+paths with the fitted coefficients held fixed. The target throughout is
+the variability of future returns, so a useful risk forecast need not imply
+an ability to predict their direction.
 
-The volatility forecast is the central forecasting object in this chapter. It
-summarizes expected future risk; directional return forecasting is outside the
-model target. In an applied forecasting book, that distinction is important:
-forecasting can target a level, a mean, a probability, or a variance. Here the
-target is dynamic risk.
+The subsequent observations, from `r min(test_returns$date)` through
+`r max(test_returns$date)`, let us distinguish that original prediction from
+the updates made possible by new returns. Both models revised their
+end-of-window risk assessment downward as the test unfolded. Comparing
+three forecasting policies showed that daily updating with fixed coefficients
+substantially reduced both loss criteria relative to the original twenty-day
+forecast. Re-estimating each day added little in this window, where the
+expanding sample gained at most 19 returns before the final forecast,
+alongside `r length(u)` original training returns. Full MLE and variance
+targeting produced very similar paths under each policy. These findings
+illustrate the value of new information for daily risk assessment while
+keeping the distinction between one-step and multi-step forecasts explicit.
+They concern one short window with a noisy variance proxy; a general claim
+of forecasting superiority would require evaluation over additional windows
+and market conditions. Read together, the
+estimation results, residual checks, and test losses show both what this
+simple model can explain and the limits of the evidence used to assess it.
 
-The natural extensions follow from the assumptions made here. GARCH(1,1) is a
-starting point. Common extensions include asymmetric volatility models such as
-EGARCH and GJR-GARCH, heavy-tailed conditional distributions such as Student-t
-innovations, and multivariate models such as DCC-GARCH. These extensions are
-treated in more advanced references such as @francq2019garch, @tsay2010analysis,
-and @mcneil2015quantitative. The core logic remains the same: define a
-conditional variance process, estimate it with an explicit criterion, diagnose
-the residuals, and evaluate whether the forecast target is useful for the
-applied problem.
+Further developments can be motivated by the assumptions that remain.
+An asymmetric response to gains and losses would lead toward EGARCH or
+GJR-GARCH, heavier conditional tails toward Student-t innovations, and
+joint risk across assets toward multivariate models such as DCC-GARCH.
+These extensions are discussed in @francq2019garch, @tsay2010analysis, and
+@mcneil2015quantitative. Each changes part of the model, but the route from
+an economic question to an explicit variance equation, an estimable
+criterion, and an honest forecast evaluation remains the basis for
+understanding and using the result.
